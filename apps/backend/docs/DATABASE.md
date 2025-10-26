@@ -25,10 +25,12 @@ CREATE TABLE users (
 
 - `id`: Auto-incrementing primary key
 - `org_id`: Organization identifier (default: 1)
-- `email`: User's email address (unique)
+- `email`: User's email address (unique, stored in lowercase via backend normalization)
 - `password_hash`: Argon2 hashed password
 - `role`: User role (default: 'user')
 - `created_at`: Account creation timestamp
+
+**Note:** Email addresses are automatically normalized to lowercase by the backend before any database operation.
 
 ### refresh_tokens
 
