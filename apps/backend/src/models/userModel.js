@@ -2,24 +2,33 @@ import pool from '../config/db.js';
 import argon2 from 'argon2';
 
 const createUser = async (email, hashedPassword) => {
+  // Normalize email to lowercase for case-insensitive storage
+  const normalizedEmail = email?.trim().toLowerCase();
+
   const result = await pool.query(
     'INSERT INTO users (email, password_hash, org_id, role) VALUES ($1, $2, $3, $4) RETURNING id, email',
-    [email, hashedPassword, 1, 'user']
+    [normalizedEmail, hashedPassword, 1, 'user']
   );
   return result.rows[0];
 };
 
 const loginUser = async email => {
+  // Normalize email to lowercase for case-insensitive lookup
+  const normalizedEmail = email?.trim().toLowerCase();
+
   const result = await pool.query(
     'SELECT id, email, password_hash FROM users WHERE email = $1',
-    [email]
+    [normalizedEmail]
   );
   return result.rows[0];
 };
 
 const findUserByEmail = async email => {
+  // Normalize email to lowercase for case-insensitive lookup
+  const normalizedEmail = email?.trim().toLowerCase();
+
   const result = await pool.query('SELECT * FROM users WHERE email = $1', [
-    email,
+    normalizedEmail,
   ]);
   return result.rows[0];
 };

@@ -9,7 +9,11 @@ import {
 } from '../config/cookies.js';
 
 const signup = async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  let { email } = req.body;
+
+  // Normalize email to lowercase to ensure case-insensitive handling
+  email = email?.trim().toLowerCase();
 
   if (!email || !password) {
     return res.status(400).json({ error: 'All fields are required' });
@@ -46,7 +50,11 @@ const signup = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  let { email } = req.body;
+
+  // Normalize email to lowercase to ensure case-insensitive handling
+  email = email?.trim().toLowerCase();
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
