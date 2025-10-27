@@ -1,0 +1,39 @@
+meta {
+  name: Get All Customers
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/customers?page=1&limit=50
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  limit: 50
+  ~city: Istanbul
+  ~segment: Premium
+  ~is_active: true
+  ~search: test
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Get All Customers
+  
+  Lists all customers within the organization.
+  
+  **Query Parameters:**
+  - page: Page number
+  - limit: Records per page
+  - city: City filter
+  - segment: Segment filter (VIP, Premium, Standard, Basic, Potential)
+  - customer_type: Customer type (Corporate, Individual, Government, Other)
+  - is_active: Active/inactive filter
+  - search: Search by name, email, customer_code
+}

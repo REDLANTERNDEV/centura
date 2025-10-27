@@ -1,0 +1,21 @@
+meta {
+  name: Delete Product
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/products/1
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Delete Product
+  
+  Deletes product (soft delete - is_active = false).
+}

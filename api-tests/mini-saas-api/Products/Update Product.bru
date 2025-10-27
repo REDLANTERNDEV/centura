@@ -1,0 +1,31 @@
+meta {
+  name: Update Product
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/products/1
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+body:json {
+  {
+    "price": 1199.99,
+    "stock_quantity": 45,
+    "description": "Updated description - High-performance laptop with latest specs"
+  }
+}
+
+docs {
+  # Update Product
+  
+  Updates an existing product.
+  
+  All fields are optional.
+}

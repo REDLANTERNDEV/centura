@@ -8,6 +8,7 @@
   "scripts": {
     "dev:backend": "npm run dev --workspace mini-saas-erp-be",
     "dev:frontend": "npm run dev --workspace mini-saas-erp-fe",
+    "sync:bruno": "node scripts/sync-bruno-env.js",
     "format": "prettier --write .",
     "lint": "eslint .",
     "prepare": "husky"

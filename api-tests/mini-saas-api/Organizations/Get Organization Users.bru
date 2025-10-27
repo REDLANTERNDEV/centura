@@ -1,0 +1,104 @@
+meta {
+  name: Get Organization Users
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/organizations/1/users
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Organization Users
+  
+  Returns all users in an organization with their roles and details.
+  
+  ## Authentication Required
+  - HTTP-only cookie with access token
+  
+  ## URL Parameters
+  - `id` (number): Organization ID
+  
+  ## Access Control
+  - **org_owner**: Can view all users in their organization
+  - **org_admin**: Can view all users in their organization
+  - Other roles: Access denied (403)
+  
+  ## Response
+  Returns list of users with their roles:
+  ```json
+  {
+    "success": true,
+    "message": "Organization users retrieved successfully",
+    "organization": {
+      "org_id": 1,
+      "org_name": "Acme Corporation"
+    },
+    "users": [
+      {
+        "user_id": 1,
+        "email": "owner@acme.com",
+        "system_role": "user",
+        "org_role": "org_owner",
+        "is_active": true,
+        "assigned_at": "2025-01-15T10:30:00.000Z",
+        "assigned_by": null,
+        "assigned_by_email": null
+      },
+      {
+        "user_id": 2,
+        "email": "admin@acme.com",
+        "system_role": "user",
+        "org_role": "org_admin",
+        "is_active": true,
+        "assigned_at": "2025-02-20T14:45:00.000Z",
+        "assigned_by": 1,
+        "assigned_by_email": "owner@acme.com"
+      },
+      {
+        "user_id": 3,
+        "email": "manager@acme.com",
+        "system_role": "user",
+        "org_role": "manager",
+        "is_active": true,
+        "assigned_at": "2025-03-10T09:15:00.000Z",
+        "assigned_by": 1,
+        "assigned_by_email": "owner@acme.com"
+      }
+    ],
+    "total": 3
+  }
+  ```
+  
+  ## Error Responses
+  
+  ### 403 Forbidden
+  ```json
+  {
+    "success": false,
+    "message": "Access denied. Only organization owners and admins can view user list"
+  }
+  ```
+  
+  ### 404 Not Found
+  ```json
+  {
+    "success": false,
+    "message": "Organization not found"
+  }
+  ```
+  
+  ## Use Cases
+  - Team management dashboard
+  - User audit trail
+  - Role assignment preparation
+  - Security review of organization members
+  
+  ## Future Enhancements
+  This endpoint lays foundation for:
+  - POST /organizations/:id/users (invite new user)
+  - PUT /organizations/:id/users/:userId/role (change user role)
+  - DELETE /organizations/:id/users/:userId (remove user from org)
+}

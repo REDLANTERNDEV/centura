@@ -1,0 +1,27 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "testuser@example.com",
+    "password": "StrongPass123!"
+  }
+  
+}
+
+docs {
+  # Login
+  
+  Authenticates user and returns authentication token.
+  
+  Copy the cookie value from response and save it to the environment.
+}

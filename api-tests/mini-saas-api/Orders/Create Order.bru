@@ -1,0 +1,69 @@
+meta {
+  name: Create Order
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/orders
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+body:json {
+  {
+    "customer_id": 1,
+    "order_date": "2025-10-27T10:00:00Z",
+    "expected_delivery_date": "2025-11-03T10:00:00Z",
+    "status": "draft",
+    "payment_status": "pending",
+    "payment_method": "credit_card",
+    "shipping_address": "123 Main Street, Apt 4B",
+    "shipping_city": "Istanbul",
+    "billing_address": "123 Main Street, Apt 4B",
+    "billing_city": "Istanbul",
+    "discount_percentage": 0,
+    "notes": "Handle with care - fragile items",
+    "items": [
+      {
+        "product_id": 1,
+        "quantity": 2,
+        "unit_price": 1299.99,
+        "tax_rate": 18.00,
+        "discount_amount": 0
+      },
+      {
+        "product_id": 2,
+        "quantity": 3,
+        "unit_price": 29.99,
+        "tax_rate": 18.00,
+        "discount_amount": 5.00
+      }
+    ]
+  }
+}
+
+docs {
+  # Create Order
+  
+  Creates a new order.
+  
+  **Automatic Operations:**
+  - Order number is auto-generated (ORD2025000001)
+  - Stock quantity is automatically reduced
+  - Total amounts are automatically calculated
+  
+  **Required Fields:**
+  - customer_id: Customer ID
+  - items: Order items (array)
+    - product_id: Product ID
+    - quantity: Quantity
+  
+  **Optional Fields:**
+  - unit_price: If not specified, current product price is used
+  - tax_rate: If not specified, product tax rate is used
+}

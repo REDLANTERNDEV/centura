@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { COOKIE_NAMES } from '../config/cookies.js';
 
 /**
- * JWT Authentication Middleware - Cookie-based
+ * JWT Authentication Middleware - Cookie-based with Multi-Tenant Role Support
  * Verifies access tokens from HTTP-only cookies and adds user information to the request object
  */
 export const verifyToken = (req, res, next) => {
@@ -34,7 +34,8 @@ export const verifyToken = (req, res, next) => {
     req.user = {
       id: decoded.userId,
       email: decoded.email,
-      role: decoded.role || 'user',
+      org_id: decoded.orgId, // Current/default organization
+      // org_role will be populated by requireOrgRole middleware if needed
     };
 
     return next();
@@ -65,8 +66,167 @@ export const verifyToken = (req, res, next) => {
 };
 
 /**
- * Role-based authorization middleware
- * Checks if the authenticated user has the required role(s)
+ * Organization-based role authorization middleware
+ * Checks if user has required role in the organization from route params or request body
+ * FULL TENANT ISOLATION - No cross-organization access allowed
+ */
+export const requireOrgRole = (...allowedRoles) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Access denied. User not authenticated.',
+        });
+      }
+
+      // Get org_id from route params, body, or user's default org
+      const orgId = Number.parseInt(
+        req.params.id || req.params.org_id || req.body.org_id || req.user.org_id
+      );
+
+      if (!orgId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Organization ID is required.',
+        });
+      }
+
+      // Get user's role in this organization
+      const roleModel = await import('../models/roleModel.js');
+      const userRole = await roleModel.default.getUserRoleInOrg(
+        req.user.id,
+        orgId
+      );
+
+      if (!userRole) {
+        return res.status(403).json({
+          success: false,
+          message:
+            'Access denied. You do not have access to this organization.',
+        });
+      }
+
+      // Check if user's role is in allowed roles
+      if (!allowedRoles.includes(userRole.role)) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied. Required role: ${allowedRoles.join(' or ')}. Your role: ${userRole.role}`,
+        });
+      }
+
+      // Add organization role to request
+      req.user.org_role = userRole.role;
+      req.user.org_permissions = userRole.permissions;
+
+      return next();
+    } catch (error) {
+      console.error('Organization role verification error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during role verification.',
+      });
+    }
+  };
+};
+
+/**
+ * Check if user has minimum permission level in organization
+ * FULL TENANT ISOLATION - No cross-organization access
+ */
+export const requireOrgPermission = minPermissionLevel => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Access denied. User not authenticated.',
+        });
+      }
+
+      const orgId = Number.parseInt(
+        req.params.id || req.params.org_id || req.body.org_id || req.user.org_id
+      );
+
+      if (!orgId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Organization ID is required.',
+        });
+      }
+
+      // Get user's permissions
+      const roleModel = await import('../models/roleModel.js');
+      const permissions = await roleModel.default.getUserPermissions(
+        req.user.id,
+        orgId
+      );
+
+      if (!permissions) {
+        return res.status(403).json({
+          success: false,
+          message:
+            'Access denied. You do not have access to this organization.',
+        });
+      }
+
+      if (permissions.permission_level < minPermissionLevel) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Insufficient permissions.',
+        });
+      }
+
+      req.user.org_role = permissions.role;
+      req.user.permission_level = permissions.permission_level;
+
+      return next();
+    } catch (error) {
+      console.error('Permission verification error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during permission verification.',
+      });
+    }
+  };
+};
+
+/**
+ * REMOVED: Super Admin concept eliminated for security
+ * Use organization-based roles instead (org_owner, org_admin)
+ * For infrastructure access, use separate platform_admin system
+ */
+export const requireSuperAdmin = (req, res, _next) => {
+  return res.status(403).json({
+    success: false,
+    message:
+      'Super admin access has been removed for security. Use organization-based roles.',
+    code: 'SUPER_ADMIN_DEPRECATED',
+  });
+};
+
+/**
+ * Organization owner or admin middleware
+ */
+export const requireOrgAdmin = requireOrgRole('org_owner', 'org_admin');
+
+/**
+ * Organization owner only middleware
+ */
+export const requireOrgOwner = requireOrgRole('org_owner');
+
+/**
+ * Manager or higher middleware
+ */
+export const requireManager = requireOrgRole(
+  'org_owner',
+  'org_admin',
+  'manager'
+);
+
+/**
+ * DEPRECATED: Old role-based authorization middleware
+ * Use requireOrgRole or requireOrgPermission instead
  */
 export const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
@@ -78,7 +238,7 @@ export const requireRole = (...allowedRoles) => {
         });
       }
 
-      const userRole = req.user.role;
+      const userRole = req.user.system_role || req.user.role;
 
       if (!allowedRoles.includes(userRole)) {
         return res.status(403).json({
@@ -105,16 +265,15 @@ export const requireRole = (...allowedRoles) => {
 export const protect = verifyToken;
 
 /**
- * Admin only middleware
- * Ensures only admin users can access the route
+ * DEPRECATED: Old system-wide admin check - REMOVED for security
+ * Use requireOrgRole('org_owner', 'org_admin') instead
  */
-export const adminOnly = [verifyToken, requireRole('admin')];
+export const adminOnly = [verifyToken, requireSuperAdmin];
 
 /**
- * User or Admin middleware
- * Allows both regular users and admins to access the route
+ * DEPRECATED: Use requireOrgRole instead for organization-specific access
  */
-export const userOrAdmin = [verifyToken, requireRole('user', 'admin')];
+export const userOrAdmin = [verifyToken];
 
 /**
  * Optional authentication middleware - Cookie-based
@@ -135,7 +294,7 @@ export const optionalAuth = (req, res, next) => {
       req.user = {
         id: decoded.userId,
         email: decoded.email,
-        role: decoded.role || 'user',
+        org_id: decoded.orgId,
       };
     }
 

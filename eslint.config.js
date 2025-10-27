@@ -59,7 +59,6 @@ export default [
       'no-duplicate-imports': 'error',
 
       // Best Practices
-      'consistent-return': 'error',
       'default-case': 'error',
       'dot-notation': 'error',
       'no-else-return': 'error',
@@ -78,7 +77,6 @@ export default [
       'no-useless-concat': 'error',
       'no-useless-return': 'error',
       'prefer-promise-reject-errors': 'error',
-      'require-await': 'error',
     },
   },
 

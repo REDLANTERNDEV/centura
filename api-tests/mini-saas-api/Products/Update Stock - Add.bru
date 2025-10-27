@@ -1,0 +1,32 @@
+meta {
+  name: Update Stock - Add
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/products/1/stock
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+body:json {
+  {
+    "quantity": 20,
+    "type": "add"
+  }
+}
+
+docs {
+  # Update Product Stock - Add
+  
+  Adds to product stock.
+  
+  **Body:**
+  - quantity: Quantity to add
+  - type: "add" (add stock)
+}

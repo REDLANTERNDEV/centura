@@ -1,0 +1,74 @@
+meta {
+  name: Delete Organization
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/organizations/1
+  body: none
+  auth: none
+}
+
+docs {
+  # Delete Organization
+  
+  **⚠️ DANGER ZONE**: Permanently deletes an organization and all associated data.
+  
+  ## Authentication Required
+  - HTTP-only cookie with access token
+  - Role: **org_owner** only
+  
+  ## URL Parameters
+  - `id` (number): Organization ID to delete
+  
+  ## Access Control
+  - ❌ Only **org_owner** can delete
+  - ❌ org_admin CANNOT delete
+  - ❌ Other roles CANNOT delete
+  
+  ## What Gets Deleted (Cascade)
+  ⚠️ This operation deletes:
+  - The organization record
+  - All customers in this organization
+  - All products in this organization
+  - All orders in this organization
+  - All user-organization relationships
+  - All role assignments
+  
+  ## Data Loss Prevention
+  **Recommended checks before deletion:**
+  1. Export all critical data
+  2. Notify all organization members
+  3. Check for active orders/payments
+  4. Archive important records
+  
+  ## Response
+  - **200 OK**: Organization deleted successfully
+  - **403 Forbidden**: Not org_owner
+  - **404 Not Found**: Organization doesn't exist
+  - **409 Conflict**: Has active dependencies
+  
+  ## Use Cases
+  - Company shutdown
+  - Test organization cleanup
+  - Duplicate organization removal
+  - GDPR data deletion requests
+  
+  ## Alternative: Deactivation
+  Instead of deletion, consider implementing a "deactivate" feature to:
+  - Preserve historical data
+  - Allow reactivation
+  - Maintain audit trails
+  
+  ## Example
+  ```
+  DELETE /api/v1/organizations/1
+  
+  Response:
+  {
+    "message": "Organization deleted successfully",
+    "deletedId": 1
+  }
+  ```
+}

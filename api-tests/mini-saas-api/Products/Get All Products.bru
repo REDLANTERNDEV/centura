@@ -1,0 +1,39 @@
+meta {
+  name: Get All Products
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/products?page=1&limit=50
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  limit: 50
+  ~category: Electronics
+  ~is_active: true
+  ~search: laptop
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Get All Products
+  
+  Lists all products within the organization.
+  
+  **Query Parameters:**
+  - page: Page number
+  - limit: Records per page
+  - category: Category filter
+  - is_active: Active/inactive filter
+  - search: Search by name, SKU, or barcode
+  - min_price: Minimum price
+  - max_price: Maximum price
+  - low_stock: true (low stock products)
+}

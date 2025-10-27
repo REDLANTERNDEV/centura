@@ -1,0 +1,32 @@
+meta {
+  name: Update Stock - Subtract
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/products/1/stock
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+body:json {
+  {
+    "quantity": 5,
+    "type": "subtract"
+  }
+}
+
+docs {
+  # Update Product Stock - Subtract
+  
+  Subtracts from product stock.
+  
+  **Body:**
+  - quantity: Quantity to subtract
+  - type: "subtract" (reduce stock)
+}

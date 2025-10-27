@@ -1,0 +1,39 @@
+meta {
+  name: Get All Organizations
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/organizations
+  body: none
+  auth: none
+}
+
+docs {
+  # Get All Organizations
+  
+  Returns organizations based on user's role:
+  - **super_admin**: All organizations in the system
+  - **Regular users**: Only organizations they belong to
+  
+  ## Authentication Required
+  - HTTP-only cookie with access token
+  
+  ## Response
+  Returns an array of organizations with:
+  - Organization ID
+  - Name and code
+  - User's role in each organization
+  - Member count
+  - Creation date
+  
+  ## Use Cases
+  - Organization switcher dropdown
+  - Admin dashboard (super_admin)
+  - Multi-tenant user interface
+  - Organization management panel
+  
+  ## Pagination
+  Currently returns all organizations. Pagination will be added for large datasets.
+}

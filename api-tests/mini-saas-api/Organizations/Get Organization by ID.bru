@@ -1,0 +1,48 @@
+meta {
+  name: Get Organization by ID
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/organizations/1
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Organization by ID
+  
+  Returns detailed information about a specific organization.
+  
+  ## Authentication Required
+  - HTTP-only cookie with access token
+  
+  ## URL Parameters
+  - `id` (number): Organization ID
+  
+  ## Access Control
+  - Users can only view organizations they belong to
+  - **super_admin** can view any organization
+  
+  ## Response
+  Returns complete organization details:
+  - Organization ID
+  - Name and code
+  - Owner information
+  - Member count
+  - Creation and update dates
+  - User's role in the organization
+  
+  ## Use Cases
+  - Organization settings page
+  - Member management
+  - Organization details modal
+  - Audit logs
+  
+  ## Example
+  ```
+  GET /api/v1/organizations/1
+  GET /api/v1/organizations/42
+  ```
+}

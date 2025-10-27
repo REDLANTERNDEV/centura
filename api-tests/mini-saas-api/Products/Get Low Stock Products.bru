@@ -1,0 +1,21 @@
+meta {
+  name: Get Low Stock Products
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/products/low-stock
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Get Low Stock Products
+  
+  Lists products where stock quantity is below the threshold.
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Customer Orders
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/orders/customer/1
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Customer Orders
+  
+  Lists all orders for a specific customer.
+  
+  Includes customer information and order summary.
+}

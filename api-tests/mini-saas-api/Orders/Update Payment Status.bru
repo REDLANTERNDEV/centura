@@ -1,0 +1,35 @@
+meta {
+  name: Update Payment Status
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/orders/1/payment
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+body:json {
+  {
+    "payment_status": "paid",
+    "paid_amount": 1864.36
+  }
+}
+
+docs {
+  # Update Payment Status
+  
+  Updates the payment status.
+  
+  **Payment Workflow:**
+  pending → partial → paid → refunded
+  
+  **Fields:**
+  - payment_status: pending, partial, paid, refunded
+  - paid_amount: Amount paid (if not specified, total amount is used)
+}

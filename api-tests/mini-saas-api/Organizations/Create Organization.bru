@@ -1,0 +1,77 @@
+meta {
+  name: Create Organization
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/organizations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoidGVzdHVzZXJAZXhhbXBsZS5jb20iLCJvcmdJZCI6MSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2MTU2ODE3OCwiZXhwIjoxNzYxNTY5MDc4fQ.vDVxZr1ayrtQ5m-ZCWtmgv9uNATZd4KutgI2wpIa7-A; Max-Age=900; Path=/; Expires=Mon, 27 Oct 2025 12:44:38 GMT; HttpOnly; SameSite=Strictrefresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInR5cGUiOiJyZWZyZXNoIiwiaWF0IjoxNzYxNTY4MTc4LCJleHAiOjE3NjIxNzI5Nzh9.d1sdgsrmVgPUsxl09Ngj1zI0vdGnifq8uCVYDJ4jp-0
+}
+
+body:json {
+  {
+    "org_name": "Acme Corporation"
+  }
+}
+
+docs {
+  # Create Organization
+  
+  Creates a new organization. The user who creates the organization automatically becomes the **org_owner**.
+  
+  ## Authentication Required
+  - HTTP-only cookie with access token
+  
+  ## Request Body
+  ```json
+  {
+    "org_name": "Acme Corporation"  // Required: 2-255 characters
+  }
+  ```
+  
+  ## Validation Rules
+  - **org_name**: 2-255 characters, required
+  
+  ## Auto-Generated
+  - **org_id**: Automatically generated primary key (SERIAL)
+  
+  ## Response
+  Returns the created organization with:
+  - Organization ID (auto-generated)
+  - Name
+  - Creator's role (org_owner)
+  
+  ## Use Cases
+  - First-time user creating their workspace
+  - Company admin setting up new department
+  - Multi-organization user adding another workspace
+  
+  ## Why No Organization Code?
+  - org_id (auto-incrementing) is sufficient for unique identification
+  - No manual code needed - follows modern SaaS best practices (Slack, Notion)
+  - More secure than predictable codes (ACME2025, etc.)
+}
+  
+  ## Response
+  Returns the created organization with:
+  - Organization ID
+  - Name and code
+  - Creator's role (org_owner)
+  
+  ## Use Cases
+  - First-time user creating their workspace
+  - Company admin setting up new department
+  - Multi-organization user adding another workspace
+  
+  ## Example Codes
+  - `ACME2025`
+  - `SALES_TEAM`
+  - `DEV_OPS`
+  - `MARKETING_Q1`
+}

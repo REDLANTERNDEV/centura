@@ -1,0 +1,78 @@
+meta {
+  name: Get Organization Stats
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/organizations/1/stats
+  body: none
+  auth: none
+}
+
+docs {
+  # Get Organization Statistics
+  
+  Returns comprehensive statistics about an organization.
+  
+  ## Authentication Required
+  - HTTP-only cookie with access token
+  
+  ## URL Parameters
+  - `id` (number): Organization ID
+  
+  ## Access Control
+  - Users can only view stats for organizations they belong to
+  - **super_admin** can view stats for any organization
+  
+  ## Response
+  Returns organization statistics including:
+  ```json
+  {
+    "organization": {
+      "id": 1,
+      "name": "Acme Corporation",
+      "code": "ACME2025"
+    },
+    "stats": {
+      "totalMembers": 15,
+      "totalCustomers": 128,
+      "totalProducts": 45,
+      "totalOrders": 342,
+      "activeOrders": 23,
+      "totalRevenue": 125000.50,
+      "lowStockProducts": 7
+    },
+    "membersByRole": {
+      "org_owner": 1,
+      "org_admin": 2,
+      "manager": 4,
+      "user": 6,
+      "viewer": 2
+    },
+    "recentActivity": {
+      "lastOrderDate": "2025-10-27T10:30:00Z",
+      "lastCustomerAdded": "2025-10-26T15:45:00Z",
+      "lastProductUpdate": "2025-10-27T09:15:00Z"
+    }
+  }
+  ```
+  
+  ## Use Cases
+  - Organization dashboard
+  - Analytics overview
+  - Admin reporting
+  - Health monitoring
+  - KPI tracking
+  
+  ## Performance
+  - Cached for 5 minutes
+  - Heavy queries optimized with indexes
+  - Pagination for large datasets
+  
+  ## Example
+  ```
+  GET /api/v1/organizations/1/stats
+  GET /api/v1/organizations/42/stats
+  ```
+}

@@ -1,0 +1,53 @@
+meta {
+  name: Register
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "john.doe@example.com",
+    "password": "SecurePass123!",
+    "name": "John Doe"
+  }
+}
+
+docs {
+  # Register New User - Simple & Modern
+  
+  Registers a new user with minimal information required.
+  
+  ## Required Fields
+  - **email**: User's email address (unique)
+  - **password**: Minimum 8 characters
+  - **name**: User's full name (minimum 2 characters)
+  
+  ## Optional Fields
+  - **inviteToken**: If user received an invitation email (auto-joins organization)
+  
+  ## After Registration
+  User should login and then:
+  1. Create a new organization, OR
+  2. Accept an invitation to join existing organization
+  
+  ## Example with Invite Token
+  ```json
+  {
+    "email": "john.doe@example.com",
+    "password": "SecurePass123!",
+    "name": "John Doe",
+    "inviteToken": "abc123xyz789"
+  }
+  ```
+  
+  ## Response
+  - **201**: Registration successful
+  - **400**: Validation error
+  - **409**: Email already registered
+}

@@ -1,0 +1,39 @@
+meta {
+  name: Create Order - Auto Pricing
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/orders
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+body:json {
+  {
+    "customer_id": 1,
+    "items": [
+      {
+        "product_id": 1,
+        "quantity": 1
+      },
+      {
+        "product_id": 2,
+        "quantity": 2
+      }
+    ]
+  }
+}
+
+docs {
+  # Create Order - Auto Pricing
+  
+  Creates order with minimal data.
+  
+  Current product prices and tax rates are automatically used.
+}

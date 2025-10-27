@@ -1,0 +1,40 @@
+meta {
+  name: Sales Statistics
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/orders/statistics
+  body: none
+  auth: none
+}
+
+params:query {
+  ~start_date: 2025-10-01
+  ~end_date: 2025-10-31
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Sales Statistics
+  
+  Retrieves sales statistics.
+  
+  **Response:**
+  - total_orders: Total number of orders
+  - delivered_orders: Number of delivered orders
+  - cancelled_orders: Number of cancelled orders
+  - paid_orders: Number of paid orders
+  - total_revenue: Total revenue
+  - paid_revenue: Paid revenue
+  - pending_revenue: Pending revenue
+  - average_order_value: Average order value
+  
+  **Filters:**
+  - start_date: Start date (YYYY-MM-DD)
+  - end_date: End date (YYYY-MM-DD)
+}

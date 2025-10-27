@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "Mini SaaS API",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

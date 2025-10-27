@@ -1,0 +1,21 @@
+meta {
+  name: Logout
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/auth/logout
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Logout
+  
+  Logs out the current user session.
+}

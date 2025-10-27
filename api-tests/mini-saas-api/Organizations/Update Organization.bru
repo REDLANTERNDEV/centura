@@ -1,0 +1,62 @@
+meta {
+  name: Update Organization
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/organizations/1
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "org_name": "Acme Corporation Ltd"
+  }
+}
+
+docs {
+  # Update Organization
+  
+  Updates organization details. Only organization owner and admins can update.
+  
+  ## Authentication Required
+  - HTTP-only cookie with access token
+  - Role: **org_owner** or **org_admin**
+  
+  ## URL Parameters
+  - `id` (number): Organization ID
+  
+  ## Request Body
+  All fields are optional (update only what you need):
+  ```json
+  {
+    "org_name": "Acme Corporation Ltd"  // 2-255 characters
+  }
+  ```
+  
+  ## Validation Rules
+  - **org_name**: 2-255 characters (if provided)
+  
+  ## Access Control
+  - ❌ Regular users cannot update
+  - ❌ Managers cannot update
+  - ✅ org_admin can update
+  - ✅ org_owner can update
+  
+  ## Response
+  Returns the updated organization with:
+  - Updated fields
+  - Organization ID
+  - Modification timestamp
+  
+  ## Use Cases
+  - Rebranding company name
+  - Updating organization code
+  - Organization settings management
+  
+  ## Example Updates
+  - Change name: `"Acme Corp" → "Acme Corporation"`
+  - Update code: `"ACME" → "ACME_ENTERPRISE"`
+}

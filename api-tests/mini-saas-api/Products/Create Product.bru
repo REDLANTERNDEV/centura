@@ -1,0 +1,45 @@
+meta {
+  name: Create Product
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/products
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+body:json {
+  {
+    "name": "Laptop Dell XPS 15",
+    "description": "High-performance laptop with Intel i7, 16GB RAM, 512GB SSD",
+    "sku": "LAP-XPS15-001",
+    "barcode": "1234567890123",
+    "category": "Electronics",
+    "price": 1299.99,
+    "cost_price": 999.99,
+    "tax_rate": 18.00,
+    "stock_quantity": 50,
+    "low_stock_threshold": 10,
+    "unit": "pcs"
+  }
+}
+
+docs {
+  # Create Product
+  
+  Creates a new product.
+  
+  **Required Fields:**
+  - name: Product name
+  - sku: Stock keeping unit (unique within organization)
+  - category: Category
+  - price: Selling price
+  - stock_quantity: Stock quantity
+  - unit: Unit (pcs, kg, liter, etc.)
+}

@@ -1,0 +1,61 @@
+meta {
+  name: Create Customer
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/customers
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+body:json {
+  {
+    "customer_code": "CUST-ACME-001",
+    "name": "Acme Corporation",
+    "email": "contact@acme.com",
+    "phone": "+90 212 555 0001",
+    "mobile": "+90 555 123 4567",
+    "city": "Istanbul",
+    "country": "Turkey",
+    "address": "123 Business Street, Suite 100",
+    "postal_code": "34000",
+    "tax_number": "1234567890",
+    "tax_office": "Istanbul Tax Office",
+    "segment": "Premium",
+    "customer_type": "Corporate",
+    "payment_terms": 30,
+    "credit_limit": 50000.00,
+    "notes": "VIP customer - priority support"
+  }
+}
+
+docs {
+  # Create Customer
+  
+  Creates a new customer in your organization.
+  
+  **Required Fields:**
+  - **customer_code**: Unique customer code (3-50 chars, uppercase + numbers + hyphens)
+  - **name**: Customer/Company name (2-255 characters)
+  
+  **Optional Fields:**
+  - email, phone, mobile
+  - city, country, address, postal_code
+  - tax_number, tax_office
+  - segment: VIP, Premium, Standard, Basic, Potential
+  - customer_type: Corporate, Individual, Government, Other
+  - payment_terms: Days (e.g., 30, 60, 90)
+  - credit_limit: Maximum credit allowed
+  - notes: Additional information
+  
+  **Example Codes:**
+  - CUST-ACME-001
+  - CORP-2025-001
+  - IND-ISTANBUL-042
+}

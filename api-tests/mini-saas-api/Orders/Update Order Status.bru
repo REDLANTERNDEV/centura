@@ -1,0 +1,38 @@
+meta {
+  name: Update Order Status
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/orders/1/status
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+body:json {
+  {
+    "status": "confirmed"
+  }
+}
+
+docs {
+  # Update Order Status
+  
+  Updates the order status.
+  
+  **Workflow:**
+  draft → confirmed → processing → shipped → delivered
+  
+  **Important:**
+  - Can transition to cancelled at any time (except delivered)
+  - Delivered orders cannot be cancelled
+}
+
+vars:post-response {
+  // Status values: draft, confirmed, processing, shipped, delivered, cancelled
+}

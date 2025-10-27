@@ -8,44 +8,88 @@ import {
   getClearCookieConfig,
 } from '../config/cookies.js';
 
+/**
+ * User Registration - Simple & Modern Approach
+ * Only requires: email, password, name
+ * Organization setup is optional and done after login
+ * User can also join via invitation link
+ */
 const signup = async (req, res) => {
-  const { password } = req.body;
+  const { password, name, inviteToken } = req.body;
   let { email } = req.body;
 
   // Normalize email to lowercase to ensure case-insensitive handling
   email = email?.trim().toLowerCase();
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'All fields are required' });
+  // Validation
+  if (!email || !password || !name) {
+    return res.status(400).json({
+      success: false,
+      error: 'Email, password, and name are required',
+    });
   }
 
   if (password.length < 8) {
     return res.status(400).json({
-      error: 'Password is too short. It must be at least 8 characters.',
+      success: false,
+      error: 'Password must be at least 8 characters',
+    });
+  }
+
+  if (name.trim().length < 2) {
+    return res.status(400).json({
+      success: false,
+      error: 'Name must be at least 2 characters',
     });
   }
 
   try {
     const existingUser = await userModel.findUserByEmail(email);
     if (existingUser) {
-      return res
-        .status(409)
-        .json({ error: 'This email is already registered' });
+      return res.status(409).json({
+        success: false,
+        error: 'This email is already registered',
+      });
     }
 
+    // Hash password with Argon2
     const hashPassword = await argon2.hash(password, {
       type: argon2.argon2id,
       memoryCost: 2 ** 16,
       timeCost: 3,
       parallelism: 1,
     });
-    const newUser = await userModel.createUser(email, hashPassword);
-    return res
-      .status(201)
-      .json({ message: 'Register successful', user: newUser });
+
+    // Create user without organization (org_id will be null)
+    const newUser = await userModel.createUser(email, hashPassword, name);
+
+    // If inviteToken is provided, join the organization automatically
+    const organization = null;
+    if (inviteToken) {
+      // Invite token functionality will be implemented separately
+      // For now, users create organizations after login
+      console.log('Invite token provided:', inviteToken);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Registration successful! You can now login.',
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+      },
+      // Guide user on next steps
+      nextSteps: organization
+        ? 'You have joined the organization. Please login to continue.'
+        : 'After login, you can create your organization or join one via invitation.',
+    });
   } catch (err) {
     console.error('Register error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({
+      success: false,
+      error: 'Server error during registration',
+    });
   }
 };
 
@@ -70,12 +114,12 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Create JWT tokens with proper payload
+    // Create JWT tokens with organization-based access only
     const accessToken = jwt.sign(
       {
         userId: user.id,
         email: user.email,
-        role: user.role || 'user',
+        orgId: user.org_id, // Default/current organization
         type: 'access',
       },
       process.env.JWT_SECRET,
@@ -94,7 +138,7 @@ const login = async (req, res) => {
     const refreshExpiryMs =
       process.env.JWT_REFRESH_EXPIRES_IN === '7d'
         ? 7 * 24 * 60 * 60 * 1000
-        : parseInt(process.env.JWT_REFRESH_EXPIRES_IN) * 1000;
+        : Number.parseInt(process.env.JWT_REFRESH_EXPIRES_IN) * 1000;
 
     const expiresAt = new Date(Date.now() + refreshExpiryMs);
 
@@ -199,7 +243,7 @@ const refreshToken = async (req, res) => {
       {
         userId: tokenData.user_id,
         email: tokenData.email,
-        role: tokenData.role || 'user',
+        orgId: tokenData.org_id,
         type: 'access',
       },
       process.env.JWT_SECRET,
@@ -220,7 +264,7 @@ const refreshToken = async (req, res) => {
     const refreshExpiryMs =
       process.env.JWT_REFRESH_EXPIRES_IN === '7d'
         ? 7 * 24 * 60 * 60 * 1000
-        : parseInt(process.env.JWT_REFRESH_EXPIRES_IN) * 1000;
+        : Number.parseInt(process.env.JWT_REFRESH_EXPIRES_IN) * 1000;
 
     const expiresAt = new Date(Date.now() + refreshExpiryMs);
 

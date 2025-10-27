@@ -1,0 +1,42 @@
+meta {
+  name: Get All Orders
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/orders?page=1&limit=50
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  limit: 50
+  ~status: confirmed
+  ~payment_status: paid
+  ~customer_id: 1
+  ~start_date: 2025-10-01
+  ~end_date: 2025-10-31
+  ~search: ORD2025
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Get All Orders
+  
+  Lists all orders within the organization.
+  
+  **Query Parameters:**
+  - page: Page number
+  - limit: Records per page
+  - status: Order status (draft, confirmed, processing, shipped, delivered, cancelled)
+  - payment_status: Payment status (pending, partial, paid, refunded)
+  - customer_id: Customer ID
+  - start_date: Start date (YYYY-MM-DD)
+  - end_date: End date (YYYY-MM-DD)
+  - search: Search (order number or customer name)
+}

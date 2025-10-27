@@ -1,0 +1,23 @@
+meta {
+  name: Get Order by ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/orders/1
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Get Order by ID
+  
+  Retrieves all details of a specific order.
+  
+  Includes customer information, order items, and product details.
+}

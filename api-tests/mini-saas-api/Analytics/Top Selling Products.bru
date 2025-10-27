@@ -1,0 +1,41 @@
+meta {
+  name: Top Selling Products
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/orders/top-products?limit=10
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 10
+  ~start_date: 2025-10-01
+  ~end_date: 2025-10-31
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Top Selling Products
+  
+  Lists the top selling products.
+  
+  **Response:**
+  - id: Product ID
+  - name: Product name
+  - sku: Stock keeping unit
+  - category: Category
+  - total_quantity: Total quantity sold
+  - total_revenue: Total revenue
+  - order_count: Number of orders containing this product
+  
+  **Filters:**
+  - limit: Number of results (default: 10)
+  - start_date: Start date
+  - end_date: End date
+}

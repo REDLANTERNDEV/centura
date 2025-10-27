@@ -1,0 +1,25 @@
+meta {
+  name: Delete Order
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/orders/1
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Delete Order
+  
+  Deletes the order.
+  
+  **Automatic Operations:**
+  - Stock is restored if order is not cancelled
+  - Order items are also deleted (CASCADE)
+}

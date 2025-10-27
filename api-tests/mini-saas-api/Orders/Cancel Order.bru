@@ -1,0 +1,29 @@
+meta {
+  name: Cancel Order
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/orders/1/cancel
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: token={{token}}
+}
+
+docs {
+  # Cancel Order
+  
+  Cancels the order and restores stock.
+  
+  **Automatic Operations:**
+  - Order status is marked as "cancelled"
+  - Stock is restored for all order products
+  
+  **Important:**
+  - Delivered orders cannot be cancelled
+  - Cancelled orders cannot be updated again
+}

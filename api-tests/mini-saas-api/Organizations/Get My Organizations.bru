@@ -1,0 +1,63 @@
+meta {
+  name: Get My Organizations
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/organizations/me
+  body: none
+  auth: none
+}
+
+docs {
+  # Get My Organizations
+  
+  Returns **all organizations** where the current user has access.
+  
+  ## Authentication Required
+  - HTTP-only cookie with access token
+  
+  ## Response
+  Returns an array of organizations with details:
+  ```json
+  {
+    "success": true,
+    "message": "Organizations retrieved successfully",
+    "data": [
+      {
+        "org_id": 1,
+        "org_name": "Acme Corporation",
+        "role": "org_owner",
+        "org_active": true,
+        "role_active": true,
+        "assigned_at": "2025-10-27T10:00:00Z",
+        "email": "contact@acme.com",
+        "phone": "+90 212 555 0001",
+        "address": "123 Business Street"
+      },
+      {
+        "org_id": 2,
+        "org_name": "Tech Solutions",
+        "role": "org_admin",
+        "org_active": true,
+        "role_active": true,
+        "assigned_at": "2025-10-26T15:30:00Z"
+      }
+    ],
+    "count": 2
+  }
+  ```
+  
+  ## Use Cases
+  - **Organization switcher UI** - Show all orgs user can access
+  - **Dashboard initialization** - List available workspaces
+  - **Multi-tenant navigation** - Switch between organizations
+  - **Role-based feature access** - Check permissions per org
+  
+  ## Multi-Organization Support
+  - One user can belong to **multiple organizations**
+  - Each organization has a different role (owner, admin, manager, user, viewer)
+  - Ordered by most recently assigned first
+  - Only shows active organizations and active roles
+}
