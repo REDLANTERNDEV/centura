@@ -38,7 +38,7 @@ export const getAllOrders = async (orgId, filters = {}, pagination = {}) => {
           ) ORDER BY oi.id
         ) as items
       FROM orders o
-      LEFT JOIN customers c ON o.customer_id = c.id
+      LEFT JOIN customers c ON o.customer_id = c.customer_id
       LEFT JOIN users u ON o.created_by = u.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
@@ -91,7 +91,7 @@ export const getAllOrders = async (orgId, filters = {}, pagination = {}) => {
     }
 
     // Group by
-    query += ` GROUP BY o.id, c.name, c.email, c.customer_code, u.email`;
+    query += ` GROUP BY o.id, c.customer_id, c.name, c.email, c.customer_code, u.email`;
 
     // Order by
     query += ` ORDER BY o.order_date DESC, o.created_at DESC`;
@@ -152,12 +152,12 @@ export const getOrderById = async (orderId, orgId) => {
           ) ORDER BY oi.id
         ) as items
        FROM orders o
-       LEFT JOIN customers c ON o.customer_id = c.id
+       LEFT JOIN customers c ON o.customer_id = c.customer_id
        LEFT JOIN users u ON o.created_by = u.id
        LEFT JOIN order_items oi ON o.id = oi.order_id
        LEFT JOIN products p ON oi.product_id = p.id
        WHERE o.id = $1 AND o.org_id = $2
-       GROUP BY o.id, c.name, c.email, c.phone, c.customer_code, c.address, c.city, c.tax_number, u.email`,
+       GROUP BY o.id, c.customer_id, c.name, c.email, c.phone, c.customer_code, c.address, c.city, c.tax_number, u.email`,
       [orderId, orgId]
     );
     return result.rows[0] || null;

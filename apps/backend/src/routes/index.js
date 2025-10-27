@@ -4,6 +4,7 @@ import customerRoutes from './customerRoutes.js';
 import organizationRoutes from './organizationRoutes.js';
 import productRoutes from './productRoutes.js';
 import orderRoutes from './orderRoutes.js';
+import insightsRoutes from './insightsRoutes.js';
 
 const router = express.Router();
 
@@ -13,6 +14,7 @@ router.use('/v1/customers', customerRoutes);
 router.use('/v1/organizations', organizationRoutes);
 router.use('/v1/products', productRoutes);
 router.use('/v1/orders', orderRoutes);
+router.use('/v1/insights', insightsRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

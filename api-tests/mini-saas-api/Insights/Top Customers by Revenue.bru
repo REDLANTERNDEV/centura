@@ -1,0 +1,36 @@
+meta {
+  name: Top Customers by Revenue
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/insights/customers/top
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~limit: 10
+  ~startDate: 2024-01-01
+  ~endDate: 2025-12-31
+}
+
+docs {
+  # Top Customers by Revenue
+  
+  Get top customers ranked by total sales (Customer Lifetime Value).
+  
+  ## Industry Metrics:
+  - Total Sales (Revenue)
+  - Total Orders
+  - Average Order Value
+  - Customer Lifetime Days
+  - Last Order Date
+  - Customer Segment
+  
+  ## Query Parameters:
+  - `limit` (optional): Number of customers to return (default: 10)
+  - `startDate` (optional): Filter from date
+  - `endDate` (optional): Filter until date
+}

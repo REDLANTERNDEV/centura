@@ -1,0 +1,44 @@
+meta {
+  name: Growth Metrics (MoM)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/insights/growth/metrics
+  body: none
+  auth: inherit
+}
+
+docs {
+  # Growth Metrics
+  
+  Month-over-Month (MoM) growth analysis.
+  
+  ## Metrics Tracked:
+  1. **Revenue Growth**
+     - Current month revenue
+     - Previous month revenue
+     - Growth rate (%)
+  
+  2. **Order Growth**
+     - Current month orders
+     - Previous month orders
+     - Growth rate (%)
+  
+  3. **Customer Growth**
+     - Current month unique customers
+     - Previous month unique customers
+     - Growth rate (%)
+  
+  ## Industry Standard:
+  - SaaS/ERP companies track MoM growth
+  - Helps identify trends early
+  - Critical for investor reporting
+  - Enables forecasting
+  
+  ## Future Enhancements:
+  - Quarter-over-Quarter (QoQ)
+  - Year-over-Year (YoY)
+  - Compound Annual Growth Rate (CAGR)
+}

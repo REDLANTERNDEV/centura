@@ -1,0 +1,39 @@
+meta {
+  name: Inventory Health
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/insights/inventory/health
+  body: none
+  auth: inherit
+}
+
+docs {
+  # Inventory Health Metrics
+  
+  Inventory management KPIs and stock analysis.
+  
+  ## Metrics:
+  - Total Products
+  - Active Products
+  - Low Stock Products (at or below threshold)
+  - Out of Stock Products
+  - Total Inventory Value ($)
+  - Average Stock Level
+  - Total Units in Stock
+  - Stock Health Rate (%)
+  - Stockout Rate (%)
+  
+  ## Industry Standards:
+  - **Stock Health Rate**: % of products with adequate stock
+  - **Stockout Rate**: % of products out of stock
+  - **Inventory Value**: Total asset value in inventory
+  
+  ## Use Cases:
+  - Prevent stockouts
+  - Optimize inventory levels
+  - Identify slow-moving products
+  - Cash flow management
+}

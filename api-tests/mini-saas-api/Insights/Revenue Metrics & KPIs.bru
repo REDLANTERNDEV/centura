@@ -1,0 +1,40 @@
+meta {
+  name: Revenue Metrics & KPIs
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/insights/revenue/metrics
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~startDate: 2024-01-01
+  ~endDate: 2025-12-31
+}
+
+docs {
+  # Revenue Metrics & Financial KPIs
+  
+  Comprehensive financial metrics for CFO dashboard.
+  
+  ## Metrics:
+  - Total Revenue
+  - Subtotal Revenue
+  - Total Tax
+  - Total Discounts
+  - Average Order Value
+  - Collected Revenue
+  - Pending Revenue
+  - Overdue Revenue
+  - Unique Customers
+  - Collection Rate (%)
+  - Discount Rate (%)
+  
+  ## Industry Standard KPIs:
+  - **Collection Rate**: Cash flow efficiency
+  - **Discount Rate**: Pricing strategy effectiveness
+  - **AOV**: Customer spending behavior
+}

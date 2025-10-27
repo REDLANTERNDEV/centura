@@ -1,0 +1,44 @@
+meta {
+  name: Payment & AR Analysis
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/insights/payments/analysis
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~startDate: 2024-01-01
+  ~endDate: 2025-12-31
+}
+
+docs {
+  # Payment & Accounts Receivable Analysis
+  
+  Financial analytics for payment tracking and AR management.
+  
+  ## Breakdown By:
+  - Payment Status (paid, pending, overdue)
+  - Payment Method (cash, credit_card, bank_transfer, etc.)
+  
+  ## Metrics per Breakdown:
+  - Transaction Count
+  - Total Amount
+  - Percentage Share
+  - Average Days to Payment
+  
+  ## Industry Use Cases:
+  - **Cash Flow Management**: Monitor payment collection
+  - **AR Aging**: Identify overdue payments
+  - **Payment Method Analysis**: Optimize payment options
+  - **Collection Efficiency**: Track days to payment
+  
+  ## CFO Dashboard Metrics:
+  - Days Sales Outstanding (DSO)
+  - Collection efficiency
+  - Payment method preferences
+  - Overdue revenue tracking
+}

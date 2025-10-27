@@ -1,0 +1,33 @@
+meta {
+  name: Monthly Sales Trend
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/insights/sales/monthly
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~startDate: 2024-01-01
+  ~endDate: 2025-12-31
+}
+
+docs {
+  # Monthly Sales Trend
+  
+  Time-series analysis of monthly sales performance.
+  
+  ## Metrics per Month:
+  - Total Sales
+  - Total Orders
+  - Average Order Value
+  - Unique Customers
+  - Paid Amount
+  - Pending Amount
+  - Collection Rate (%)
+  
+  Perfect for revenue trend charts and forecasting.
+}

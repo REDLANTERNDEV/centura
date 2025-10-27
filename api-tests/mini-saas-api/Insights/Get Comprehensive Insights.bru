@@ -1,0 +1,42 @@
+meta {
+  name: Get Comprehensive Insights
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/insights
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~startDate: 2024-01-01
+  ~endDate: 2025-12-31
+}
+
+docs {
+  # Get Comprehensive Insights
+  
+  Returns a complete dashboard of business intelligence and analytics including:
+  - Sales performance metrics
+  - Customer analytics and segmentation
+  - Revenue analytics and KPIs
+  - Order fulfillment metrics
+  - Inventory health
+  - Growth metrics (MoM comparisons)
+  - Payment analysis
+  
+  ## Industry Standard Metrics Included:
+  - Customer Lifetime Value (CLV)
+  - Month-over-Month Growth Rate
+  - Average Order Value (AOV)
+  - Collection Rate
+  - Inventory Turnover
+  - Customer Segmentation Analysis
+  
+  ## Query Parameters:
+  - `startDate` (optional): Filter data from this date (YYYY-MM-DD)
+  - `endDate` (optional): Filter data until this date (YYYY-MM-DD)
+  - `compareWithPrevious` (optional): Compare with previous period
+}

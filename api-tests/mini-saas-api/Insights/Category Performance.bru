@@ -1,0 +1,33 @@
+meta {
+  name: Category Performance
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/insights/categories/performance
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~startDate: 2024-01-01
+  ~endDate: 2025-12-31
+}
+
+docs {
+  # Category Performance Analysis
+  
+  Category-level revenue and performance metrics.
+  
+  ## Metrics per Category:
+  - Total Products
+  - Total Orders
+  - Total Units Sold
+  - Total Revenue
+  - Average Price
+  - Revenue Share (%)
+  - Total Stock Value
+  
+  Ideal for category management and pricing strategy.
+}

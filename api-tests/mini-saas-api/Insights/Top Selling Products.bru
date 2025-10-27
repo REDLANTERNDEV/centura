@@ -1,0 +1,35 @@
+meta {
+  name: Top Selling Products
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/insights/products/top
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~limit: 10
+  ~startDate: 2024-01-01
+  ~endDate: 2025-12-31
+}
+
+docs {
+  # Top Selling Products
+  
+  Product performance ranking by revenue.
+  
+  ## Metrics:
+  - Total Revenue
+  - Total Quantity Sold
+  - Times Ordered
+  - Average Selling Price
+  - Current Stock Level
+  - Current Price
+  
+  ## Query Parameters:
+  - `limit` (optional): Number of products (default: 10)
+  - `startDate`, `endDate`: Date range filters
+}

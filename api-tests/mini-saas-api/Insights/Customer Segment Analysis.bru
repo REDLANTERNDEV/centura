@@ -1,0 +1,32 @@
+meta {
+  name: Customer Segment Analysis
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/insights/customers/segments
+  body: none
+  auth: inherit
+}
+
+docs {
+  # Customer Segment Analysis
+  
+  Customer segmentation metrics for targeted marketing.
+  
+  ## Metrics per Segment:
+  - Customer Count
+  - Total Orders
+  - Total Revenue
+  - Average Order Value
+  - Active Customers (Last 30 Days)
+  - Customer Share (%)
+  - Revenue Share (%)
+  
+  ## Use Cases:
+  - Identify high-value segments
+  - Target marketing campaigns
+  - Customer retention strategies
+  - Segment-specific pricing
+}

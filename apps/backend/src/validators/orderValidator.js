@@ -42,10 +42,11 @@ export const validateOrderCreate = data => {
         itemErrors.push('Quantity must be a positive integer');
       }
 
-      if (item.unit_price === undefined || item.unit_price === null) {
-        itemErrors.push('Unit price is required');
-      } else if (typeof item.unit_price !== 'number' || item.unit_price < 0) {
-        itemErrors.push('Unit price must be a positive number');
+      // Unit price is optional - if not provided, will be fetched from product
+      if (item.unit_price !== undefined && item.unit_price !== null) {
+        if (typeof item.unit_price !== 'number' || item.unit_price < 0) {
+          itemErrors.push('Unit price must be a positive number');
+        }
       }
 
       if (item.tax_rate !== undefined && item.tax_rate !== null) {
