@@ -66,6 +66,20 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // Don't count successful requests
 });
 
+// Permissive limiter for lightweight verification endpoints used by middleware
+export const verifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // allow many verification calls from the same IP (middleware can be chatty)
+  message: {
+    error: 'Too many verification requests, please try again later.',
+    retryAfter: 15 * 60,
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // We intentionally do NOT skip successful requests because middleware may cause
+  // many successful verifies; choose a high limit instead to avoid false 429s.
+});
+
 // Password reset/sensitive operations limiter
 export const sensitiveOperationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour

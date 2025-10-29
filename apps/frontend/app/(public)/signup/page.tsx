@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
 import { apiClient, API_ENDPOINTS } from '@/lib/api-client';
+import { signupSchema, type SignupFormData } from '@/lib/validations';
+import { validateForm } from '@/lib/validations/form-validation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,35 +25,36 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrors({});
 
     const formData = new FormData(e.currentTarget);
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
+    const data: SignupFormData = {
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+      confirmPassword: formData.get('confirmPassword') as string,
+    };
 
-    // Client-side validation
-    if (password !== confirmPassword) {
-      toast.error('Şifreler eşleşmiyor');
-      setIsLoading(false);
-      return;
-    }
+    // Validate form data with Zod
+    const validation = validateForm(signupSchema, data);
 
-    if (password.length < 8) {
-      toast.error('Şifre en az 8 karakter olmalıdır');
+    if (!validation.success) {
+      setErrors(validation.errors);
       setIsLoading(false);
+      toast.error('Lütfen form hatalarını düzeltin');
       return;
     }
 
     try {
       await apiClient.post(API_ENDPOINTS.AUTH.SIGNUP, {
-        name,
-        email,
-        password,
+        name: validation.data.name,
+        email: validation.data.email,
+        password: validation.data.password,
       });
 
       toast.success('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
@@ -64,14 +67,14 @@ export default function SignupPage() {
       const message =
         error instanceof Error ? error.message : 'Kayıt başarısız oldu';
       toast.error(message);
-      console.error('Signup error:', error);
+      // removed console logging per project linting preferences
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-background p-4'>
+    <div className='h-full flex items-center justify-center bg-background md:pt-32 pt-16'>
       <Card className='w-full max-w-md'>
         <CardHeader className='space-y-1'>
           <CardTitle className='text-2xl font-bold text-center'>
@@ -92,7 +95,11 @@ export default function SignupPage() {
                 placeholder='Ahmet Yılmaz'
                 required
                 disabled={isLoading}
+                className={errors.name ? 'border-red-500' : ''}
               />
+              {errors.name && (
+                <p className='text-sm text-red-500'>{errors.name}</p>
+              )}
             </div>
             <div className='space-y-2'>
               <Label htmlFor='email'>E-posta</Label>
@@ -103,7 +110,11 @@ export default function SignupPage() {
                 placeholder='ornek@email.com'
                 required
                 disabled={isLoading}
+                className={errors.email ? 'border-red-500' : ''}
               />
+              {errors.email && (
+                <p className='text-sm text-red-500'>{errors.email}</p>
+              )}
             </div>
             <div className='space-y-2'>
               <Label htmlFor='password'>Şifre</Label>
@@ -115,7 +126,7 @@ export default function SignupPage() {
                   placeholder='••••••••'
                   required
                   disabled={isLoading}
-                  className='pr-10'
+                  className={`pr-10 ${errors.password ? 'border-red-500' : ''}`}
                 />
                 <button
                   type='button'
@@ -129,6 +140,9 @@ export default function SignupPage() {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className='text-sm text-red-500'>{errors.password}</p>
+              )}
             </div>
             <div className='space-y-2'>
               <Label htmlFor='confirmPassword'>Şifre Tekrar</Label>
@@ -140,7 +154,7 @@ export default function SignupPage() {
                   placeholder='••••••••'
                   required
                   disabled={isLoading}
-                  className='pr-10'
+                  className={`pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
                 />
                 <button
                   type='button'
@@ -154,6 +168,9 @@ export default function SignupPage() {
                   )}
                 </button>
               </div>
+              {errors.confirmPassword && (
+                <p className='text-sm text-red-500'>{errors.confirmPassword}</p>
+              )}
             </div>
             <Button type='submit' className='w-full' disabled={isLoading}>
               {isLoading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}

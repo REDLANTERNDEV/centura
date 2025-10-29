@@ -1,7 +1,11 @@
 import express from 'express';
 import userController from '../controllers/userController.js';
-import { authLimiter } from '../middleware/security.js';
-import { verifyRefreshToken } from '../middleware/auth.js';
+import { authLimiter, verifyLimiter } from '../middleware/security.js';
+import {
+  verifyRefreshToken as verifyRefreshMiddleware,
+  verifyToken as verifyAccessMiddleware,
+} from '../middleware/auth.js';
+import { verifyRefreshToken as verifyRefreshController } from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -13,6 +17,24 @@ router.post('/login', authLimiter, userController.login);
 router.post('/logout', userController.logout);
 
 // Refresh token - requires valid refresh token cookie
-router.post('/refresh-token', verifyRefreshToken, userController.refreshToken);
+router.post(
+  '/refresh-token',
+  verifyRefreshMiddleware,
+  userController.refreshToken
+);
+
+// Verify refresh token endpoint (used by middleware fallback)
+router.get('/verify-token', verifyLimiter, verifyRefreshController);
+
+// Verify access token endpoint (validates access token cookie via middleware)
+router.get(
+  '/verify-access',
+  verifyLimiter,
+  verifyAccessMiddleware,
+  (req, res) => {
+    // If middleware passed, req.user is populated
+    return res.status(200).json({ success: true, user: req.user });
+  }
+);
 
 export default router;

@@ -34,7 +34,7 @@ export default function LogoutPage() {
             ? error.message
             : 'Çıkış işlemi başarısız oldu';
         toast.error(message);
-        console.error('Logout error:', error);
+        // removed console logging per project linting preferences
 
         // Still redirect to login page even if logout fails
         setTimeout(() => {
@@ -49,7 +49,7 @@ export default function LogoutPage() {
   }, [router]);
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-background p-4'>
+    <div className='h-full flex items-center justify-center bg-background md:pt-32 pt-16'>
       <Card className='w-full max-w-md'>
         <CardHeader className='space-y-1'>
           <div className='flex items-center justify-center mb-4'>

@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import errorHandler from './src/middleware/errorHandler.js';
 import routes from './src/routes/index.js';
+import authRoutes from './src/routes/authRoutes.js';
 import {
   securityHeaders,
   generalLimiter,
@@ -85,6 +86,9 @@ app.get('/ping', (req, res) => {
 
 // API Routes
 app.use('/api', routes);
+
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

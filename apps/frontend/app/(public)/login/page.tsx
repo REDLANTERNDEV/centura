@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
 import { apiClient, API_ENDPOINTS } from '@/lib/api-client';
+import { loginSchema, type LoginFormData } from '@/lib/validations';
+import { validateForm } from '@/lib/validations/form-validation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,17 +24,31 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrors({});
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    const data: LoginFormData = {
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+    };
+
+    // Validate form data with Zod
+    const validation = validateForm(loginSchema, data);
+
+    if (!validation.success) {
+      setErrors(validation.errors);
+      setIsLoading(false);
+      toast.error('Lütfen form hatalarını düzeltin');
+      return;
+    }
 
     try {
-      await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
+      await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, validation.data);
 
       toast.success('Giriş başarılı! Yönlendiriliyorsunuz...');
 
@@ -44,14 +60,14 @@ export default function LoginPage() {
       const message =
         error instanceof Error ? error.message : 'Giriş başarısız oldu';
       toast.error(message);
-      console.error('Login error:', error);
+      // removed console logging per project linting preferences
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-background p-4'>
+    <div className='h-full flex items-center justify-center bg-background md:pt-32 pt-16'>
       <Card className='w-full max-w-md'>
         <CardHeader className='space-y-1'>
           <CardTitle className='text-2xl font-bold text-center'>
@@ -72,7 +88,11 @@ export default function LoginPage() {
                 placeholder='ornek@email.com'
                 required
                 disabled={isLoading}
+                className={errors.email ? 'border-red-500' : ''}
               />
+              {errors.email && (
+                <p className='text-sm text-red-500'>{errors.email}</p>
+              )}
             </div>
             <div className='space-y-2'>
               <Label htmlFor='password'>Şifre</Label>
@@ -84,7 +104,7 @@ export default function LoginPage() {
                   placeholder='••••••••'
                   required
                   disabled={isLoading}
-                  className='pr-10'
+                  className={`pr-10 ${errors.password ? 'border-red-500' : ''}`}
                 />
                 <button
                   type='button'
@@ -98,6 +118,9 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className='text-sm text-red-500'>{errors.password}</p>
+              )}
             </div>
             <Button type='submit' className='w-full' disabled={isLoading}>
               {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
