@@ -63,9 +63,8 @@ CREATE TABLE users (
   org_id INTEGER REFERENCES organizations(org_id) ON DELETE SET NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  first_name VARCHAR(100),
-  last_name VARCHAR(100),
-  system_role VARCHAR(50) CHECK (system_role IN ('platform_admin') OR system_role IS NULL),
+  name VARCHAR(255) NOT NULL,
+  system_role VARCHAR(50) CHECK (system_role = 'platform_admin' OR system_role IS NULL),
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -75,22 +74,57 @@ CREATE TABLE users (
 **Columns:**
 
 - `id`: Auto-incrementing primary key
-- `org_id`: Foreign key to organizations table (nullable for platform admins)
+- `org_id`: Foreign key to organizations table (**nullable** - see Registration Flow below)
 - `email`: User's email address (unique, stored in lowercase via backend normalization)
 - `password_hash`: Argon2 hashed password
-- `first_name`: User's first name
-- `last_name`: User's last name
-- `system_role`: Platform-level role (only 'platform_admin' or NULL) - **NOT for user data access**
+- `name`: User's full name (single field for flexibility, e.g., "John Smith")
+- `system_role`: Platform-level role (ONLY 'platform_admin' or NULL) - **for infrastructure management ONLY**
 - `is_active`: User active status
 - `created_at`: Account creation timestamp
 - `updated_at`: Last update timestamp (auto-updated via trigger)
 
+**Registration Flow (Modern SaaS Pattern):**
+
+```
+1. User Registration
+   ├─ Email (required)
+   ├─ Password (required, min 8 characters)
+   └─ Name (required)
+   └─> org_id = NULL (no organization yet)
+
+2. After Login (Optional - User Choice)
+   ├─ User can choose to create an organization
+   │  └─> Becomes org_owner automatically
+   │  └─> Gets full access to organization features
+   │
+   └─ Or use basic features without organization
+      └─> Can join organization later via invite
+
+3. Organization Features (If Created)
+   ├─ Products & Inventory Management
+   ├─ Customer Management (CRM)
+   ├─ Order Processing
+   ├─ Analytics & Insights
+   └─ Team Collaboration (invite users)
+```
+
 **Important Notes:**
 
-- Email addresses are automatically normalized to lowercase by the backend before any database operation
-- `system_role = 'super_admin'` has been **REMOVED** for security (October 2024)
-- Platform admins can ONLY manage infrastructure, NEVER access user/organization data
-- All user permissions are managed through `user_organization_roles` table
+- **Email Normalization**: Automatically converted to lowercase by backend before any database operation
+- **Single Name Field**: Modern approach for flexibility (matches GitHub, Slack, Linear)
+  - Users can enter their name however they prefer ("John Smith", "山田太郎", "María José")
+  - No cultural assumptions about first/last name structure
+  - `first_name` and `last_name` columns were removed (October 2024)
+- **No Organization Required**: Users can register and explore the app without creating an organization
+  - Organization creation is optional and done after login
+  - Users choose when they're ready to use full ERP/CRM features
+  - This reduces friction during signup
+- **Platform Admin Security**:
+  - `system_role = 'super_admin'` has been **REMOVED** for security (October 2024)
+  - Only 'platform_admin' or NULL allowed
+  - Platform admins manage infrastructure (backups, monitoring, deployments)
+  - Platform admins **CANNOT** access organization data
+  - All user data access permissions are managed via `user_organization_roles` table
 
 **Foreign Keys:**
 
@@ -102,6 +136,16 @@ CREATE TABLE users (
 CREATE INDEX idx_users_org_id ON users(org_id);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_system_role ON users(system_role);
+CREATE INDEX idx_users_is_active ON users(is_active);
+```
+
+**Triggers:**
+
+```sql
+CREATE TRIGGER update_users_updated_at
+  BEFORE UPDATE ON users
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
 ```
 
 ---
