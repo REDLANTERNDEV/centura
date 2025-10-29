@@ -1,4 +1,5 @@
 import * as productModel from '../models/productModel.js';
+import { getMessage } from '../config/messages.js';
 import {
   validateProductCreate,
   validateProductUpdate,
@@ -57,7 +58,7 @@ export const getAllProducts = async (req, res) => {
     console.error('Error in getAllProducts controller:', error);
     res.status(500).json({
       success: false,
-      message: 'Error retrieving products',
+      message: getMessage('PRODUCT.RETRIEVE_ERROR'),
       error: error.message,
     });
   }
@@ -76,7 +77,7 @@ export const getProductById = async (req, res) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        message: 'Product not found',
+        message: getMessage('PRODUCT.NOT_FOUND'),
       });
     }
 
@@ -88,7 +89,7 @@ export const getProductById = async (req, res) => {
     console.error('Error in getProductById controller:', error);
     res.status(500).json({
       success: false,
-      message: 'Error retrieving product',
+      message: getMessage('PRODUCT.RETRIEVE_ERROR'),
       error: error.message,
     });
   }
@@ -107,7 +108,7 @@ export const createProduct = async (req, res) => {
     if (!validation.isValid) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: getMessage('ERROR.VALIDATION_FAILED'),
         errors: validation.errors,
       });
     }
@@ -120,7 +121,7 @@ export const createProduct = async (req, res) => {
     if (existingProduct) {
       return res.status(409).json({
         success: false,
-        message: 'Product with this SKU already exists',
+        message: getMessage('PRODUCT.SKU_EXISTS'),
       });
     }
 
@@ -128,14 +129,14 @@ export const createProduct = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Product created successfully',
+      message: getMessage('PRODUCT.CREATED'),
       data: product,
     });
   } catch (error) {
     console.error('Error in createProduct controller:', error);
     res.status(500).json({
       success: false,
-      message: 'Error creating product',
+      message: getMessage('PRODUCT.CREATE_ERROR'),
       error: error.message,
     });
   }
@@ -154,7 +155,7 @@ export const updateProduct = async (req, res) => {
     if (!validation.isValid) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: getMessage('ERROR.VALIDATION_FAILED'),
         errors: validation.errors,
       });
     }
@@ -164,7 +165,7 @@ export const updateProduct = async (req, res) => {
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
-        message: 'Product not found',
+        message: getMessage('PRODUCT.NOT_FOUND'),
       });
     }
 
@@ -177,7 +178,7 @@ export const updateProduct = async (req, res) => {
       if (duplicateProduct) {
         return res.status(409).json({
           success: false,
-          message: 'Product with this SKU already exists',
+          message: getMessage('PRODUCT.SKU_EXISTS'),
         });
       }
     }
@@ -186,14 +187,14 @@ export const updateProduct = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Product updated successfully',
+      message: getMessage('PRODUCT.UPDATED'),
       data: product,
     });
   } catch (error) {
     console.error('Error in updateProduct controller:', error);
     res.status(500).json({
       success: false,
-      message: 'Error updating product',
+      message: getMessage('PRODUCT.UPDATE_ERROR'),
       error: error.message,
     });
   }
@@ -212,7 +213,7 @@ export const updateProductStock = async (req, res) => {
     if (!validation.isValid) {
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: getMessage('ERROR.VALIDATION_FAILED'),
         errors: validation.errors,
       });
     }
@@ -222,7 +223,7 @@ export const updateProductStock = async (req, res) => {
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
-        message: 'Product not found',
+        message: getMessage('PRODUCT.NOT_FOUND'),
       });
     }
 
@@ -240,8 +241,7 @@ export const updateProductStock = async (req, res) => {
     if (existingProduct.stock_quantity + quantity < 0) {
       return res.status(400).json({
         success: false,
-        message:
-          'Insufficient stock. Operation would result in negative stock.',
+        message: getMessage('PRODUCT.INSUFFICIENT_STOCK'),
       });
     }
 
@@ -249,14 +249,14 @@ export const updateProductStock = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Stock updated successfully',
+      message: getMessage('PRODUCT.STOCK_UPDATED'),
       data: product,
     });
   } catch (error) {
     console.error('Error in updateProductStock controller:', error);
     res.status(500).json({
       success: false,
-      message: 'Error updating stock',
+      message: getMessage('PRODUCT.STOCK_UPDATE_ERROR'),
       error: error.message,
     });
   }
@@ -275,7 +275,7 @@ export const deleteProduct = async (req, res) => {
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
-        message: 'Product not found',
+        message: getMessage('PRODUCT.NOT_FOUND'),
       });
     }
 
@@ -283,14 +283,14 @@ export const deleteProduct = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Product deleted successfully',
+      message: getMessage('PRODUCT.DELETED'),
       data: product,
     });
   } catch (error) {
     console.error('Error in deleteProduct controller:', error);
     res.status(500).json({
       success: false,
-      message: 'Error deleting product',
+      message: getMessage('PRODUCT.DELETE_ERROR'),
       error: error.message,
     });
   }
@@ -314,7 +314,7 @@ export const getLowStockProducts = async (req, res) => {
     console.error('Error in getLowStockProducts controller:', error);
     res.status(500).json({
       success: false,
-      message: 'Error retrieving low stock products',
+      message: getMessage('PRODUCT.LOW_STOCK_ERROR'),
       error: error.message,
     });
   }

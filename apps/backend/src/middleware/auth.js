@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { COOKIE_NAMES } from '../config/cookies.js';
+import { getMessage } from '../config/messages.js';
 
 /**
  * JWT Authentication Middleware - Cookie-based with Multi-Tenant Role Support
@@ -13,7 +14,7 @@ export const verifyToken = (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Access denied. No authentication cookie provided.',
+        message: getMessage('AUTH.NO_AUTH_COOKIE'),
         code: 'NO_AUTH_COOKIE',
       });
     }
@@ -25,7 +26,7 @@ export const verifyToken = (req, res, next) => {
     if (decoded.type !== 'access') {
       return res.status(401).json({
         success: false,
-        message: 'Access denied. Invalid token type.',
+        message: getMessage('AUTH.INVALID_TOKEN_TYPE'),
         code: 'INVALID_TOKEN_TYPE',
       });
     }
@@ -43,7 +44,7 @@ export const verifyToken = (req, res, next) => {
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
-        message: 'Access denied. Invalid authentication cookie.',
+        message: getMessage('AUTH.INVALID_TOKEN'),
         code: 'INVALID_TOKEN',
       });
     }
@@ -51,7 +52,7 @@ export const verifyToken = (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
-        message: 'Access denied. Authentication cookie has expired.',
+        message: getMessage('AUTH.TOKEN_EXPIRED'),
         code: 'TOKEN_EXPIRED',
       });
     }
@@ -59,7 +60,7 @@ export const verifyToken = (req, res, next) => {
     console.error('Cookie token verification error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error during authentication.',
+      message: getMessage('ERROR.AUTH_ERROR'),
       code: 'AUTH_ERROR',
     });
   }
@@ -76,7 +77,7 @@ export const requireOrgRole = (...allowedRoles) => {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'Access denied. User not authenticated.',
+          message: getMessage('AUTH.NOT_AUTHENTICATED'),
         });
       }
 
@@ -88,7 +89,7 @@ export const requireOrgRole = (...allowedRoles) => {
       if (!orgId) {
         return res.status(400).json({
           success: false,
-          message: 'Organization ID is required.',
+          message: getMessage('AUTHORIZATION.ORG_ID_REQUIRED'),
         });
       }
 
@@ -102,8 +103,7 @@ export const requireOrgRole = (...allowedRoles) => {
       if (!userRole) {
         return res.status(403).json({
           success: false,
-          message:
-            'Access denied. You do not have access to this organization.',
+          message: getMessage('AUTHORIZATION.NO_ORG_ACCESS'),
         });
       }
 
@@ -111,7 +111,7 @@ export const requireOrgRole = (...allowedRoles) => {
       if (!allowedRoles.includes(userRole.role)) {
         return res.status(403).json({
           success: false,
-          message: `Access denied. Required role: ${allowedRoles.join(' or ')}. Your role: ${userRole.role}`,
+          message: getMessage('AUTHORIZATION.INSUFFICIENT_PERMISSIONS'),
         });
       }
 
@@ -124,7 +124,7 @@ export const requireOrgRole = (...allowedRoles) => {
       console.error('Organization role verification error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Internal server error during role verification.',
+        message: getMessage('ERROR.AUTH_ERROR'),
       });
     }
   };

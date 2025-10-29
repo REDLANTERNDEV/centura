@@ -7,7 +7,6 @@ const router = express.Router();
 
 // Auth routes with rate limiting
 router.post('/signup', authLimiter, userController.signup);
-
 router.post('/login', authLimiter, userController.login);
 
 // Logout - requires refresh token verification (but handles missing gracefully in controller)

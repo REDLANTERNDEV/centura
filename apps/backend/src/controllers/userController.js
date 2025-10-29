@@ -7,6 +7,7 @@ import {
   refreshTokenCookieConfig,
   getClearCookieConfig,
 } from '../config/cookies.js';
+import { getMessage } from '../config/messages.js';
 
 /**
  * User Registration - Simple & Modern Approach
@@ -25,21 +26,21 @@ const signup = async (req, res) => {
   if (!email || !password || !name) {
     return res.status(400).json({
       success: false,
-      error: 'Email, password, and name are required',
+      error: getMessage('AUTH.EMAIL_PASSWORD_REQUIRED'),
     });
   }
 
   if (password.length < 8) {
     return res.status(400).json({
       success: false,
-      error: 'Password must be at least 8 characters',
+      error: getMessage('AUTH.PASSWORD_TOO_SHORT'),
     });
   }
 
   if (name.trim().length < 2) {
     return res.status(400).json({
       success: false,
-      error: 'Name must be at least 2 characters',
+      error: getMessage('VALIDATION.FIELD_TOO_SHORT', { field: 'Ad', min: 2 }),
     });
   }
 
@@ -48,7 +49,7 @@ const signup = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        error: 'This email is already registered',
+        error: getMessage('AUTH.EMAIL_ALREADY_EXISTS'),
       });
     }
 
@@ -73,7 +74,7 @@ const signup = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Registration successful! You can now login.',
+      message: getMessage('AUTH.SIGNUP_SUCCESS'),
       user: {
         id: newUser.id,
         email: newUser.email,
@@ -81,14 +82,14 @@ const signup = async (req, res) => {
       },
       // Guide user on next steps
       nextSteps: organization
-        ? 'You have joined the organization. Please login to continue.'
-        : 'After login, you can create your organization or join one via invitation.',
+        ? 'Organizasyona katıldınız. Devam etmek için lütfen giriş yapın.'
+        : 'Giriş yaptıktan sonra organizasyonunuzu oluşturabilir veya davet ile katılabilirsiniz.',
     });
   } catch (err) {
-    console.error('Register error:', err);
+    console.error('Signup error:', err);
     return res.status(500).json({
       success: false,
-      error: 'Server error during registration',
+      error: getMessage('ERROR.SERVER_ERROR'),
     });
   }
 };
@@ -101,17 +102,26 @@ const login = async (req, res) => {
   email = email?.trim().toLowerCase();
 
   if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
+    return res.status(400).json({
+      success: false,
+      error: getMessage('AUTH.EMAIL_PASSWORD_REQUIRED'),
+    });
   }
   try {
     const user = await userModel.loginUser(email);
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        error: getMessage('AUTH.INVALID_CREDENTIALS'),
+      });
     }
     const isValidPassword = await argon2.verify(user.password_hash, password);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        error: getMessage('AUTH.INVALID_CREDENTIALS'),
+      });
     }
 
     // Create JWT tokens with organization-based access only
@@ -155,7 +165,7 @@ const login = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: getMessage('AUTH.LOGIN_SUCCESS'),
       user: {
         id: user.id,
         email: user.email,
@@ -164,7 +174,10 @@ const login = async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({
+      success: false,
+      error: getMessage('ERROR.SERVER_ERROR'),
+    });
   }
 };
 
@@ -187,7 +200,7 @@ const logout = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Logout successful',
+      message: getMessage('AUTH.LOGOUT_SUCCESS'),
     });
   } catch (err) {
     console.error('Logout error:', err);
@@ -201,7 +214,7 @@ const logout = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      error: 'Server error during logout',
+      error: getMessage('ERROR.SERVER_ERROR'),
     });
   }
 };
@@ -214,7 +227,7 @@ const refreshToken = async (req, res) => {
     if (!refreshToken) {
       return res.status(401).json({
         success: false,
-        error: 'Refresh token not found in cookies',
+        error: getMessage('AUTH.REFRESH_TOKEN_EXPIRED'),
       });
     }
 
@@ -234,7 +247,7 @@ const refreshToken = async (req, res) => {
 
       return res.status(401).json({
         success: false,
-        error: 'Invalid or expired refresh token',
+        error: getMessage('AUTH.INVALID_REFRESH_TOKEN'),
       });
     }
 
@@ -290,7 +303,7 @@ const refreshToken = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Token refreshed successfully',
+      message: getMessage('AUTH.TOKEN_REFRESH_SUCCESS'),
       user: {
         id: tokenData.user_id,
         email: tokenData.email,
@@ -309,7 +322,7 @@ const refreshToken = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      error: 'Server error during token refresh',
+      error: getMessage('ERROR.SERVER_ERROR'),
     });
   }
 };
