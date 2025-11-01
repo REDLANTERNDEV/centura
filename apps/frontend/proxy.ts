@@ -14,7 +14,7 @@ import type { NextRequest } from 'next/server';
  * - Set `NEXT_PUBLIC_API_URL` in your Next.js environment to your backend (e.g. http://localhost:5000).
  *   Middleware will fall back to `http://localhost:5000` if the var is not set in development.
  */
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const token = req.cookies.get('access_token')?.value;
   const { pathname } = req.nextUrl;
 

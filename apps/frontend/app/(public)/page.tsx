@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className='relative h-full md:pt-22 pt-4 w-full overflow-hidden bg-background'>
+    <div className='relative h-full md:pt-22 pt-4 pb-4 w-full overflow-hidden bg-background'>
       {/* Animasyonlu blob arka plan */}
       <div className='absolute inset-0'>
         <div className='absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse' />
