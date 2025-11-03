@@ -65,11 +65,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=4321
+ENV HOSTNAME="0.0.0.0"
 
 # Copy built application from builder
-COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/public ./apps/frontend/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/static ./apps/frontend/.next/static
 
 # Copy node_modules if needed (for Next.js standalone)
 COPY --from=dependencies --chown=nextjs:nodejs /app/node_modules ./node_modules
@@ -87,5 +89,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application
-CMD ["node", "server.js"]
+# Start the application (server.js is in apps/frontend/ after standalone copy)
+CMD ["node", "apps/frontend/server.js"]
