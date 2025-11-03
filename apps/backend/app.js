@@ -15,25 +15,62 @@ import {
 
 const app = express();
 
-// CORS configuration (must be before other middleware)
-const allowedOrigins = new Set(
-  [
-    process.env.FRONTEND_URL,
-    process.env.NODE_ENV === 'development' ? 'http://localhost:4321' : null,
-  ].filter(Boolean)
-);
+/**
+ * CORS Configuration
+ * Supports multiple origins via comma-separated CORS_ORIGIN environment variable
+ * Falls back to FRONTEND_URL for backwards compatibility
+ */
+const buildAllowedOrigins = () => {
+  const origins = [];
+
+  // Parse CORS_ORIGIN (supports comma-separated values)
+  const corsOrigin = process.env.CORS_ORIGIN || process.env.FRONTEND_URL;
+  if (corsOrigin) {
+    const parsedOrigins = corsOrigin
+      .split(',')
+      .map(origin => origin.trim())
+      .filter(Boolean);
+    origins.push(...parsedOrigins);
+  }
+
+  // Add development origins
+  if (process.env.NODE_ENV === 'development') {
+    origins.push('http://localhost:4321', 'http://localhost:8765');
+  }
+
+  return new Set(origins);
+};
+
+const allowedOrigins = buildAllowedOrigins();
+
+// Log CORS configuration in development only
+if (process.env.NODE_ENV !== 'production' && allowedOrigins.size > 0) {
+  console.log(
+    '🌐 CORS Allowed Origins:',
+    Array.from(allowedOrigins).join(', ')
+  );
+}
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.has(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
+      // Allow requests with no origin (mobile apps, curl, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
       }
+
+      // Check if origin is in allowed list
+      if (allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+
+      // Reject unauthorized origins (log in development only)
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('🚫 CORS: Blocked origin:', origin);
+      }
+      return callback(
+        new Error(`Origin ${origin} is not allowed by CORS policy`)
+      );
     },
     credentials: true, // Allow cookies to be sent
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
