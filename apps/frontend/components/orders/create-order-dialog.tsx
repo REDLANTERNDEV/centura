@@ -4,7 +4,6 @@
  */
 
 'use client';
- 
 
 import { useState, useEffect } from 'react';
 import {
@@ -107,7 +106,7 @@ export function CreateOrderDialog({
 
       setCustomers(customersResponse.data || []);
       setProducts(productsResponse.data || []);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Veriler yüklenirken hata oluştu', {
         description: error.message,
       });
@@ -201,7 +200,7 @@ export function CreateOrderDialog({
       toast.success('Sipariş başarıyla oluşturuldu');
       onSuccess?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Sipariş oluşturulurken hata oluştu', {
         description: error.message,
       });

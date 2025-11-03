@@ -108,10 +108,10 @@ export default function OrdersPage() {
       try {
         const revenueMetrics = await getRevenueMetrics();
         setTotalRevenue(revenueMetrics.totalRevenue || 0);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Could not fetch revenue metrics:', error);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching orders:', error);
       toast.error('Siparişler yüklenirken hata oluştu', {
         description:
@@ -169,7 +169,7 @@ export default function OrdersPage() {
       await cancelOrder(order.id);
       toast.success('Sipariş iptal edildi');
       fetchOrders(); // Refresh list
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Sipariş iptal edilirken hata oluştu', {
         description:
           error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',
@@ -193,7 +193,7 @@ export default function OrdersPage() {
       await deleteOrder(order.id);
       toast.success('Sipariş silindi');
       fetchOrders(); // Refresh list
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Sipariş silinirken hata oluştu', {
         description:
           error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',

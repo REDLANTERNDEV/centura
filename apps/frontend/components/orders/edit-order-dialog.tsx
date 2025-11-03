@@ -4,7 +4,6 @@
  */
 
 'use client';
- 
 
 import { useState, useEffect } from 'react';
 import {
@@ -132,7 +131,7 @@ export function EditOrderDialog({
 
       onSuccess?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Güncelleme başarısız', {
         description: error.message,
       });

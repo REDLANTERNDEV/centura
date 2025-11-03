@@ -67,7 +67,7 @@ export function validateField<T extends z.ZodType>(
       error => error.path[0] === fieldName
     );
     return fieldError?.message || null;
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return error.issues[0]?.message || 'Geçersiz değer';
     }

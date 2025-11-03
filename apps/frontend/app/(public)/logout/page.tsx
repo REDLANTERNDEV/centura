@@ -28,7 +28,7 @@ export default function LogoutPage() {
         setTimeout(() => {
           router.push('/login');
         }, 1000);
-      } catch (error) {
+      } catch (error: any) {
         const message =
           error instanceof Error
             ? error.message

@@ -132,7 +132,7 @@ export default function ProductsPage() {
           totalValue,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to fetch products:', error);
       toast.error(
         error instanceof Error ? error.message : 'Ürünler yüklenemedi'
@@ -158,7 +158,7 @@ export default function ProductsPage() {
       await deleteProduct(product.id);
       toast.success('Ürün başarıyla silindi');
       fetchProducts();
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to delete product:', error);
       toast.error(error instanceof Error ? error.message : 'Ürün silinemedi');
     }

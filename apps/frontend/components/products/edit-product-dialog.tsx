@@ -5,7 +5,6 @@
 
 'use client';
 /* eslint-disable no-console */
- 
 
 import { useState, useEffect } from 'react';
 import { Product, updateProduct } from '@/lib/api-client';
@@ -124,7 +123,7 @@ export function EditProductDialog({
 
       toast.success('Ürün başarıyla güncellendi');
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to update product:', error);
       toast.error(
         error instanceof Error ? error.message : 'Ürün güncellenemedi'

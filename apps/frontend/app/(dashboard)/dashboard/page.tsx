@@ -53,7 +53,7 @@ export default function DashboardPage() {
         if (customersResponse.success && customersResponse.data) {
           setRecentCustomers(customersResponse.data);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching dashboard data:', error);
       } finally {
         setIsLoading(false);

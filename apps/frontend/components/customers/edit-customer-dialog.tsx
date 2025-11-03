@@ -4,7 +4,6 @@
  */
 
 'use client';
- 
 
 import { useState, useEffect } from 'react';
 import { updateCustomer, Customer } from '@/lib/api-client';
@@ -171,7 +170,7 @@ export function EditCustomerDialog({
 
       onSuccess?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Müşteri güncellenemedi', {
         description: error.message,
       });

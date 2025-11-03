@@ -4,7 +4,6 @@
  */
 
 'use client';
- 
 
 import { useState } from 'react';
 import { createCustomer } from '@/lib/api-client';
@@ -136,7 +135,7 @@ export function CreateCustomerDialog({
 
       onSuccess?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Müşteri oluşturulamadı', {
         description: error.message,
       });

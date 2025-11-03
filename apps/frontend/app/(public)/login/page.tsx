@@ -59,7 +59,7 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push('/dashboard');
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       const message =
         error instanceof Error ? error.message : 'Giriş başarısız oldu';
       toast.error(message);

@@ -5,7 +5,6 @@
 
 'use client';
 /* eslint-disable no-console */
- 
 
 import { useState } from 'react';
 import { useOrganization } from '@/lib/contexts/OrganizationContext';
@@ -124,7 +123,7 @@ export function CreateProductDialog({
       });
 
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to create product:', error);
       toast.error(
         error instanceof Error ? error.message : 'Ürün oluşturulamadı'

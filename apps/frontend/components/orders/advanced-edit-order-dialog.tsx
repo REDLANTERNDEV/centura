@@ -136,7 +136,7 @@ export function AdvancedEditOrderDialog({
     try {
       const response = await getProducts({ is_active: true, limit: 100 });
       setProducts(response.data || []);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Ürünler yüklenirken hata oluştu', {
         description:
           error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',
@@ -242,7 +242,7 @@ export function AdvancedEditOrderDialog({
       toast.success('Sipariş başarıyla güncellendi');
       onSuccess?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Sipariş güncellenirken hata oluştu', {
         description:
           error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',

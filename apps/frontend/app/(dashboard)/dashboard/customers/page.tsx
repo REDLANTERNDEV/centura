@@ -119,7 +119,7 @@ export default function CustomersPage() {
       try {
         const revenueMetrics = await getRevenueMetrics();
         revenueAmount = revenueMetrics.totalRevenue || 0;
-      } catch (error) {
+      } catch (error: any) {
         console.error('Could not fetch revenue metrics:', error);
       }
 
@@ -129,7 +129,7 @@ export default function CustomersPage() {
         vip: customers.filter((c: Customer) => c.segment === 'VIP').length,
         revenue: revenueAmount,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching customers:', error);
       toast.error('Müşteriler yüklenemedi', {
         description: error instanceof Error ? error.message : 'Bilinmeyen hata',

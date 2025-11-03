@@ -74,7 +74,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
       toast.success('Başarıyla çıkış yapıldı');
       router.push('/login');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Logout failed:', error);
       toast.error('Çıkış yapılamadı');
     }
