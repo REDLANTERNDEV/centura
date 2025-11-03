@@ -1,6 +1,5 @@
 'use client';
 /* eslint-disable no-console */
- 
 
 /**
  * Ayarlar Sayfası - Profesyonel ERP/CRM Ayarlar Yönetimi
@@ -108,7 +107,7 @@ export default function SettingsPage() {
       if (response.data.success) {
         setUserProfile(response.data.data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Kullanıcı profili yüklenemedi:', error);
       toast.error('Kullanıcı profili yüklenemedi');
     }
@@ -139,7 +138,7 @@ export default function SettingsPage() {
           userRole: data.userRole || '',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Organizasyon ayarları yüklenemedi:', error);
       toast.error('Organizasyon ayarları yüklenemedi');
     }
@@ -158,7 +157,7 @@ export default function SettingsPage() {
       if (response.data.success) {
         setTeamMembers(response.data.data.team || []);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ekip üyeleri yüklenemedi:', error);
     }
   };
@@ -191,7 +190,7 @@ export default function SettingsPage() {
         toast.success('Profil başarıyla güncellendi');
         await fetchUserProfile();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.response?.data?.message || 'Profil güncellenemedi');
     } finally {
       setIsSaving(false);
@@ -230,7 +229,7 @@ export default function SettingsPage() {
           globalThis.window.location.href = '/auth/login';
         }, 2000);
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.response?.data?.message || 'Şifre güncellenemedi');
     } finally {
       setIsSaving(false);
@@ -263,7 +262,7 @@ export default function SettingsPage() {
         toast.success('Organizasyon ayarları güncellendi');
         await fetchOrgSettings();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error(
         error.response?.data?.message || 'Organizasyon ayarları güncellenemedi'
       );
@@ -315,7 +314,7 @@ export default function SettingsPage() {
         toast.success('Kullanıcı rolü güncellendi');
         await fetchTeamMembers();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.response?.data?.message || 'Rol güncellenemedi');
     }
   };
@@ -339,7 +338,7 @@ export default function SettingsPage() {
         );
         await fetchTeamMembers();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.response?.data?.message || 'Durum güncellenemedi');
     }
   };
@@ -368,7 +367,7 @@ export default function SettingsPage() {
         toast.success('Kullanıcı organizasyondan çıkarıldı');
         await fetchTeamMembers();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.response?.data?.message || 'Kullanıcı çıkarılamadı');
     }
   };
