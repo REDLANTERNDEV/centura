@@ -7,7 +7,8 @@ import { z } from 'zod';
 
 // Order Status Enum
 export const orderStatusSchema = z.enum([
-  'pending',
+  'draft',
+  'confirmed',
   'processing',
   'shipped',
   'delivered',
@@ -17,10 +18,9 @@ export const orderStatusSchema = z.enum([
 // Payment Status Enum
 export const paymentStatusSchema = z.enum([
   'pending',
+  'partial',
   'paid',
-  'partially_paid',
   'refunded',
-  'failed',
 ]);
 
 // Order Item Schema
@@ -109,3 +109,24 @@ export const orderSchema = z.object({
 });
 
 export type Order = z.infer<typeof orderSchema>;
+
+// Edit Order Schema
+export const editOrderSchema = z.object({
+  orderStatus: orderStatusSchema,
+  paymentStatus: paymentStatusSchema,
+  paidAmount: z
+    .number()
+    .min(0, 'Ödenen tutar negatif olamaz')
+    .nonnegative('Ödenen tutar 0 veya daha büyük olmalıdır'),
+});
+
+export type EditOrderFormData = z.infer<typeof editOrderSchema>;
+
+// Edit Order Schema with total validation
+export const createEditOrderSchema = (totalAmount: number) =>
+  editOrderSchema.extend({
+    paidAmount: z
+      .number()
+      .min(0, 'Ödenen tutar negatif olamaz')
+      .max(totalAmount, `Ödenen tutar ${totalAmount} TL'den fazla olamaz`),
+  });

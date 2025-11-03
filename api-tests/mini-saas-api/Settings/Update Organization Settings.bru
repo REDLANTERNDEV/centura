@@ -1,0 +1,68 @@
+meta {
+  name: Update Organization Settings
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{base_url}}/settings/organization/1
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Organization-ID: 1
+}
+
+body:json {
+  {
+    "org_name": "Acme Corporation Updated",
+    "industry": "Technology",
+    "phone": "+90 212 555 0001",
+    "email": "contact@acme.com",
+    "address": "123 Business Street, Suite 500",
+    "city": "Istanbul",
+    "country": "Turkey",
+    "tax_number": "1234567890"
+  }
+}
+
+docs {
+  # Update Organization Settings
+  
+  Updates organization settings. Only accessible by org admins and owners.
+  
+  **Authentication:** Required (JWT cookie)
+  **Authorization:** Org Admin or Org Owner only
+  
+  **URL Parameters:**
+  - `orgId` - Organization ID
+  
+  **Request Body:**
+  ```json
+  {
+    "org_name": "Organization Name (required)",
+    "industry": "Industry (optional)",
+    "phone": "Phone number (optional)",
+    "email": "Email (optional)",
+    "address": "Address (optional)",
+    "city": "City (optional)",
+    "country": "Country (optional)",
+    "tax_number": "Tax number (optional)"
+  }
+  ```
+  
+  **Response:**
+  ```json
+  {
+    "success": true,
+    "message": "Organization settings updated successfully",
+    "data": {
+      "org_id": 1,
+      "org_name": "Updated Name",
+      ...
+    }
+  }
+  ```
+}

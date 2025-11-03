@@ -8,6 +8,7 @@ import authRoutes from './src/routes/authRoutes.js';
 import {
   securityHeaders,
   generalLimiter,
+  healthCheckLimiter,
   cookieSecurity,
   securityLogger,
 } from './src/middleware/security.js';
@@ -18,7 +19,7 @@ const app = express();
 const allowedOrigins = new Set(
   [
     process.env.FRONTEND_URL,
-    process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null,
+    process.env.NODE_ENV === 'development' ? 'http://localhost:4321' : null,
   ].filter(Boolean)
 );
 
@@ -36,7 +37,12 @@ app.use(
     },
     credentials: true, // Allow cookies to be sent
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Organization-ID', // Allow organization context header
+    ],
+    exposedHeaders: ['X-Organization-ID'], // Expose header to frontend
   })
 );
 
@@ -90,13 +96,23 @@ app.use('/api', routes);
 // Auth routes
 app.use('/api/auth', authRoutes);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
+// Health check endpoints (for Docker and monitoring)
+// Rate limited to prevent abuse
+app.get('/health', healthCheckLimiter, (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     memory: process.memoryUsage(),
+    environment: process.env.NODE_ENV || 'development',
+  });
+});
+
+app.get('/api/v1/health', healthCheckLimiter, (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
   });
 });

@@ -44,10 +44,16 @@ export const assignRoleToUser = async (
  */
 export const getUserRoleInOrg = async (userId, orgId) => {
   const result = await pool.query(
-    `SELECT uor.*, u.system_role
+    `SELECT 
+       uor.*,
+       u.system_role,
+       o.org_name,
+       o.is_active as org_active,
+       uor.is_active as role_active
      FROM user_organization_roles uor
      JOIN users u ON u.id = uor.user_id
-     WHERE uor.user_id = $1 AND uor.org_id = $2 AND uor.is_active = TRUE`,
+     JOIN organizations o ON o.org_id = uor.org_id
+     WHERE uor.user_id = $1 AND uor.org_id = $2`,
     [userId, orgId]
   );
   return result.rows[0];

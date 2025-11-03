@@ -1,0 +1,60 @@
+meta {
+  name: Get Organization Team
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{base_url}}/settings/organization/1/users
+  body: none
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Organization-ID: 1
+}
+
+docs {
+  # Get Organization Team Members
+  
+  Retrieves all team members in the organization. Only accessible by managers and above.
+  
+  **Authentication:** Required (JWT cookie)
+  **Authorization:** Manager, Org Admin, or Org Owner
+  
+  **URL Parameters:**
+  - `orgId` - Organization ID
+  
+  **Response:**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "team": [
+        {
+          "id": 1,
+          "name": "John Smith",
+          "email": "john@example.com",
+          "is_active": true,
+          "role": "org_owner",
+          "role_active": true,
+          "assigned_at": "2024-01-01T00:00:00.000Z",
+          "assigned_by_name": "System"
+        },
+        {
+          "id": 2,
+          "name": "Jane Doe",
+          "email": "jane@example.com",
+          "is_active": true,
+          "role": "org_admin",
+          "role_active": true,
+          "assigned_at": "2024-01-02T00:00:00.000Z",
+          "assigned_by_name": "John Smith"
+        }
+      ],
+      "userRole": "org_owner"
+    }
+  }
+  ```
+}

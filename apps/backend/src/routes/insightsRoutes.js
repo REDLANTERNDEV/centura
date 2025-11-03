@@ -26,6 +26,9 @@ router.get(
   '/customers/segments',
   insightsController.getCustomerSegmentAnalysis
 );
+router.get('/customers/retention', insightsController.getCustomerRetention);
+router.get('/customers/churn', insightsController.getChurnRate);
+router.get('/customers/rfm', insightsController.getRFMAnalysis);
 
 /**
  * Sales Analytics
@@ -45,13 +48,16 @@ router.get(
  * Financial Analytics
  */
 router.get('/revenue/metrics', insightsController.getRevenueMetrics);
+router.get('/revenue/gross-margin', insightsController.getGrossMargin);
 router.get('/payments/analysis', insightsController.getPaymentAnalysis);
+router.get('/payments/dso', insightsController.getDSO);
 
 /**
  * Operational Analytics
  */
 router.get('/orders/metrics', insightsController.getOrderMetrics);
 router.get('/inventory/health', insightsController.getInventoryHealth);
+router.get('/inventory/turnover', insightsController.getInventoryTurnover);
 
 /**
  * Growth Analytics

@@ -49,12 +49,13 @@ export const accessTokenCookieConfig = {
 /**
  * Refresh token cookie configuration
  * Longer-lived, HTTP-only, secure cookie for refresh tokens
+ * Path set to '/' to ensure it's sent with refresh requests from frontend
  */
 export const refreshTokenCookieConfig = {
   ...baseCookieConfig,
   maxAge: COOKIE_DURATIONS.REFRESH_TOKEN,
-  // More restrictive path for refresh tokens
-  path: '/api/auth',
+  // Changed from '/api/auth' to '/' for better frontend compatibility
+  path: '/',
 };
 
 /**
@@ -85,11 +86,11 @@ export const clearCookieConfig = {
 
 /**
  * Refresh token clearing configuration
- * Specific path for refresh token clearing
+ * Updated to match the refresh token path
  */
 export const clearRefreshCookieConfig = {
   ...clearCookieConfig,
-  path: '/api/auth',
+  path: '/',
 };
 
 /**

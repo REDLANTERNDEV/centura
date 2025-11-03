@@ -2,6 +2,10 @@
 
 Modern, secure, and scalable multi-tenant ERP/CRM system built with Node.js, Express, PostgreSQL, and Next.js.
 
+> **🐳 Docker Setup (RECOMMENDED):** [Docker Quickstart](./docs/docker/QUICKSTART.md) - Get running in 5 minutes!
+>
+> **🔧 Manual Setup:** Follow the steps below.
+
 ## ✨ Features
 
 ### 🔐 Authentication & Security
@@ -22,19 +26,22 @@ Modern, secure, and scalable multi-tenant ERP/CRM system built with Node.js, Exp
 
 ### 📦 Core Modules
 
-- ✅ **Customer Management** - CRM with segments, cities, credit limits
-- ✅ **Product Management** - Inventory tracking, low stock alerts
+- ✅ **Customer Management** - CRM with segments, RFM analysis, CLV tracking
+- ✅ **Product Management** - Inventory tracking, low stock alerts, reorder management
 - ✅ **Order Management** - Complete order workflow with stock integration
-- ✅ **Analytics** - Sales statistics, top products, customer insights
-- ✅ **Organization Management** - Multi-tenant setup
+- ✅ **Analytics Dashboard** - 20+ KPIs, 5 detailed tabs, professional charts
+- ✅ **Advanced Insights** - Revenue metrics, customer retention, inventory turnover
+- ✅ **Organization Management** - Multi-tenant setup, settings, user management
 
 ### 🎯 Business Logic
 
 - ✅ Automatic stock management (order creation/cancellation)
 - ✅ Auto-calculated totals (subtotal, tax, discount)
 - ✅ Order number generation (ORD2025000001)
-- ✅ Order status workflow (draft → confirmed → delivered)
-- ✅ Payment tracking (pending → paid)
+- ✅ Order status workflow (draft → confirmed → processing → shipped → delivered)
+- ✅ Payment tracking (pending → partial → paid → refunded)
+- ✅ Customer metrics automation (RFM, CLV, retention rate)
+- ✅ Real-time inventory turnover calculation
 
 ---
 
@@ -61,32 +68,111 @@ Modern, secure, and scalable multi-tenant ERP/CRM system built with Node.js, Exp
 - **Code Quality:** ESLint + Prettier
 - **Git Hooks:** Husky + lint-staged
 - **Environment:** dotenv
+- **Containerization:** Docker + Docker Compose
+- **Reverse Proxy:** Nginx
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 🐳 Method 1: Docker Setup (RECOMMENDED)
+
+Docker is the easiest and fastest way to get started. All dependencies are installed automatically.
+
+#### For Windows Users:
+
+```powershell
+# 1. Run the automated setup script
+.\scripts\docker-setup.ps1
+
+# The script will prompt you for:
+# - Development or Production environment?
+# - Secure passwords will be auto-generated
+```
+
+#### For Linux/Mac Users:
+
+```bash
+# 1. Make the script executable
+chmod +x scripts/docker-setup.sh
+
+# 2. Run the automated setup script
+./scripts/docker-setup.sh
+```
+
+#### Manual Docker Setup:
+
+```bash
+# 1. Create environment file
+cp .env.docker.example .env
+
+# 2. Edit .env file (important: change passwords!)
+# Windows: notepad .env
+# Linux/Mac: nano .env
+
+# 3. For development environment
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+# OR for production environment
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+#### Access the Application:
+
+- **Frontend:** http://localhost:4321
+- **Backend API:** http://localhost:8765
+- **API Health:** http://localhost:8765/api/v1/health
+
+#### Common Docker Commands:
+
+```bash
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Backup database
+.\scripts\backup-db.ps1  # Windows
+./scripts/backup-db.sh   # Linux/Mac
+
+# Check all services status
+docker-compose ps
+```
+
+**📚 Detailed Docker Guide:** [Docker Documentation](./docs/docker/README.md)
+
+---
+
+### 💻 Method 2: Traditional Setup (Manual)
+
+If you prefer not to use Docker, you can set up manually.
+
+### 💻 Yöntem 2: Geleneksel Kurulum (Manuel)
+
+Docker kullanmak istemiyorsanız, geleneksel yöntemle kurulum yapabilirsiniz.
+
+#### Prerequisites
 
 - Node.js 20 or higher
 - PostgreSQL 14 or higher
 - npm or yarn
 - Bruno (for API testing)
 
-### 1. Clone Repository
+#### 1. Clone Repository
 
 ```bash
 git clone https://github.com/REDLANTERNDEV/mini-saas-erp.git
 cd mini-saas-erp
 ```
 
-### 2. Install Dependencies
+#### 2. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Database Setup
+#### 3. Database Setup
 
 ```bash
 # Create database
@@ -97,7 +183,7 @@ cd apps/backend
 psql -U postgres -d saasdb -f scripts/schema.sql
 ```
 
-### 4. Configure Environment
+#### 4. Configure Environment
 
 ```bash
 # Backend configuration
@@ -110,7 +196,7 @@ cp .env.example .env
 # - Port number
 ```
 
-### 5. Sync Bruno Environment
+#### 5. Sync Bruno Environment
 
 **Important:** After setting up the project or changing backend PORT:
 
@@ -120,7 +206,7 @@ npm run sync:bruno
 
 This command automatically syncs Bruno API test environment with your backend `.env` PORT setting!
 
-### 6. Start Development
+#### 6. Start Development
 
 ```bash
 # Start backend server
@@ -130,7 +216,7 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-### 7. Test with Bruno
+#### 7. Test with Bruno
 
 1. Open Bruno
 2. Load collection: `api-tests/mini-saas-api`
@@ -140,82 +226,149 @@ npm run dev:frontend
 
 ---
 
-## 📁 Project Structure
+## 📁 Proje Yapısı
 
 ```text
 mini-saas-erp/
-├── apps/
+├── 📱 apps/
 │   ├── backend/              # Express API server
 │   │   ├── src/
-│   │   │   ├── config/       # Configuration files
-│   │   │   ├── controllers/  # Request handlers
-│   │   │   ├── middleware/   # Auth, security, error handling
-│   │   │   ├── models/       # Database models
-│   │   │   ├── routes/       # API routes
-│   │   │   ├── services/     # Business logic
-│   │   │   └── validators/   # Input validation
-│   │   ├── scripts/          # Database migrations
-│   │   ├── docs/             # API documentation
-│   │   └── .env              # Environment variables
+│   │   │   ├── config/       # Yapılandırma dosyaları
+│   │   │   ├── controllers/  # İstek işleyiciler
+│   │   │   ├── middleware/   # Auth, güvenlik, hata yönetimi
+│   │   │   ├── models/       # Veritabanı modelleri
+│   │   │   ├── routes/       # API rotaları
+│   │   │   ├── services/     # İş mantığı
+│   │   │   └── validators/   # Girdi doğrulama
+│   │   ├── scripts/          # Veritabanı migrations
+│   │   ├── docs/             # API dokümantasyonu
+│   │   ├── Dockerfile        # Backend Docker yapılandırması
+│   │   ├── .dockerignore     # Docker build optimizasyonu
+│   │   └── .env              # Ortam değişkenleri
 │   │
-│   └── frontend/             # Next.js application
+│   └── frontend/             # Next.js uygulaması
 │       ├── app/              # Next.js 15 App Router
-│       └── public/           # Static assets
+│       ├── components/       # React bileşenleri
+│       ├── hooks/            # Custom hooks
+│       ├── lib/              # Yardımcı kütüphaneler
+│       ├── public/           # Statik dosyalar
+│       ├── Dockerfile        # Frontend Docker yapılandırması
+│       └── .dockerignore     # Docker build optimizasyonu
 │
-├── api-tests/                # Bruno API test collection
+├── 🐳 Docker Yapılandırması
+│   ├── docker-compose.yml            # Temel yapılandırma
+│   ├── docker-compose.dev.yml        # Development ortamı
+│   ├── docker-compose.prod.yml       # Production ortamı
+│   ├── docker-compose.ci.yml         # CI/CD referansı
+│   ├── .env.docker.example           # Docker ortam değişkenleri
+│   ├── .dockerignore                 # Build context optimizasyonu
+│   └── Makefile                      # Otomasyon komutları
+│
+├── 🔧 nginx/                 # Reverse Proxy (Production)
+│   ├── nginx.conf            # Ana yapılandırma
+│   └── conf.d/
+│       └── default.conf      # Server blokları
+│
+├── 🛠️ scripts/
+│   ├── docker-setup.sh       # Unix/Linux/Mac otomatik kurulum
+│   ├── docker-setup.ps1      # Windows PowerShell otomatik kurulum
+│   ├── backup-db.sh          # Unix veritabanı yedeği
+│   ├── backup-db.ps1         # Windows veritabanı yedeği
+│   └── sync-bruno-env.js     # Bruno API test senkronizasyonu
+│
+├── 🧪 api-tests/             # Bruno API test koleksiyonu
 │   └── mini-saas-api/
 │       ├── environments/     # Development & Production
-│       ├── Auth/             # Authentication tests
-│       ├── Products/         # Product API tests
-│       ├── Orders/           # Order API tests
-│       ├── Analytics/        # Analytics tests
-│       └── Customers/        # Customer tests
+│       ├── Auth/             # Authentication testleri
+│       ├── Products/         # Product API testleri
+│       ├── Orders/           # Order API testleri
+│       ├── Analytics/        # Analytics testleri
+│       └── Customers/        # Customer testleri
 │
-├── scripts/
-│   └── sync-bruno-env.js     # Auto-sync Bruno with backend .env
+├── 📚 docs/                  # Proje dokümantasyonu
+│   ├── docker/               # Docker dokümantasyonu
+│   │   ├── README.md         # Komple Docker rehberi
+│   │   ├── QUICKSTART.md     # Hızlı başlangıç
+│   │   ├── SETUP_SUMMARY.md  # Kurulum özeti
+│   │   ├── INDEX.md          # Dokümantasyon indeksi
+│   │   └── PRODUCTION_CHECKLIST.md
+│   ├── deployment/           # Deployment rehberleri
+│   │   └── FILE_STRUCTURE.md # Detaylı dosya yapısı
+│   ├── guides/               # Kullanım rehberleri
+│   │   ├── analytics.md
+│   │   └── analytics-page.md
+│   ├── api/                  # API dokümantasyonu
+│   └── architecture/         # Mimari dokümantasyonu
 │
-├── docs/                     # Project documentation
-│   ├── USER_REGISTRATION_FLOW.md
-│   ├── BRUNO_ENV_SYNC.md
-│   └── KAYIT_SISTEMI_DEGISIKLIKLERI.md
-│
-└── package.json              # Workspace configuration
+└── 📦 Root Dosyalar
+    ├── README.md             # Ana README (bu dosya)
+    ├── package.json          # Workspace yapılandırması
+    ├── Makefile              # Docker otomasyon komutları
+    └── LICENSE               # Lisans
 ```
 
 ---
 
-## 📚 Available Scripts
+## 📚 Kullanılabilir Komutlar
 
-### Development
+### 🐳 Docker Komutları (Önerilen)
 
 ```bash
-# Start backend development server
+# Development ortamını başlat
+make dev
+
+# Production ortamını başlat
+make prod
+
+# Logları görüntüle
+make logs
+
+# Veritabanı yedeği al
+make db-backup
+
+# Tüm servislerin durumunu kontrol et
+make health
+
+# Servisleri durdur
+make down
+
+# Temizlik (tüm container ve volume'leri sil)
+make clean
+
+# Tüm komutları görmek için
+make help
+```
+
+### 💻 Geleneksel Development Komutları
+
+```bash
+# Backend development server'ı başlat
 npm run dev:backend
 
-# Start frontend development server
+# Frontend development server'ı başlat
 npm run dev:frontend
 
-# Sync Bruno environment with backend .env
+# Bruno environment'ı backend .env ile senkronize et
 npm run sync:bruno
 ```
 
-### Code Quality
+### 🧹 Code Quality
 
 ```bash
-# Run ESLint
+# ESLint çalıştır
 npm run lint
 
-# Format code with Prettier
+# Prettier ile kodu formatla
 npm run format
 ```
 
-### Production
+### 🚀 Production Komutları (Geleneksel)
 
 ```bash
-# Build for production
+# Production için build et
 npm run build
 
-# Start production server
+# Production server'ı başlat
 npm start
 ```
 
@@ -310,7 +463,7 @@ User can:
 - **Accept invitation** (joins existing org)
 - **Work with multiple organizations**
 
-See `docs/USER_REGISTRATION_FLOW.md` for detailed flow.
+See [User Registration Flow](apps/backend/docs/architecture/user-registration.md) for detailed flow.
 
 ---
 
@@ -417,15 +570,123 @@ See `api-tests/README.md` for detailed API documentation.
 
 ## 📖 Documentation
 
-- **API Testing:** `api-tests/README.md`
-- **User Registration:** `docs/USER_REGISTRATION_FLOW.md`
-- **Bruno Sync:** `docs/BRUNO_ENV_SYNC.md`
-- **Database Schema:** `apps/backend/docs/DATABASE.md`
-- **Orders API:** `apps/backend/docs/ORDERS_API_GUIDE.md`
+### Core Documentation
+
+- **[Analytics Guide](docs/guides/analytics.md)** - Comprehensive analytics dashboard guide (700+ lines)
+- **[Analytics Page Guide](docs/guides/analytics-page.md)** - Frontend analytics implementation
+- **[Database Schema](apps/backend/docs/architecture/database.md)** - Complete database reference (38KB)
+- **[Security Architecture](apps/backend/docs/architecture/security.md)** - Multi-tenant security
+- **[Multi-Tenant Roles](apps/backend/docs/architecture/multi-tenant-roles.md)** - RBAC implementation
+- **[User Registration Flow](apps/backend/docs/architecture/user-registration.md)** - Modern SaaS registration
+
+### API Documentation
+
+- **[Insights API](apps/backend/docs/api/insights.md)** - Advanced analytics endpoints (577 lines)
+- **[Insights Quick Start](apps/backend/docs/api/insights-readme.md)** - Business intelligence module
+- **[Orders API](apps/backend/docs/api/orders.md)** - Order management API
+- **[Organizations API](apps/backend/docs/api/organizations.md)** - Organization endpoints
+- **[API Overview](apps/backend/docs/api/README.md)** - API documentation index
+
+### Architecture & Setup
+
+- **[Backend README](apps/backend/README.md)** - Backend setup & architecture
+- **[Error Handling](apps/backend/docs/architecture/error-handling.md)** - Error handling patterns
+- **[HTTP-Only Cookies](apps/backend/docs/architecture/http-only-cookies.md)** - Authentication security
+- **[Token Cleanup](apps/backend/docs/architecture/token-cleanup.md)** - Automatic token management
+- **[Zod Implementation](apps/backend/docs/architecture/zod-implementation.md)** - Validation with Zod
+- **[Zod Reference](apps/backend/docs/architecture/zod-reference.md)** - Quick reference card
+
+### Setup & Configuration
+
+- **[API Testing](api-tests/README.md)** - Bruno API test suite
+- **[Bruno Environment Sync](apps/backend/docs/setup/bruno-environment.md)** - API testing setup
+- **[CORS Setup](apps/backend/docs/setup/cors.md)** - Cross-origin configuration
+- **[Token Refresh](docs/guides/token-refresh-fix.md)** - Authentication troubleshooting
+- **[Test Credentials](apps/backend/docs/setup/test-credentials.md)** - Development credentials
+
+### Frontend Documentation
+
+- **[Frontend README](apps/frontend/README.md)** - Frontend setup
+- **[Auth Middleware](apps/frontend/docs/architecture/auth-middleware.md)** - Authentication flow
+- **[Organization Create](apps/frontend/docs/architecture/organization-create.md)** - Org creation architecture
+- **[Organization Selection](apps/frontend/docs/architecture/organization-selection.md)** - Multi-tenant UI
+- **[UI/UX Improvements](apps/frontend/docs/components/ui-ux-improvements.md)** - Design enhancements
+- **[Shadcn Organization](apps/frontend/docs/components/shadcn-organization.md)** - Component library
+
+### Archives
+
+- **[Operations](docs/operations/)** - Documentation cleanup reports
 
 ---
 
-## 🔒 Security Features
+## � Deployment & Docker
+
+### Development Ortamında Çalıştırma
+
+```bash
+# Otomatik kurulum (Windows)
+.\scripts\docker-setup.ps1
+
+# Otomatik kurulum (Linux/Mac)
+./scripts/docker-setup.sh
+
+# Manuel
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+### Production Ortamında Çalıştırma
+
+```bash
+# 1. Environment dosyasını hazırla
+cp .env.docker.example .env
+# .env dosyasını düzenle ve güvenli şifreler belirle!
+
+# 2. Production ortamını başlat
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+# 3. Nginx ile (SSL/HTTPS için)
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
+```
+
+### Veritabanı Yönetimi
+
+```bash
+# Yedek al
+make db-backup
+# veya
+.\scripts\backup-db.ps1  # Windows
+./scripts/backup-db.sh   # Linux/Mac
+
+# Yedekten geri yükle
+make db-restore file=backups/backup_20240101_120000.sql
+```
+
+### Monitoring & Logs
+
+```bash
+# Tüm logları görüntüle
+make logs
+
+# Belirli bir servisin loglarını görüntüle
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Servis durumlarını kontrol et
+make health
+
+# Resource kullanımını görüntüle
+make stats
+```
+
+**📚 Docker Dokümantasyonu:**
+
+- **[Hızlı Başlangıç](./docs/docker/QUICKSTART.md)** - 5 dakikada çalıştır
+- **[Komple Rehber](./docs/docker/README.md)** - Detaylı Docker dokümantasyonu
+- **[Production Checklist](./docs/docker/PRODUCTION_CHECKLIST.md)** - Production öncesi kontrol
+
+---
+
+## �🔒 Security Features
 
 - ✅ Argon2 password hashing
 - ✅ HTTP-only cookies (XSS protection)
@@ -449,7 +710,7 @@ See `api-tests/README.md` for detailed API documentation.
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) - see the [LICENSE](LICENSE) file for details.
 
 ---
 

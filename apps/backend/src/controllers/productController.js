@@ -7,11 +7,19 @@ import {
 } from '../validators/productValidator.js';
 
 /**
+ * Helper: Get organization ID from validated context
+ * SECURITY: Prioritizes organization context from header over JWT token
+ */
+const getOrgId = req => {
+  return req.organization?.id || req.user.org_id;
+};
+
+/**
  * Get all products for organization
  */
 export const getAllProducts = async (req, res) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
     const {
       category,
       is_active,
@@ -70,7 +78,7 @@ export const getAllProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     const product = await productModel.getProductById(id, orgId);
 
@@ -100,7 +108,7 @@ export const getProductById = async (req, res) => {
  */
 export const createProduct = async (req, res) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
     const userId = req.user.id;
 
     // Validate request body
@@ -148,7 +156,7 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     // Validate request body
     const validation = validateProductUpdate(req.body);
@@ -206,7 +214,7 @@ export const updateProduct = async (req, res) => {
 export const updateProductStock = async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     // Validate request body
     const validation = validateStockUpdate(req.body);
@@ -268,7 +276,7 @@ export const updateProductStock = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     // Check if product exists
     const existingProduct = await productModel.getProductById(id, orgId);
@@ -301,7 +309,7 @@ export const deleteProduct = async (req, res) => {
  */
 export const getLowStockProducts = async (req, res) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     const products = await productModel.getLowStockProducts(orgId);
 

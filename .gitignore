@@ -139,3 +139,39 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# ============================================
+# Docker Files
+# ============================================
+# Docker environment file (contains secrets)
+.env
+
+# Keep example files
+!.env.example
+!.env.docker.example
+
+# Docker volumes and data
+backups/
+*.backup
+*.sql.gz
+
+# Docker logs and overrides
+docker-compose.override.yml
+!docker-compose.override.yml.example
+
+# ============================================
+# OS Files
+# ============================================
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory

@@ -1,0 +1,44 @@
+version: '3.9'
+
+# ============================================
+# Development Override Configuration
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# ============================================
+
+services:
+  postgres:
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_PASSWORD: postgres
+
+  backend:
+    build:
+      context: ./apps/backend
+      target: base
+    volumes:
+      # Mount source code for hot reload
+      - ./apps/backend:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
+    command: npm run dev
+    ports:
+      - '8765:8765'
+      # Debug port
+      - '9229:9229'
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      target: base
+    volumes:
+      # Mount source code for hot reload
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+    command: npm run dev
+    ports:
+      - '4321:4321'

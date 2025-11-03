@@ -1,0 +1,33 @@
+version: '3.9'
+
+# ============================================
+# GitHub Actions CI/CD Configuration Example
+# For automated Docker builds and deployments
+# ============================================
+
+# This is a reference configuration for CI/CD
+# Copy to .github/workflows/docker-deploy.yml to use
+
+services:
+  # Build only - no run
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      target: production
+      cache_from:
+        - type=registry,ref=myregistry/mini-saas-backend:cache
+      cache_to:
+        - type=registry,ref=myregistry/mini-saas-backend:cache
+    image: myregistry/mini-saas-backend:latest
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      target: production
+      cache_from:
+        - type=registry,ref=myregistry/mini-saas-frontend:cache
+      cache_to:
+        - type=registry,ref=myregistry/mini-saas-frontend:cache
+    image: myregistry/mini-saas-frontend:latest

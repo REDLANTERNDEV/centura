@@ -1,0 +1,57 @@
+# Root level dockerignore
+
+# Node modules
+node_modules
+npm-debug.log
+
+# Environment files
+.env
+.env.*
+!.env.docker.example
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+**/.dockerignore
+**/Dockerfile*
+docker-compose*.yml
+
+# Documentation
+README.md
+docs
+*.md
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Tests
+tests
+coverage
+*.test.*
+*.spec.*
+
+# Build outputs
+dist
+build
+.next
+out
+
+# Backups
+backups
+*.backup
+*.bak
+
+# API tests
+api-tests

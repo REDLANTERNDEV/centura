@@ -1,0 +1,50 @@
+meta {
+  name: Get Organization Settings
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/settings/organization/1
+  body: none
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Organization-ID: 1
+}
+
+docs {
+  # Get Organization Settings
+  
+  Retrieves organization settings. Only accessible by managers and above.
+  
+  **Authentication:** Required (JWT cookie)
+  **Authorization:** Manager, Org Admin, or Org Owner
+  
+  **URL Parameters:**
+  - `orgId` - Organization ID
+  
+  **Response:**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "org_id": 1,
+      "org_name": "Acme Corporation",
+      "industry": "Technology",
+      "phone": "+90 212 555 0001",
+      "email": "contact@acme.com",
+      "address": "123 Business Street",
+      "city": "Istanbul",
+      "country": "Turkey",
+      "tax_number": "1234567890",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "updated_at": "2024-01-01T00:00:00.000Z",
+      "userRole": "org_owner"
+    }
+  }
+  ```
+}

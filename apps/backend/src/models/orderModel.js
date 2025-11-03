@@ -14,6 +14,14 @@ import pool from '../config/db.js';
  */
 export const getAllOrders = async (orgId, filters = {}, pagination = {}) => {
   try {
+    // DEBUG: Log incoming parameters
+    console.log('🔍 orderModel.getAllOrders called with:', {
+      orgId,
+      orgId_type: typeof orgId,
+      filters,
+      pagination,
+    });
+
     let query = `
       SELECT 
         o.*,
@@ -109,7 +117,20 @@ export const getAllOrders = async (orgId, filters = {}, pagination = {}) => {
       params.push(pagination.offset);
     }
 
+    // DEBUG: Log final query and params
+    console.log('🔍 Executing SQL query:', {
+      params,
+      query_snippet: `${query.substring(0, 200)}...`,
+    });
+
     const result = await pool.query(query, params);
+
+    console.log('✅ Query result:', {
+      rows_count: result.rows.length,
+      first_order_org_id: result.rows[0]?.org_id,
+      first_order_number: result.rows[0]?.order_number,
+    });
+
     return result.rows;
   } catch (error) {
     console.error('Error in getAllOrders:', error);
@@ -506,6 +527,106 @@ export const cancelOrder = async (orderId, orgId) => {
   } finally {
     client.release();
   }
+};
+
+/**
+ * Delete order items
+ * @param {number} orderId - Order ID
+ * @param {number} orgId - Organization ID
+ * @returns {Promise<void>}
+ */
+export const deleteOrderItems = async (orderId, orgId) => {
+  await pool.query(
+    'DELETE FROM order_items WHERE order_id = $1 AND order_id IN (SELECT id FROM orders WHERE org_id = $2)',
+    [orderId, orgId]
+  );
+};
+
+/**
+ * Add order item
+ * @param {object} itemData - Item data
+ * @returns {Promise<object>} Created item
+ */
+export const addOrderItem = async itemData => {
+  const {
+    order_id,
+    product_id,
+    quantity,
+    unit_price,
+    tax_rate = 0,
+    discount_amount = 0,
+  } = itemData;
+
+  // Calculate item totals
+  const itemSubtotal = quantity * unit_price;
+  const itemTaxAmount = (itemSubtotal - discount_amount) * (tax_rate / 100);
+  const itemTotal = itemSubtotal - discount_amount + itemTaxAmount;
+
+  const result = await pool.query(
+    `INSERT INTO order_items (
+      order_id, product_id, quantity, unit_price, tax_rate,
+      discount_amount, subtotal, tax_amount, total
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    RETURNING *`,
+    [
+      order_id,
+      product_id,
+      quantity,
+      unit_price,
+      tax_rate,
+      discount_amount,
+      itemSubtotal,
+      itemTaxAmount,
+      itemTotal,
+    ]
+  );
+
+  return result.rows[0];
+};
+
+/**
+ * Update order total
+ * @param {number} orderId - Order ID
+ * @param {number} total - New total amount
+ * @param {number} orgId - Organization ID
+ * @returns {Promise<void>}
+ */
+export const updateOrderTotal = async (orderId, total, orgId) => {
+  await pool.query(
+    'UPDATE orders SET total = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND org_id = $3',
+    [total, orderId, orgId]
+  );
+};
+
+/**
+ * Update order fields
+ * @param {number} orderId - Order ID
+ * @param {object} updateData - Fields to update
+ * @param {number} orgId - Organization ID
+ * @returns {Promise<void>}
+ */
+export const updateOrderFields = async (orderId, updateData, orgId) => {
+  const fields = [];
+  const values = [];
+  let paramIndex = 1;
+
+  for (const [key, value] of Object.entries(updateData)) {
+    fields.push(`${key} = $${paramIndex}`);
+    values.push(value);
+    paramIndex++;
+  }
+
+  fields.push(`updated_at = CURRENT_TIMESTAMP`);
+
+  values.push(orderId, orgId);
+
+  const query = `
+    UPDATE orders 
+    SET ${fields.join(', ')}
+    WHERE id = $${paramIndex} AND org_id = $${paramIndex + 1}
+  `;
+
+  await pool.query(query, values);
 };
 
 /**

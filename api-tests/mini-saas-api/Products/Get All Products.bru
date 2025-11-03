@@ -20,6 +20,7 @@ params:query {
 
 headers {
   Cookie: token={{token}}
+  X-Organization-ID: {{orgId}}
 }
 
 docs {
@@ -27,13 +28,30 @@ docs {
   
   Lists all products within the organization.
   
-  **Query Parameters:**
-  - page: Page number
-  - limit: Records per page
-  - category: Category filter
-  - is_active: Active/inactive filter
-  - search: Search by name, SKU, or barcode
-  - min_price: Minimum price
-  - max_price: Maximum price
-  - low_stock: true (low stock products)
+  ## Authentication Required
+  - HTTP-only cookie with access token (automatically sent)
+  - **X-Organization-ID** header (required for organization context)
+  
+  ## Headers
+  ```
+  X-Organization-ID: 2
+  ```
+  
+  ## Query Parameters
+  - **page**: Page number (default: 1)
+  - **limit**: Records per page (default: 50)
+  - **category**: Filter by category
+  - **is_active**: Filter active/inactive products
+  - **search**: Search by name, SKU, or barcode
+  - **min_price**: Minimum price filter
+  - **max_price**: Maximum price filter
+  - **low_stock**: true (show only low stock products)
+  
+  ## Response
+  Returns paginated list of products from the specified organization only.
+  
+  ## Security
+  - Backend validates user has access to organization
+  - Products are scoped to organization ID
+  - No cross-organization data access possible
 }

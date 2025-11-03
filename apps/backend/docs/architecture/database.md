@@ -85,7 +85,7 @@ CREATE TABLE users (
 
 **Registration Flow (Modern SaaS Pattern):**
 
-```
+```text
 1. User Registration
    ├─ Email (required)
    ├─ Password (required, min 8 characters)
@@ -314,19 +314,24 @@ Time-limited support access with customer approval.
 ```sql
 CREATE TABLE support_access_requests (
   id SERIAL PRIMARY KEY,
-  ticket_number VARCHAR(50) UNIQUE NOT NULL,
   support_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   target_org_id INTEGER NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-  requested_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  ticket_number VARCHAR(50),
   reason TEXT NOT NULL,
-  access_level VARCHAR(50) NOT NULL CHECK (access_level IN ('readonly', 'limited', 'full')),
-  status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'expired', 'revoked')),
-  approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  approved_by INTEGER REFERENCES users(id),
   approved_at TIMESTAMP,
-  expires_at TIMESTAMP NOT NULL,
-  access_started_at TIMESTAMP,
-  access_ended_at TIMESTAMP,
-  approval_notes TEXT,
+  approval_status VARCHAR(20) DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'rejected', 'expired')),
+  access_granted_at TIMESTAMP,
+  access_expires_at TIMESTAMP,
+  access_duration_minutes INTEGER DEFAULT 60,
+  can_view_data BOOLEAN DEFAULT TRUE,
+  can_modify_data BOOLEAN DEFAULT FALSE,
+  can_export_data BOOLEAN DEFAULT FALSE,
+  actions_log JSONB DEFAULT '[]',
+  revoked_at TIMESTAMP,
+  revoked_by INTEGER REFERENCES users(id),
+  revoke_reason TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -335,19 +340,24 @@ CREATE TABLE support_access_requests (
 **Columns:**
 
 - `id`: Auto-incrementing primary key
-- `ticket_number`: Unique support ticket number
 - `support_user_id`: Support team member requesting access
 - `target_org_id`: Target organization for support access
-- `requested_by`: User who created the request
+- `ticket_number`: Support ticket reference number
 - `reason`: Detailed reason for access request
-- `access_level`: readonly, limited, or full access
-- `status`: Request status (pending, approved, rejected, expired, revoked)
+- `requested_at`: When the request was created
 - `approved_by`: Customer user who approved the request
 - `approved_at`: Approval timestamp
-- `expires_at`: Access expiration timestamp (max 24 hours)
-- `access_started_at`: When access was actually used
-- `access_ended_at`: When access was terminated
-- `approval_notes`: Customer approval notes
+- `approval_status`: Request status (pending, approved, rejected, expired)
+- `access_granted_at`: When access was actually used/started
+- `access_expires_at`: Access expiration timestamp
+- `access_duration_minutes`: Duration of access in minutes (default: 60)
+- `can_view_data`: Permission to view data
+- `can_modify_data`: Permission to modify data
+- `can_export_data`: Permission to export data
+- `actions_log`: JSON array of all actions performed during access
+- `revoked_at`: When access was revoked (if applicable)
+- `revoked_by`: User who revoked the access
+- `revoke_reason`: Reason for revoking access
 - `created_at`: Request creation timestamp
 - `updated_at`: Last update timestamp (auto-updated via trigger)
 
@@ -355,26 +365,34 @@ CREATE TABLE support_access_requests (
 
 1. Support creates request with ticket number and reason
 2. Customer org_owner/org_admin must approve
-3. Access is time-limited (max 24 hours)
-4. All actions during access are logged in audit_logs
-5. Access auto-expires or can be revoked anytime
+3. Access is time-limited (default 60 minutes, configurable)
+4. Granular permissions: view, modify, export data
+5. All actions during access are logged in actions_log JSONB
+6. Access auto-expires or can be revoked anytime
+7. Complete audit trail in audit_logs table
 
 **Foreign Keys:**
 
 - `support_user_id` → `users(id)` ON DELETE CASCADE
 - `target_org_id` → `organizations(org_id)` ON DELETE CASCADE
-- `requested_by` → `users(id)` ON DELETE SET NULL
-- `approved_by` → `users(id)` ON DELETE SET NULL
+- `approved_by` → `users(id)`
+- `revoked_by` → `users(id)`
 
 **Indexes:**
 
 ```sql
-CREATE INDEX idx_support_requests_ticket_number ON support_access_requests(ticket_number);
-CREATE INDEX idx_support_requests_support_user ON support_access_requests(support_user_id);
-CREATE INDEX idx_support_requests_target_org ON support_access_requests(target_org_id);
-CREATE INDEX idx_support_requests_status ON support_access_requests(status);
-CREATE INDEX idx_support_requests_expires_at ON support_access_requests(expires_at);
-CREATE UNIQUE INDEX unique_support_ticket ON support_access_requests(ticket_number);
+CREATE INDEX idx_support_access_org ON support_access_requests(target_org_id);
+CREATE INDEX idx_support_access_status ON support_access_requests(approval_status);
+CREATE INDEX idx_support_access_expires ON support_access_requests(access_expires_at);
+```
+
+**Triggers:**
+
+```sql
+CREATE TRIGGER update_support_access_requests_updated_at
+  BEFORE UPDATE ON support_access_requests
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
 ```
 
 ---
@@ -385,34 +403,49 @@ Comprehensive audit trail for GDPR/SOC2/ISO27001 compliance.
 
 ```sql
 CREATE TABLE audit_logs (
-  id SERIAL PRIMARY KEY,
-  org_id INTEGER REFERENCES organizations(org_id) ON DELETE CASCADE,
+  id BIGSERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  user_email VARCHAR(255),
+  user_role VARCHAR(50),
+  impersonating_user_id INTEGER REFERENCES users(id),
   action VARCHAR(100) NOT NULL,
-  entity_type VARCHAR(100) NOT NULL,
-  entity_id INTEGER,
-  changes JSONB,
-  ip_address INET,
+  resource_type VARCHAR(50) NOT NULL,
+  resource_id VARCHAR(100),
+  org_id INTEGER REFERENCES organizations(org_id) ON DELETE SET NULL,
+  old_value JSONB,
+  new_value JSONB,
+  metadata JSONB,
+  ip_address VARCHAR(50),
   user_agent TEXT,
-  request_id VARCHAR(100),
-  support_ticket_number VARCHAR(50),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  request_path VARCHAR(500),
+  request_method VARCHAR(10),
+  success BOOLEAN DEFAULT TRUE,
+  error_message TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT audit_logs_unique_check UNIQUE (user_id, action, resource_type, resource_id, created_at)
 );
 ```
 
 **Columns:**
 
-- `id`: Auto-incrementing primary key
+- `id`: Auto-incrementing primary key (BIGINT for high volume)
+- `user_id`: User who performed the action (nullable for system actions)
+- `user_email`: Email of the user (denormalized for audit trail)
+- `user_role`: Role of the user at the time of action
+- `impersonating_user_id`: If action was performed via impersonation/support access
+- `action`: Action type (CREATE, UPDATE, DELETE, VIEW, EXPORT, LOGIN, etc.)
+- `resource_type`: Resource affected (user, customer, organization, product, order, etc.)
+- `resource_id`: ID of affected resource (as string for flexibility)
 - `org_id`: Organization context (nullable for platform actions)
-- `user_id`: User who performed the action
-- `action`: Action type (CREATE, UPDATE, DELETE, VIEW, EXPORT, etc.)
-- `entity_type`: Entity affected (customer, user, organization, etc.)
-- `entity_id`: ID of affected entity
-- `changes`: JSON before/after values
+- `old_value`: JSON of values before change
+- `new_value`: JSON of values after change
+- `metadata`: Additional JSON metadata (request details, context, etc.)
 - `ip_address`: Client IP address
-- `user_agent`: Client user agent
-- `request_id`: Unique request identifier for tracing
-- `support_ticket_number`: If action was during support access
+- `user_agent`: Client user agent string
+- `request_path`: HTTP request path
+- `request_method`: HTTP method (GET, POST, PUT, DELETE)
+- `success`: Whether the action succeeded
+- `error_message`: Error message if action failed
 - `created_at`: Action timestamp
 
 **Use Cases:**
@@ -422,21 +455,27 @@ CREATE TABLE audit_logs (
 - ISO27001 security controls
 - Security incident investigation
 - Customer data access transparency
+- Impersonation/support access tracking
 
 **Foreign Keys:**
 
-- `org_id` → `organizations(org_id)` ON DELETE CASCADE
 - `user_id` → `users(id)` ON DELETE SET NULL
+- `impersonating_user_id` → `users(id)`
+- `org_id` → `organizations(org_id)` ON DELETE SET NULL
 
 **Indexes:**
 
 ```sql
-CREATE INDEX idx_audit_logs_org_id ON audit_logs(org_id);
 CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_impersonating ON audit_logs(impersonating_user_id);
 CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_entity_type ON audit_logs(entity_type);
+CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+CREATE INDEX idx_audit_logs_org_id ON audit_logs(org_id);
+CREATE INDEX idx_audit_logs_org ON audit_logs(org_id);
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
-CREATE INDEX idx_audit_logs_support_ticket ON audit_logs(support_ticket_number);
+CREATE INDEX idx_audit_logs_created ON audit_logs(created_at DESC);
+CREATE UNIQUE INDEX audit_logs_unique_check ON audit_logs(user_id, action, resource_type, resource_id, created_at);
 ```
 
 ---
@@ -574,6 +613,16 @@ CREATE TRIGGER update_support_access_requests_updated_at
   BEFORE UPDATE ON support_access_requests
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_products_updated_at
+  BEFORE UPDATE ON products
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_orders_updated_at
+  BEFORE UPDATE ON orders
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
 ```
 
 ---
@@ -634,16 +683,15 @@ CREATE OR REPLACE VIEW v_user_organization_access AS
 SELECT
     u.id AS user_id,
     u.email,
-    u.first_name,
-    u.last_name,
+    u.name,
     u.is_active AS user_active,
     uor.org_id,
     o.org_name,
-    o.org_code,
     uor.role,
     uor.is_active AS role_active,
     uor.assigned_at,
-    uor.assigned_by
+    uor.assigned_by,
+    o.is_active AS org_active
 FROM users u
 INNER JOIN user_organization_roles uor ON u.id = uor.user_id
 INNER JOIN organizations o ON uor.org_id = o.org_id
@@ -1060,23 +1108,36 @@ CREATE INDEX idx_order_items_product_id ON order_items(product_id);
 
 ## Migration Files
 
-- `scripts/create_organizations_and_customers.sql` - Initial schema migration
-- `scripts/create_customers_tables.sql` - Customer table creation
-- `scripts/remove_super_admin_add_enterprise_security.sql` - **Enterprise security migration (Oct 2024)**
-  - Removes super_admin system role
-  - Adds platform_admins table (infrastructure only)
-  - Adds support_access_requests table (time-limited access)
-  - Adds audit_logs table (compliance)
-  - Adds user_organization_roles table (multi-tenant RBAC)
-  - Updates all database functions for tenant isolation
-- `scripts/migration_products_orders.sql` - **Products & Orders System (Oct 2024)**
-  - Adds products table (inventory management)
-  - Adds orders table (order workflow & payment tracking)
-  - Adds order_items table (order line items)
-  - Adds product_inventory_status view (inventory reporting)
-  - Adds order_summary view (order analytics)
-  - Includes automatic stock management
-  - Includes historical price preservation
+- **Analytics Enhancement (Nov 2024)**
+- Adds enhanced audit logging fields
+- Improves analytics data structure
+
+**Migration Note (October 2024):**
+
+- ❌ Removed: `system_role = 'super_admin'` (security risk)
+- ✅ Added: Enterprise security tables (platform_admins, support_access_requests, audit_logs)
+- ✅ Added: Products & Orders system (inventory + order management)
+- ✅ Migration: All super_admins converted to org_owner roles
+- ✅ Result: Zero single-point-of-failure accounts
+
+**Current Schema Status (November 2024):**
+
+Tables in production:
+
+1. ✅ organizations - Multi-tenant organization management
+2. ✅ users - User authentication with single name field
+3. ✅ refresh_tokens - JWT token management
+4. ✅ user_organization_roles - Multi-tenant RBAC
+5. ✅ platform_admins - Infrastructure-only admin access
+6. ✅ support_access_requests - Time-limited customer support access
+7. ✅ audit_logs - Enhanced compliance logging (BIGSERIAL, impersonation support)
+8. ✅ customers - CRM customer management
+9. ✅ products - Inventory management with stock tracking
+10. ✅ orders - Order workflow with payment tracking
+11. ✅ order_items - Order line items with historical pricing
+12. ✅ product_inventory_status (VIEW) - Inventory reporting
+13. ✅ order_summary (VIEW) - Order analytics
+14. ✅ v_user_organization_access (VIEW) - User-organization relationships
 
 ---
 

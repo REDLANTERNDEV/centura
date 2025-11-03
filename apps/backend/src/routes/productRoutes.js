@@ -1,5 +1,6 @@
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
+import { flexibleOrgContext } from '../middleware/orgContext.js';
 import * as productController from '../controllers/productController.js';
 
 const router = express.Router();
@@ -10,35 +11,60 @@ const router = express.Router();
  * @access  Private
  * @query   ?category=Electronics&is_active=true&low_stock=true&search=laptop&page=1&limit=50
  */
-router.get('/', verifyToken, productController.getAllProducts);
+router.get(
+  '/',
+  verifyToken,
+  flexibleOrgContext,
+  productController.getAllProducts
+);
 
 /**
  * @route   GET /api/products/low-stock
  * @desc    Get low stock products
  * @access  Private
  */
-router.get('/low-stock', verifyToken, productController.getLowStockProducts);
+router.get(
+  '/low-stock',
+  verifyToken,
+  flexibleOrgContext,
+  productController.getLowStockProducts
+);
 
 /**
  * @route   GET /api/products/:id
  * @desc    Get product by ID
  * @access  Private
  */
-router.get('/:id', verifyToken, productController.getProductById);
+router.get(
+  '/:id',
+  verifyToken,
+  flexibleOrgContext,
+  productController.getProductById
+);
 
 /**
  * @route   POST /api/products
  * @desc    Create new product
  * @access  Private
  */
-router.post('/', verifyToken, productController.createProduct);
+router.post(
+  '/',
+  verifyToken,
+  flexibleOrgContext,
+  productController.createProduct
+);
 
 /**
  * @route   PUT /api/products/:id
  * @desc    Update product
  * @access  Private
  */
-router.put('/:id', verifyToken, productController.updateProduct);
+router.put(
+  '/:id',
+  verifyToken,
+  flexibleOrgContext,
+  productController.updateProduct
+);
 
 /**
  * @route   PATCH /api/products/:id/stock
@@ -46,13 +72,23 @@ router.put('/:id', verifyToken, productController.updateProduct);
  * @access  Private
  * @body    { quantity: 10, type: 'add' } or { quantity: 5, type: 'subtract' }
  */
-router.patch('/:id/stock', verifyToken, productController.updateProductStock);
+router.patch(
+  '/:id/stock',
+  verifyToken,
+  flexibleOrgContext,
+  productController.updateProductStock
+);
 
 /**
  * @route   DELETE /api/products/:id
- * @desc    Delete product (soft delete)
+ * @desc    Delete product
  * @access  Private
  */
-router.delete('/:id', verifyToken, productController.deleteProduct);
+router.delete(
+  '/:id',
+  verifyToken,
+  flexibleOrgContext,
+  productController.deleteProduct
+);
 
 export default router;

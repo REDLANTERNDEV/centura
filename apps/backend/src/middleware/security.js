@@ -80,6 +80,19 @@ export const verifyLimiter = rateLimit({
   // many successful verifies; choose a high limit instead to avoid false 429s.
 });
 
+// Health check rate limiter (prevents health check abuse)
+export const healthCheckLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute (1 per second)
+  message: {
+    error: 'Too many health check requests.',
+    retryAfter: 60,
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+});
+
 // Password reset/sensitive operations limiter
 export const sensitiveOperationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour

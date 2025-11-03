@@ -7,16 +7,15 @@ meta {
 post {
   url: {{baseUrl}}/organizations
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoidGVzdHVzZXJAZXhhbXBsZS5jb20iLCJvcmdJZCI6MSwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc2MTU2ODE3OCwiZXhwIjoxNzYxNTY5MDc4fQ.vDVxZr1ayrtQ5m-ZCWtmgv9uNATZd4KutgI2wpIa7-A; Max-Age=900; Path=/; Expires=Mon, 27 Oct 2025 12:44:38 GMT; HttpOnly; SameSite=Strictrefresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInR5cGUiOiJyZWZyZXNoIiwiaWF0IjoxNzYxNTY4MTc4LCJleHAiOjE3NjIxNzI5Nzh9.d1sdgsrmVgPUsxl09Ngj1zI0vdGnifq8uCVYDJ4jp-0
+  auth: none
 }
 
 body:json {
   {
-    "org_name": "Acme Corporation"
+    "name": "Acme Corporation",
+    "slug": "acme-corp",
+    "description": "Our main organization",
+    "industry": "Technology"
   }
 }
 
@@ -26,52 +25,60 @@ docs {
   Creates a new organization. The user who creates the organization automatically becomes the **org_owner**.
   
   ## Authentication Required
-  - HTTP-only cookie with access token
+  - HTTP-only cookie with access token (automatically sent by browser/Bruno)
+  - Must be logged in first (use Login endpoint)
   
   ## Request Body
   ```json
   {
-    "org_name": "Acme Corporation"  // Required: 2-255 characters
+    "name": "Acme Corporation",        // Required: 2-255 characters
+    "slug": "acme-corp",               // Optional: URL-friendly identifier
+    "description": "Our main org",      // Optional: Organization description
+    "industry": "Technology"            // Optional: Industry type
   }
   ```
   
   ## Validation Rules
-  - **org_name**: 2-255 characters, required
+  - **name**: 2-255 characters, required
+  - **slug**: Optional, alphanumeric and hyphens only
+  - **description**: Optional, max 500 characters
+  - **industry**: Optional, max 100 characters
   
   ## Auto-Generated
   - **org_id**: Automatically generated primary key (SERIAL)
+  - Creator automatically assigned as **org_owner**
   
   ## Response
-  Returns the created organization with:
-  - Organization ID (auto-generated)
-  - Name
-  - Creator's role (org_owner)
+  ```json
+  {
+    "success": true,
+    "message": "Organization created successfully. You are now the organization owner.",
+    "data": {
+      "org_id": 2,
+      "name": "Acme Corporation",
+      "slug": "acme-corp",
+      "description": "Our main organization",
+      "industry": "Technology",
+      "is_active": true,
+      "created_at": "2025-10-27T09:31:04.155Z",
+      "your_role": "org_owner"
+    }
+  }
+  ```
   
   ## Use Cases
   - First-time user creating their workspace
   - Company admin setting up new department
   - Multi-organization user adding another workspace
   
-  ## Why No Organization Code?
-  - org_id (auto-incrementing) is sufficient for unique identification
-  - No manual code needed - follows modern SaaS best practices (Slack, Notion)
-  - More secure than predictable codes (ACME2025, etc.)
-}
+  ## Frontend Integration
+  After creating organization, frontend should:
+  1. Refresh organizations list
+  2. Auto-select the new organization
+  3. Redirect to dashboard
   
-  ## Response
-  Returns the created organization with:
-  - Organization ID
-  - Name and code
-  - Creator's role (org_owner)
-  
-  ## Use Cases
-  - First-time user creating their workspace
-  - Company admin setting up new department
-  - Multi-organization user adding another workspace
-  
-  ## Example Codes
-  - `ACME2025`
-  - `SALES_TEAM`
-  - `DEV_OPS`
-  - `MARKETING_Q1`
+  ## Security
+  - Any authenticated user can create an organization
+  - No limit on number of organizations per user
+  - Creator automatically becomes org_owner
 }

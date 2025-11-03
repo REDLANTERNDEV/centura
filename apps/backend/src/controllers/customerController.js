@@ -11,6 +11,14 @@ import {
 } from '../models/customerModel.js';
 
 /**
+ * Helper: Get organization ID from validated context
+ * SECURITY: Prioritizes organization context from header over JWT token
+ */
+const getOrgId = req => {
+  return req.organization?.id || req.user.org_id;
+};
+
+/**
  * Customer Controller
  * Handles all customer-related HTTP requests with org_id filtering
  */
@@ -23,7 +31,7 @@ import {
 export const getCustomers = async (req, res, next) => {
   try {
     // Get org_id from authenticated user
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     if (!orgId) {
       return res.status(403).json({
@@ -86,7 +94,7 @@ export const getCustomers = async (req, res, next) => {
 export const getCustomer = async (req, res, next) => {
   try {
     const customerId = req.params.id;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     if (!orgId) {
       return res.status(403).json({
@@ -121,7 +129,7 @@ export const getCustomer = async (req, res, next) => {
  */
 export const createNewCustomer = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
     const userId = req.user.id;
 
     if (!orgId) {
@@ -177,7 +185,7 @@ export const createNewCustomer = async (req, res, next) => {
 export const updateExistingCustomer = async (req, res, next) => {
   try {
     const customerId = req.params.id;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     if (!orgId) {
       return res.status(403).json({
@@ -231,7 +239,7 @@ export const updateExistingCustomer = async (req, res, next) => {
 export const deleteExistingCustomer = async (req, res, next) => {
   try {
     const customerId = req.params.id;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
     const hardDelete = req.query.hard_delete === 'true';
 
     if (!orgId) {
@@ -279,7 +287,7 @@ export const deleteExistingCustomer = async (req, res, next) => {
  */
 export const getCustomerStats = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     if (!orgId) {
       return res.status(403).json({

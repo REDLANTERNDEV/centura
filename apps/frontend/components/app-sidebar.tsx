@@ -1,14 +1,17 @@
 'use client';
+/* eslint-disable no-console */
 import {
-  AudioWaveform,
-  Calendar,
-  Command,
-  GalleryVerticalEnd,
   Home,
-  Inbox,
-  Search,
+  ShoppingBag,
+  Users,
+  Package,
+  BarChart3,
   Settings,
+  LogOut,
 } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { apiClient, API_ENDPOINTS } from '@/lib/api-client';
+import { toast } from 'sonner';
 
 import {
   Sidebar,
@@ -20,77 +23,76 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
-import { TeamSwitcher } from './team.switcher';
+import OrganizationSwitcher from './OrganizationSwitcher';
 
-// Menu items.
+// Menu items for ERP/CRM
 const items = [
   {
-    title: 'Home',
-    url: '#',
+    title: 'Ana Sayfa',
+    url: '/dashboard',
     icon: Home,
   },
   {
-    title: 'Inbox',
-    url: '#',
-    icon: Inbox,
+    title: 'Siparişler',
+    url: '/dashboard/orders',
+    icon: ShoppingBag,
   },
   {
-    title: 'Calendar',
-    url: '#',
-    icon: Calendar,
+    title: 'Müşteriler',
+    url: '/dashboard/customers',
+    icon: Users,
   },
   {
-    title: 'Search',
-    url: '#',
-    icon: Search,
+    title: 'Ürünler',
+    url: '/dashboard/products',
+    icon: Package,
   },
   {
-    title: 'Settings',
-    url: '#',
+    title: 'Analitik',
+    url: '/dashboard/analytics',
+    icon: BarChart3,
+  },
+  {
+    title: 'Ayarlar',
+    url: '/dashboard/settings',
     icon: Settings,
   },
 ];
 
-const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
-  teams: [
-    {
-      name: 'Acme Inc',
-      logo: GalleryVerticalEnd,
-      plan: 'Enterprise',
-    },
-    {
-      name: 'Acme Corp.',
-      logo: AudioWaveform,
-      plan: 'Startup',
-    },
-    {
-      name: 'Evil Corp.',
-      logo: Command,
-      plan: 'Free',
-    },
-  ],
-};
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleLogout = async () => {
+    try {
+      // Clear organization context before logout
+      localStorage.removeItem('centura_selected_org_id');
+      delete apiClient.defaults.headers.common['X-Organization-ID'];
+
+      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
+      toast.success('Başarıyla çıkış yapıldı');
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast.error('Çıkış yapılamadı');
+    }
+  };
+
   return (
     <Sidebar collapsible='icon' {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <OrganizationSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel>Menü</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map(item => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild isActive={pathname === item.url}>
                     <a href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
@@ -102,6 +104,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleLogout}
+              className='cursor-pointer'
+            >
+              <LogOut />
+              <span>Çıkış Yap</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

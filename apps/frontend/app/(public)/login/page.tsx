@@ -48,6 +48,9 @@ export default function LoginPage() {
     }
 
     try {
+      // Clear any previously stored organization before login
+      localStorage.removeItem('centura_selected_org_id');
+
       await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, validation.data);
 
       toast.success('Giriş başarılı! Yönlendiriliyorsunuz...');

@@ -1,0 +1,18 @@
+# Health Check Configuration
+# Used by Docker and monitoring tools
+
+# Endpoints to check
+HEALTH_ENDPOINTS=(
+    "http://localhost:8765/api/v1/health"
+    "http://localhost:4321"
+    "http://localhost:5432"
+)
+
+# Timeouts
+HEALTH_CHECK_TIMEOUT=10
+HEALTH_CHECK_INTERVAL=30
+HEALTH_CHECK_RETRIES=3
+
+# Notification settings (optional)
+# SLACK_WEBHOOK_URL=""
+# EMAIL_ALERT=""

@@ -9,11 +9,31 @@ import {
 } from '../validators/orderValidator.js';
 
 /**
+ * Helper: Get organization ID from validated context
+ * SECURITY: Prioritizes organization context from header over JWT token
+ * This ensures proper multi-tenant isolation when users switch organizations
+ */
+const getOrgId = req => {
+  return req.organization?.id || req.user.org_id;
+};
+
+/**
  * Get all orders for organization
+ * SECURITY: Uses validated organization context from X-Organization-ID header
  */
 export const getAllOrders = async (req, res) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
+
+    // DEBUG: Log organization context
+    console.log('📦 getAllOrders - Organization Context:', {
+      org_id: orgId,
+      from_header: req.organization?.id,
+      from_jwt: req.user.org_id,
+      user_email: req.user.email,
+      header_value: req.headers['x-organization-id'],
+    });
+
     const {
       status,
       payment_status,
@@ -84,7 +104,7 @@ export const getAllOrders = async (req, res) => {
 export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     const order = await orderModel.getOrderById(id, orgId);
 
@@ -114,7 +134,7 @@ export const getOrderById = async (req, res) => {
  */
 export const createOrder = async (req, res) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
     const userId = req.user.id;
 
     // Validate request body
@@ -208,7 +228,7 @@ export const createOrder = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     // Validate request body
     const validation = validateOrderStatusUpdate(req.body);
@@ -264,7 +284,7 @@ export const updateOrderStatus = async (req, res) => {
 export const updatePaymentStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     // Validate request body
     const validation = validatePaymentUpdate(req.body);
@@ -320,12 +340,120 @@ export const updatePaymentStatus = async (req, res) => {
 };
 
 /**
+ * Update order (full update with items, notes, etc.)
+ */
+export const updateOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const orgId = getOrgId(req);
+
+    // Check if order exists
+    const existingOrder = await orderModel.getOrderById(id, orgId);
+    if (!existingOrder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    // Prevent editing fully delivered and paid orders or cancelled orders (business rule)
+    // Allow editing if delivered but payment not complete
+    if (
+      existingOrder.status === 'delivered' &&
+      existingOrder.payment_status === 'paid'
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot edit fully delivered and paid orders',
+      });
+    }
+
+    if (existingOrder.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot edit cancelled orders',
+      });
+    }
+
+    const { status, payment_status, paid_amount, notes, items } = req.body;
+
+    // If items are provided, update them
+    if (items && items.length > 0) {
+      // Validate all products exist
+      for (const item of items) {
+        const product = await productModel.getProductById(
+          item.product_id,
+          orgId
+        );
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            message: `Product not found: ${item.product_id}`,
+          });
+        }
+      }
+
+      // Delete old items and add new ones
+      await orderModel.deleteOrderItems(id, orgId);
+
+      let total = 0;
+      for (const item of items) {
+        const product = await productModel.getProductById(
+          item.product_id,
+          orgId
+        );
+        const itemTotal = product.price * item.quantity;
+        total += itemTotal;
+
+        await orderModel.addOrderItem({
+          order_id: id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_price: product.price,
+          tax_rate: 0.2,
+        });
+      }
+
+      // Update order total
+      await orderModel.updateOrderTotal(id, total, orgId);
+    }
+
+    // Update order fields
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (payment_status) updateData.payment_status = payment_status;
+    if (paid_amount !== undefined) updateData.paid_amount = paid_amount;
+    if (notes !== undefined) updateData.notes = notes;
+
+    if (Object.keys(updateData).length > 0) {
+      await orderModel.updateOrderFields(id, updateData, orgId);
+    }
+
+    // Get updated order
+    const updatedOrder = await orderModel.getOrderById(id, orgId);
+
+    res.json({
+      success: true,
+      message: 'Order updated successfully',
+      data: updatedOrder,
+    });
+  } catch (error) {
+    console.error('Error in updateOrder controller:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating order',
+      error: error.message,
+    });
+  }
+};
+
+/**
  * Cancel order
  */
 export const cancelOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     // Check if order exists
     const existingOrder = await orderModel.getOrderById(id, orgId);
@@ -376,7 +504,7 @@ export const cancelOrder = async (req, res) => {
 export const deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     // Check if order exists
     const existingOrder = await orderModel.getOrderById(id, orgId);
@@ -409,7 +537,7 @@ export const deleteOrder = async (req, res) => {
  */
 export const getSalesStatistics = async (req, res) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
     const { start_date, end_date } = req.query;
 
     // Validate date range if provided
@@ -448,7 +576,7 @@ export const getSalesStatistics = async (req, res) => {
  */
 export const getTopSellingProducts = async (req, res) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
     const { start_date, end_date, limit = 10 } = req.query;
 
     // Validate date range if provided
@@ -489,7 +617,7 @@ export const getTopSellingProducts = async (req, res) => {
 export const getCustomerOrders = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const orgId = req.user.org_id;
+    const orgId = getOrgId(req);
 
     // Check if customer exists
     const customer = await customerModel.getCustomerById(customerId, orgId);

@@ -69,9 +69,27 @@ function SidebarProvider({
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
 
+  // Read initial state from cookie if no defaultOpen provided
+  const getInitialState = () => {
+    if (defaultOpen !== undefined) {
+      return defaultOpen;
+    }
+    // Try to read from cookie
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';');
+      const cookie = cookies.find(c =>
+        c.trim().startsWith(`${SIDEBAR_COOKIE_NAME}=`)
+      );
+      if (cookie) {
+        return cookie.split('=')[1] === 'true';
+      }
+    }
+    return true; // Default to open if no cookie
+  };
+
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen);
+  const [_open, _setOpen] = React.useState(getInitialState);
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -105,8 +123,8 @@ function SidebarProvider({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
+    return () => globalThis.removeEventListener('keydown', handleKeyDown);
   }, [toggleSidebar]);
 
   // We add a state so that we can do data-state="expanded" or "collapsed".

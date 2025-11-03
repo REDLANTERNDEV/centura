@@ -17,6 +17,8 @@ export default [
       'apps/backend/dist/**',
       '**/next-env.d.ts', // Next.js auto-generated file
       '**/*.d.ts', // Type definition files
+      '**/*.md', // Markdown files
+      'docs/**', // Documentation
     ],
   },
 
@@ -98,6 +100,10 @@ export default [
   ...tseslint.configs.recommended.map(config => ({
     ...config,
     files: ['**/*.{ts,tsx}'],
+    rules: {
+      ...config.rules,
+      '@typescript-eslint/no-explicit-any': 'off', // Allow any for flexibility
+    },
   })),
 
   // Backend specific configuration

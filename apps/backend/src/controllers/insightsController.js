@@ -371,6 +371,200 @@ export const getPaymentAnalysis = async (req, res, next) => {
   }
 };
 
+/**
+ * @route GET /api/v1/insights/customers/retention
+ * @desc Get customer retention rate
+ * @access Private
+ */
+export const getCustomerRetention = async (req, res, next) => {
+  try {
+    const orgId = req.user.org_id;
+    const { days } = req.query;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No organization selected',
+      });
+    }
+
+    const retentionData = await InsightsModel.getCustomerRetentionRate(
+      orgId,
+      days ? Number.parseInt(days) : 30
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: retentionData,
+    });
+  } catch (error) {
+    console.error('Error in getCustomerRetention:', error);
+    next(error);
+  }
+};
+
+/**
+ * @route GET /api/v1/insights/customers/churn
+ * @desc Get customer churn rate
+ * @access Private
+ */
+export const getChurnRate = async (req, res, next) => {
+  try {
+    const orgId = req.user.org_id;
+    const { days } = req.query;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No organization selected',
+      });
+    }
+
+    const churnData = await InsightsModel.getChurnRate(
+      orgId,
+      days ? Number.parseInt(days) : 90
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: churnData,
+    });
+  } catch (error) {
+    console.error('Error in getChurnRate:', error);
+    next(error);
+  }
+};
+
+/**
+ * @route GET /api/v1/insights/payments/dso
+ * @desc Get Days Sales Outstanding (DSO)
+ * @access Private
+ */
+export const getDSO = async (req, res, next) => {
+  try {
+    const orgId = req.user.org_id;
+    const { startDate, endDate } = req.query;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No organization selected',
+      });
+    }
+
+    const options = {};
+    if (startDate) options.startDate = startDate;
+    if (endDate) options.endDate = endDate;
+
+    const dsoData = await InsightsModel.getDaysSalesOutstanding(orgId, options);
+
+    return res.status(200).json({
+      success: true,
+      data: dsoData,
+    });
+  } catch (error) {
+    console.error('Error in getDSO:', error);
+    next(error);
+  }
+};
+
+/**
+ * @route GET /api/v1/insights/inventory/turnover
+ * @desc Get inventory turnover ratio
+ * @access Private
+ */
+export const getInventoryTurnover = async (req, res, next) => {
+  try {
+    const orgId = req.user.org_id;
+    const { startDate, endDate } = req.query;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No organization selected',
+      });
+    }
+
+    const options = {};
+    if (startDate) options.startDate = startDate;
+    if (endDate) options.endDate = endDate;
+
+    const turnoverData = await InsightsModel.getInventoryTurnover(
+      orgId,
+      options
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: turnoverData,
+    });
+  } catch (error) {
+    console.error('Error in getInventoryTurnover:', error);
+    next(error);
+  }
+};
+
+/**
+ * @route GET /api/v1/insights/revenue/gross-margin
+ * @desc Get gross margin metrics
+ * @access Private
+ */
+export const getGrossMargin = async (req, res, next) => {
+  try {
+    const orgId = req.user.org_id;
+    const { startDate, endDate } = req.query;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No organization selected',
+      });
+    }
+
+    const options = {};
+    if (startDate) options.startDate = startDate;
+    if (endDate) options.endDate = endDate;
+
+    const marginData = await InsightsModel.getGrossMargin(orgId, options);
+
+    return res.status(200).json({
+      success: true,
+      data: marginData,
+    });
+  } catch (error) {
+    console.error('Error in getGrossMargin:', error);
+    next(error);
+  }
+};
+
+/**
+ * @route GET /api/v1/insights/customers/rfm
+ * @desc Get RFM (Recency, Frequency, Monetary) analysis
+ * @access Private
+ */
+export const getRFMAnalysis = async (req, res, next) => {
+  try {
+    const orgId = req.user.org_id;
+
+    if (!orgId) {
+      return res.status(400).json({
+        success: false,
+        error: 'No organization selected',
+      });
+    }
+
+    const rfmData = await InsightsModel.getRFMAnalysis(orgId);
+
+    return res.status(200).json({
+      success: true,
+      data: rfmData,
+    });
+  } catch (error) {
+    console.error('Error in getRFMAnalysis:', error);
+    next(error);
+  }
+};
+
 export default {
   getInsights,
   getTopCustomers,
@@ -383,4 +577,10 @@ export default {
   getInventoryHealth,
   getGrowthMetrics,
   getPaymentAnalysis,
+  getCustomerRetention,
+  getChurnRate,
+  getDSO,
+  getInventoryTurnover,
+  getGrossMargin,
+  getRFMAnalysis,
 };

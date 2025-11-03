@@ -1,5 +1,6 @@
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
+import { flexibleOrgContext } from '../middleware/orgContext.js';
 import * as orderController from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -10,7 +11,7 @@ const router = express.Router();
  * @access  Private
  * @query   ?status=confirmed&payment_status=paid&customer_id=1&start=2025-01-01&end=2025-12-31&page=1&limit=50
  */
-router.get('/', verifyToken, orderController.getAllOrders);
+router.get('/', verifyToken, flexibleOrgContext, orderController.getAllOrders);
 
 /**
  * @route   GET /api/orders/statistics
@@ -18,7 +19,12 @@ router.get('/', verifyToken, orderController.getAllOrders);
  * @access  Private
  * @query   ?start_date=2025-01-01&end_date=2025-12-31
  */
-router.get('/statistics', verifyToken, orderController.getSalesStatistics);
+router.get(
+  '/statistics',
+  verifyToken,
+  flexibleOrgContext,
+  orderController.getSalesStatistics
+);
 
 /**
  * @route   GET /api/orders/top-products
@@ -26,7 +32,12 @@ router.get('/statistics', verifyToken, orderController.getSalesStatistics);
  * @access  Private
  * @query   ?start_date=2025-01-01&end_date=2025-12-31&limit=10
  */
-router.get('/top-products', verifyToken, orderController.getTopSellingProducts);
+router.get(
+  '/top-products',
+  verifyToken,
+  flexibleOrgContext,
+  orderController.getTopSellingProducts
+);
 
 /**
  * @route   GET /api/orders/customer/:customerId
@@ -36,6 +47,7 @@ router.get('/top-products', verifyToken, orderController.getTopSellingProducts);
 router.get(
   '/customer/:customerId',
   verifyToken,
+  flexibleOrgContext,
   orderController.getCustomerOrders
 );
 
@@ -44,14 +56,19 @@ router.get(
  * @desc    Get order by ID with all details
  * @access  Private
  */
-router.get('/:id', verifyToken, orderController.getOrderById);
+router.get(
+  '/:id',
+  verifyToken,
+  flexibleOrgContext,
+  orderController.getOrderById
+);
 
 /**
  * @route   POST /api/orders
  * @desc    Create new order
  * @access  Private
  */
-router.post('/', verifyToken, orderController.createOrder);
+router.post('/', verifyToken, flexibleOrgContext, orderController.createOrder);
 
 /**
  * @route   PATCH /api/orders/:id/status
@@ -59,7 +76,25 @@ router.post('/', verifyToken, orderController.createOrder);
  * @access  Private
  * @body    { status: 'confirmed' }
  */
-router.patch('/:id/status', verifyToken, orderController.updateOrderStatus);
+router.patch(
+  '/:id/status',
+  verifyToken,
+  flexibleOrgContext,
+  orderController.updateOrderStatus
+);
+
+/**
+ * @route   PUT /api/orders/:id
+ * @desc    Update order (full update)
+ * @access  Private
+ * @body    { status, payment_status, paid_amount, notes, items }
+ */
+router.put(
+  '/:id',
+  verifyToken,
+  flexibleOrgContext,
+  orderController.updateOrder
+);
 
 /**
  * @route   PATCH /api/orders/:id/payment
@@ -67,20 +102,35 @@ router.patch('/:id/status', verifyToken, orderController.updateOrderStatus);
  * @access  Private
  * @body    { payment_status: 'paid', paid_amount: 1000 }
  */
-router.patch('/:id/payment', verifyToken, orderController.updatePaymentStatus);
+router.patch(
+  '/:id/payment',
+  verifyToken,
+  flexibleOrgContext,
+  orderController.updatePaymentStatus
+);
 
 /**
  * @route   PATCH /api/orders/:id/cancel
  * @desc    Cancel order and restore stock
  * @access  Private
  */
-router.patch('/:id/cancel', verifyToken, orderController.cancelOrder);
+router.patch(
+  '/:id/cancel',
+  verifyToken,
+  flexibleOrgContext,
+  orderController.cancelOrder
+);
 
 /**
  * @route   DELETE /api/orders/:id
  * @desc    Delete order
  * @access  Private
  */
-router.delete('/:id', verifyToken, orderController.deleteOrder);
+router.delete(
+  '/:id',
+  verifyToken,
+  flexibleOrgContext,
+  orderController.deleteOrder
+);
 
 export default router;
