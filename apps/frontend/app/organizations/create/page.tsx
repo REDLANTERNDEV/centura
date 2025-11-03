@@ -97,7 +97,9 @@ export default function CreateOrganizationPage() {
       router.replace('/dashboard');
     } catch (error) {
       console.error('❌ Failed to create organization:', error);
-      toast.error(error.message || 'Organizasyon oluşturulamadı');
+      toast.error(
+        error instanceof Error ? error.message : 'Organizasyon oluşturulamadı'
+      );
     } finally {
       setIsLoading(false);
     }

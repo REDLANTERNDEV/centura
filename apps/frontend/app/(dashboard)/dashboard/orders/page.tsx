@@ -114,7 +114,8 @@ export default function OrdersPage() {
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Siparişler yüklenirken hata oluştu', {
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',
       });
     } finally {
       setIsLoading(false);
@@ -170,7 +171,8 @@ export default function OrdersPage() {
       fetchOrders(); // Refresh list
     } catch (error) {
       toast.error('Sipariş iptal edilirken hata oluştu', {
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',
       });
     }
   };
@@ -193,7 +195,8 @@ export default function OrdersPage() {
       fetchOrders(); // Refresh list
     } catch (error) {
       toast.error('Sipariş silinirken hata oluştu', {
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',
       });
     }
   };

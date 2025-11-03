@@ -3,8 +3,6 @@
  * Full order editing with customer, products, notes, status and payment
  */
 
- 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -140,7 +138,8 @@ export function AdvancedEditOrderDialog({
       setProducts(response.data || []);
     } catch (error) {
       toast.error('Ürünler yüklenirken hata oluştu', {
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',
       });
     } finally {
       setIsLoadingProducts(false);
@@ -245,7 +244,8 @@ export function AdvancedEditOrderDialog({
       onOpenChange(false);
     } catch (error) {
       toast.error('Sipariş güncellenirken hata oluştu', {
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',
       });
     } finally {
       setIsSubmitting(false);
