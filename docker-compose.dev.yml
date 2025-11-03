@@ -35,6 +35,8 @@ services:
       context: . # Root context for workspace
       dockerfile: apps/frontend/Dockerfile
       target: base
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
     volumes:
       # Mount source code for hot reload
       - ./apps/frontend:/app/apps/frontend
@@ -44,6 +46,7 @@ services:
       - /app/apps/frontend/.next
     environment:
       NODE_ENV: development
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
     working_dir: /app/apps/frontend
     command: npm run dev
     ports:

@@ -106,12 +106,12 @@ services:
       dockerfile: apps/frontend/Dockerfile
       target: production
       args:
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8765/api/v1}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
     container_name: mini-saas-frontend
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8765/api/v1}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
     ports:
       - '${FRONTEND_PORT:-4321}:4321'
     networks:

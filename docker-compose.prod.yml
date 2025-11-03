@@ -54,6 +54,10 @@ services:
       context: . # Root context for workspace
       dockerfile: apps/frontend/Dockerfile
       target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL} # Required in production .env
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL} # Required in production .env
     deploy:
       # replicas: 2  # Disabled for local testing (conflicts with container_name)
       resources:
