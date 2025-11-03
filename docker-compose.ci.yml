@@ -1,5 +1,3 @@
-version: '3.9'
-
 # ============================================
 # GitHub Actions CI/CD Configuration Example
 # For automated Docker builds and deployments

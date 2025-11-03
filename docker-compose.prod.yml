@@ -1,5 +1,3 @@
-version: '3.9'
-
 # ============================================
 # Production Override Configuration
 # Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
