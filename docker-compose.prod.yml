@@ -30,7 +30,7 @@ services:
       dockerfile: apps/backend/Dockerfile
       target: production
     deploy:
-      replicas: 2
+      # replicas: 2  # Disabled for local testing (conflicts with container_name)
       resources:
         limits:
           cpus: '1'
@@ -55,7 +55,7 @@ services:
       dockerfile: apps/frontend/Dockerfile
       target: production
     deploy:
-      replicas: 2
+      # replicas: 2  # Disabled for local testing (conflicts with container_name)
       resources:
         limits:
           cpus: '1'
