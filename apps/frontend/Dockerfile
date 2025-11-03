@@ -1,10 +1,10 @@
 # ============================================
 # Multi-stage Dockerfile for Next.js Frontend
-# Production-ready with optimized builds
+# Production-ready with NPM Workspaces support
 # ============================================
 
 # ============================================
-# Stage 1: Base image with dependencies
+# Stage 1: Base image
 # ============================================
 FROM node:20-alpine AS base
 
@@ -13,8 +13,6 @@ RUN apk update && \
     apk upgrade && \
     apk add --no-cache dumb-init libc6-compat && \
     rm -rf /var/cache/apk/*
-
-WORKDIR /app
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -25,10 +23,15 @@ RUN addgroup -g 1001 -S nodejs && \
 # ============================================
 FROM base AS dependencies
 
-# Copy package files
+WORKDIR /app
+
+# Copy workspace root package files
 COPY package*.json ./
 
-# Install dependencies
+# Copy frontend workspace package.json
+COPY apps/frontend/package.json ./apps/frontend/
+
+# Install ALL dependencies (workspaces need full install)
 RUN npm ci --ignore-scripts && \
     npm cache clean --force
 
@@ -39,17 +42,18 @@ FROM base AS builder
 
 WORKDIR /app
 
-# Copy dependencies from previous stage
+# Copy node_modules from dependencies stage
 COPY --from=dependencies /app/node_modules ./node_modules
 
-# Copy application code
-COPY . .
+# Copy frontend application code
+COPY apps/frontend ./apps/frontend
 
 # Set build-time environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 # Build the Next.js application
+WORKDIR /app/apps/frontend
 RUN npm run build
 
 # ============================================
@@ -63,9 +67,12 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy built application from builder
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/static ./.next/static
+
+# Copy node_modules if needed (for Next.js standalone)
+COPY --from=dependencies --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 # Switch to non-root user
 USER nextjs

@@ -12,8 +12,8 @@ services:
   # Build only - no run
   backend:
     build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
+      context: . # Root context for workspace
+      dockerfile: apps/backend/Dockerfile
       target: production
       cache_from:
         - type=registry,ref=myregistry/mini-saas-backend:cache
@@ -23,8 +23,8 @@ services:
 
   frontend:
     build:
-      context: ./apps/frontend
-      dockerfile: Dockerfile
+      context: . # Root context for workspace
+      dockerfile: apps/frontend/Dockerfile
       target: production
       cache_from:
         - type=registry,ref=myregistry/mini-saas-frontend:cache

@@ -28,7 +28,8 @@ services:
   backend:
     restart: always
     build:
-      context: ./apps/backend
+      context: . # Root context for workspace
+      dockerfile: apps/backend/Dockerfile
       target: production
     deploy:
       replicas: 2
@@ -52,7 +53,8 @@ services:
   frontend:
     restart: always
     build:
-      context: ./apps/frontend
+      context: . # Root context for workspace
+      dockerfile: apps/frontend/Dockerfile
       target: production
     deploy:
       replicas: 2

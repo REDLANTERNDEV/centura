@@ -54,8 +54,8 @@ services:
   # ============================================
   backend:
     build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
+      context: . # Root context for workspace
+      dockerfile: apps/backend/Dockerfile
       target: production
     container_name: mini-saas-backend
     restart: unless-stopped
@@ -106,8 +106,8 @@ services:
   # ============================================
   frontend:
     build:
-      context: ./apps/frontend
-      dockerfile: Dockerfile
+      context: . # Root context for workspace
+      dockerfile: apps/frontend/Dockerfile
       target: production
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8765/api/v1}

@@ -1,10 +1,10 @@
 # ============================================
 # Multi-stage Dockerfile for Node.js Backend
-# Production-ready with security best practices
+# Production-ready with NPM Workspaces support
 # ============================================
 
 # ============================================
-# Stage 1: Base image with dependencies
+# Stage 1: Base image
 # ============================================
 FROM node:20-alpine AS base
 
@@ -13,9 +13,6 @@ RUN apk update && \
     apk upgrade && \
     apk add --no-cache dumb-init && \
     rm -rf /var/cache/apk/*
-
-# Create app directory and set ownership
-WORKDIR /app
 
 # Create non-root user for running the application
 RUN addgroup -g 1001 -S nodejs && \
@@ -26,47 +23,51 @@ RUN addgroup -g 1001 -S nodejs && \
 # ============================================
 FROM base AS dependencies
 
-# Copy package files
+WORKDIR /app
+
+# Copy workspace root package files
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production --ignore-scripts && \
-    npm cache clean --force
+# Copy backend workspace package.json
+COPY apps/backend/package.json ./apps/backend/
 
-# ============================================
-# Stage 3: Development dependencies (for build if needed)
-# ============================================
-FROM base AS dev-dependencies
-
-COPY package*.json ./
-
-# Install all dependencies including dev
+# Install ALL dependencies (workspaces need full install)
 RUN npm ci --ignore-scripts && \
     npm cache clean --force
 
 # ============================================
-# Stage 4: Build stage (if you have build steps)
+# Stage 3: Build stage
 # ============================================
-FROM dev-dependencies AS build
+# Stage 3: Build stage
+# ============================================
+FROM base AS build
 
-COPY . .
+WORKDIR /app
+
+# Copy node_modules from dependencies stage
+COPY --from=dependencies /app/node_modules ./node_modules
+
+# Copy backend application code only
+COPY apps/backend ./apps/backend
 
 # Run any build scripts if needed
-# RUN npm run build
+# RUN npm run build --workspace mini-saas-erp-be
 
 # ============================================
-# Stage 5: Production image
+# Stage 4: Production image
 # ============================================
 FROM base AS production
+
+WORKDIR /app/apps/backend
 
 # Set environment to production
 ENV NODE_ENV=production
 
-# Copy production dependencies
-COPY --from=dependencies --chown=nodejs:nodejs /app/node_modules ./node_modules
+# Copy production dependencies (only what backend needs)
+COPY --from=dependencies --chown=nodejs:nodejs /app/node_modules /app/node_modules
 
-# Copy application code
-COPY --chown=nodejs:nodejs . .
+# Copy backend application code
+COPY --chown=nodejs:nodejs apps/backend .
 
 # Switch to non-root user
 USER nodejs
