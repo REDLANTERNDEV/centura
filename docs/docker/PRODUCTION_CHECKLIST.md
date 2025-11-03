@@ -74,6 +74,7 @@ Use this checklist before deploying your Mini SaaS ERP to production.
 
 - [ ] **Database**
   - [ ] Database migrations applied
+  - [ ] PostgreSQL timezone configured to UTC (automatic via docker-compose)
   - [ ] Initial data seeded (if needed)
   - [ ] Connection pooling configured
   - [ ] Query optimization reviewed
@@ -196,6 +197,19 @@ nano nginx/conf.d/default.conf
 ```
 
 ### 5. Build and Start
+
+```bash
+# Build images
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
+
+# Start services
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# Or with Nginx reverse proxy
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
+```
+
+### 6. Verify Deployment
 
 ```bash
 # Build images
@@ -393,11 +407,11 @@ When you need to scale:
 
 Document your support contacts:
 
-- **Hosting Provider:** ******\_\_\_******
-- **Domain Registrar:** ******\_\_\_******
-- **SSL Provider:** ******\_\_\_******
-- **On-Call Contact:** ******\_\_\_******
-- **Backup Contact:** ******\_\_\_******
+- **Hosting Provider:** **\*\***\_\_\_**\*\***
+- **Domain Registrar:** **\*\***\_\_\_**\*\***
+- **SSL Provider:** **\*\***\_\_\_**\*\***
+- **On-Call Contact:** **\*\***\_\_\_**\*\***
+- **Backup Contact:** **\*\***\_\_\_**\*\***
 
 ## ✅ Final Verification
 
@@ -414,10 +428,10 @@ Before announcing production:
 
 ---
 
-**Deployment Date:** ******\_******  
-**Deployed By:** ******\_******  
-**Version:** ******\_******  
-**Notes:** ******\_******
+**Deployment Date:** **\*\***\_**\*\***  
+**Deployed By:** **\*\***\_**\*\***  
+**Version:** **\*\***\_**\*\***  
+**Notes:** **\*\***\_**\*\***
 
 ---
 

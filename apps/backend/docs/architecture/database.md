@@ -24,8 +24,8 @@ CREATE TABLE organizations (
   country VARCHAR(100) DEFAULT 'Turkey',
   tax_number VARCHAR(50),
   is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -66,8 +66,8 @@ CREATE TABLE users (
   name VARCHAR(255) NOT NULL,
   system_role VARCHAR(50) CHECK (system_role = 'platform_admin' OR system_role IS NULL),
   is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -159,8 +159,8 @@ CREATE TABLE refresh_tokens (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL,
-  expires_at TIMESTAMP NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   is_revoked BOOLEAN DEFAULT FALSE
 );
 ```
@@ -201,9 +201,9 @@ CREATE TABLE user_organization_roles (
   permissions JSONB DEFAULT '{}',
   is_active BOOLEAN DEFAULT TRUE,
   assigned_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  assigned_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT unique_user_org_role UNIQUE (user_id, org_id)
 );
 ```
@@ -259,12 +259,12 @@ CREATE TABLE platform_admins (
   permissions JSONB DEFAULT '{"infrastructure_only": true}',
   can_access_user_data BOOLEAN DEFAULT FALSE CHECK (can_access_user_data = FALSE),
   assigned_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  revoked_at TIMESTAMP,
+  assigned_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  revoked_at TIMESTAMPTZ,
   is_active BOOLEAN DEFAULT TRUE,
   notes TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT unique_platform_admin UNIQUE (user_id)
 );
 ```
@@ -318,22 +318,22 @@ CREATE TABLE support_access_requests (
   target_org_id INTEGER NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
   ticket_number VARCHAR(50),
   reason TEXT NOT NULL,
-  requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  requested_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   approved_by INTEGER REFERENCES users(id),
-  approved_at TIMESTAMP,
+  approved_at TIMESTAMPTZ,
   approval_status VARCHAR(20) DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'rejected', 'expired')),
-  access_granted_at TIMESTAMP,
-  access_expires_at TIMESTAMP,
+  access_granted_at TIMESTAMPTZ,
+  access_expires_at TIMESTAMPTZTZ,
   access_duration_minutes INTEGER DEFAULT 60,
   can_view_data BOOLEAN DEFAULT TRUE,
   can_modify_data BOOLEAN DEFAULT FALSE,
   can_export_data BOOLEAN DEFAULT FALSE,
   actions_log JSONB DEFAULT '[]',
-  revoked_at TIMESTAMP,
+  revoked_at TIMESTAMPTZ,
   revoked_by INTEGER REFERENCES users(id),
   revoke_reason TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -421,7 +421,7 @@ CREATE TABLE audit_logs (
   request_method VARCHAR(10),
   success BOOLEAN DEFAULT TRUE,
   error_message TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT audit_logs_unique_check UNIQUE (user_id, action, resource_type, resource_id, created_at)
 );
 ```
@@ -511,8 +511,8 @@ CREATE TABLE customers (
   notes TEXT,
   assigned_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
   -- Constraints
   CONSTRAINT unique_customer_code_per_org UNIQUE (org_id, customer_code)
@@ -874,8 +874,8 @@ CREATE TABLE products (
   unit VARCHAR(50) NOT NULL,
   is_active BOOLEAN DEFAULT TRUE,
   created_by INTEGER REFERENCES users(id),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT unique_sku_per_org UNIQUE(org_id, sku),
   CONSTRAINT check_price_positive CHECK (price >= 0),
@@ -968,8 +968,8 @@ CREATE TABLE orders (
   notes TEXT,
 
   created_by INTEGER REFERENCES users(id),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT check_subtotal_positive CHECK (subtotal >= 0),
   CONSTRAINT check_discount_percentage_valid CHECK (discount_percentage >= 0 AND discount_percentage <= 100),
@@ -1054,7 +1054,7 @@ CREATE TABLE order_items (
   tax_amount DECIMAL(10, 2) NOT NULL,
   total DECIMAL(10, 2) NOT NULL,
 
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT check_quantity_positive CHECK (quantity > 0),
   CONSTRAINT check_unit_price_positive CHECK (unit_price >= 0),

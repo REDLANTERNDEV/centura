@@ -117,6 +117,8 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
+> **💡 Note:** PostgreSQL is configured to use UTC timezone by default for consistent timestamp handling across all regions.
+
 #### Access the Application:
 
 - **Frontend:** http://localhost:4321

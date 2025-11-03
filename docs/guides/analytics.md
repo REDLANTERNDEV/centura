@@ -191,9 +191,9 @@ The Analytics Dashboard is a comprehensive, industry-standard business intellige
 **Added Columns to `orders` table:**
 
 ```sql
-ALTER TABLE orders ADD COLUMN payment_completed_at TIMESTAMP;
-ALTER TABLE orders ADD COLUMN fulfilled_at TIMESTAMP;
-ALTER TABLE orders ADD COLUMN cancelled_at TIMESTAMP;
+ALTER TABLE orders ADD COLUMN payment_completed_at TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN fulfilled_at TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN cancelled_at TIMESTAMPTZ;
 ```
 
 **Added Columns to `customers` table:**
@@ -201,7 +201,7 @@ ALTER TABLE orders ADD COLUMN cancelled_at TIMESTAMP;
 ```sql
 ALTER TABLE customers ADD COLUMN rfm_score INTEGER DEFAULT 0;
 ALTER TABLE customers ADD COLUMN customer_lifetime_value DECIMAL(10,2) DEFAULT 0;
-ALTER TABLE customers ADD COLUMN last_order_date TIMESTAMP;
+ALTER TABLE customers ADD COLUMN last_order_date TIMESTAMPTZ;
 ALTER TABLE customers ADD COLUMN total_orders_count INTEGER DEFAULT 0;
 ```
 
@@ -210,7 +210,7 @@ ALTER TABLE customers ADD COLUMN total_orders_count INTEGER DEFAULT 0;
 ```sql
 ALTER TABLE products ADD COLUMN reorder_level INTEGER DEFAULT 10;
 ALTER TABLE products ADD COLUMN reorder_quantity INTEGER DEFAULT 50;
-ALTER TABLE products ADD COLUMN last_restock_date TIMESTAMP;
+ALTER TABLE products ADD COLUMN last_restock_date TIMESTAMPTZ;
 ```
 
 #### Automatic Customer Metrics Update
