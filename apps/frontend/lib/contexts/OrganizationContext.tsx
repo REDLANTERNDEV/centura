@@ -108,8 +108,6 @@ export function OrganizationProvider({
       }
     } catch (err) {
       const error = err as { message?: string; response?: { status?: number } };
-      // eslint-disable-next-line no-console
-      console.error('❌ Failed to fetch organizations:', err);
       setError(error.message || 'Failed to load organizations');
 
       // If unauthorized, clear everything
@@ -124,13 +122,6 @@ export function OrganizationProvider({
 
   // Select an organization
   const selectOrganization = useCallback((org: Organization) => {
-    // eslint-disable-next-line no-console
-    console.log('🔐 Selecting organization:', {
-      org_id: org.org_id,
-      id: org.id,
-      name: org.name,
-    });
-
     // SECURITY: Only store org_id (number), not the full object
     // The API interceptor will automatically read this from localStorage
     localStorage.setItem(ORG_STORAGE_KEY, org.org_id.toString());

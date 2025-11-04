@@ -4,7 +4,7 @@
  */
 
 'use client';
-/* eslint-disable no-console */
+ 
 
 import { useState } from 'react';
 import { useOrganization } from '@/lib/contexts/OrganizationContext';
@@ -124,7 +124,6 @@ export function CreateProductDialog({
 
       onSuccess();
     } catch (error: any) {
-      console.error('❌ Failed to create product:', error);
       toast.error(
         error instanceof Error ? error.message : 'Ürün oluşturulamadı'
       );
@@ -208,7 +207,7 @@ export function CreateProductDialog({
                 <Label htmlFor='category'>Kategori</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={value =>
+                  onValueChange={(value: string) =>
                     setFormData({ ...formData, category: value })
                   }
                 >
@@ -325,7 +324,7 @@ export function CreateProductDialog({
                 <Label htmlFor='unit'>Ölçü Birimi</Label>
                 <Select
                   value={formData.unit}
-                  onValueChange={value =>
+                  onValueChange={(value: string) =>
                     setFormData({ ...formData, unit: value })
                   }
                 >
@@ -349,7 +348,7 @@ export function CreateProductDialog({
                 <Label htmlFor='is_active'>Durum</Label>
                 <Select
                   value={formData.is_active ? 'active' : 'inactive'}
-                  onValueChange={value =>
+                  onValueChange={(value: string) =>
                     setFormData({ ...formData, is_active: value === 'active' })
                   }
                 >

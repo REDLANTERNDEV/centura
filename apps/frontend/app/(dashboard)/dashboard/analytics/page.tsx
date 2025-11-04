@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable no-console */
  
 
 /**
@@ -50,8 +49,6 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
 } from '@/components/ui/chart';
 import {
   LineChart as RechartsLineChart,
@@ -592,9 +589,7 @@ export default function AnalyticsPage() {
       } else {
         throw new Error('Invalid response structure');
       }
-    } catch (err) {
-      console.error('Error fetching analytics:', err);
-
+    } catch {
       // Use mock data for development if API is not available
       setAnalyticsData(getMockAnalyticsData());
       setError(null); // Clear error since we're using mock data
@@ -916,7 +911,6 @@ export default function AnalyticsPage() {
                     <YAxis yAxisId='left' />
                     <YAxis yAxisId='right' orientation='right' />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
                     <Line
                       yAxisId='left'
                       type='monotone'
@@ -1151,7 +1145,6 @@ export default function AnalyticsPage() {
                   <YAxis yAxisId='left' />
                   <YAxis yAxisId='right' orientation='right' />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
                   <Bar
                     yAxisId='left'
                     dataKey='revenue'
@@ -1326,9 +1319,13 @@ export default function AnalyticsPage() {
                       cx='50%'
                       cy='50%'
                       outerRadius={80}
-                      label={({ segment, percentage }) =>
-                        `${segment} (%${percentage.toFixed(0)})`
-                      }
+                      label={({
+                        segment,
+                        percentage,
+                      }: {
+                        segment: string;
+                        percentage: number;
+                      }) => `${segment} (%${percentage.toFixed(0)})`}
                     >
                       {data.customerMetrics.segmentation.map((entry, index) => (
                         <Cell

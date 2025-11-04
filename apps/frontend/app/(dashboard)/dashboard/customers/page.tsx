@@ -4,7 +4,7 @@
  * Industry-standard features including advanced filtering, segmentation, and analytics
  */
 
-/* eslint-disable no-console */
+ 
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -119,8 +119,8 @@ export default function CustomersPage() {
       try {
         const revenueMetrics = await getRevenueMetrics();
         revenueAmount = revenueMetrics.totalRevenue || 0;
-      } catch (error: any) {
-        console.error('Could not fetch revenue metrics:', error);
+      } catch {
+        // Silently fail - revenue will be 0
       }
 
       setStats({
@@ -130,7 +130,6 @@ export default function CustomersPage() {
         revenue: revenueAmount,
       });
     } catch (error: any) {
-      console.error('Error fetching customers:', error);
       toast.error('Müşteriler yüklenemedi', {
         description: error instanceof Error ? error.message : 'Bilinmeyen hata',
       });

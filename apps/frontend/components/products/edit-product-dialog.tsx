@@ -4,7 +4,7 @@
  */
 
 'use client';
-/* eslint-disable no-console */
+ 
 
 import { useState, useEffect } from 'react';
 import { Product, updateProduct } from '@/lib/api-client';
@@ -124,7 +124,6 @@ export function EditProductDialog({
       toast.success('Ürün başarıyla güncellendi');
       onSuccess();
     } catch (error: any) {
-      console.error('❌ Failed to update product:', error);
       toast.error(
         error instanceof Error ? error.message : 'Ürün güncellenemedi'
       );
@@ -210,7 +209,7 @@ export function EditProductDialog({
                 <Label htmlFor='edit-category'>Kategori</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={value =>
+                  onValueChange={(value: string) =>
                     setFormData({ ...formData, category: value })
                   }
                 >
@@ -329,7 +328,7 @@ export function EditProductDialog({
                 <Label htmlFor='edit-unit'>Ölçü Birimi</Label>
                 <Select
                   value={formData.unit}
-                  onValueChange={value =>
+                  onValueChange={(value: string) =>
                     setFormData({ ...formData, unit: value })
                   }
                 >
@@ -353,7 +352,7 @@ export function EditProductDialog({
                 <Label htmlFor='edit-is_active'>Durum</Label>
                 <Select
                   value={formData.is_active ? 'active' : 'inactive'}
-                  onValueChange={value =>
+                  onValueChange={(value: string) =>
                     setFormData({ ...formData, is_active: value === 'active' })
                   }
                 >

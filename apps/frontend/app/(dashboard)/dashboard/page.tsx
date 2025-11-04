@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable no-console */
+ 
 
 import { useState, useEffect } from 'react';
 import { useOrganization } from '@/lib/contexts/OrganizationContext';
@@ -53,8 +53,6 @@ export default function DashboardPage() {
         if (customersResponse.success && customersResponse.data) {
           setRecentCustomers(customersResponse.data);
         }
-      } catch (error: any) {
-        console.error('Error fetching dashboard data:', error);
       } finally {
         setIsLoading(false);
       }

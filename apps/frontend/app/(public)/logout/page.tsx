@@ -24,10 +24,14 @@ export default function LogoutPage() {
 
         toast.success('Çıkış başarılı! Yönlendiriliyorsunuz...');
 
-        // Redirect to login page after successful logout
-        setTimeout(() => {
+        // Force refresh and redirect - Critical for production builds
+        // Use window.location for reliable redirect in Docker/production
+        if (globalThis.window) {
+          globalThis.window.location.href = '/login';
+        } else {
           router.push('/login');
-        }, 1000);
+          router.refresh();
+        }
       } catch (error: any) {
         const message =
           error instanceof Error
@@ -37,9 +41,12 @@ export default function LogoutPage() {
         // removed console logging per project linting preferences
 
         // Still redirect to login page even if logout fails
-        setTimeout(() => {
+        if (globalThis.window) {
+          globalThis.window.location.href = '/login';
+        } else {
           router.push('/login');
-        }, 2000);
+          router.refresh();
+        }
       } finally {
         setIsLoggingOut(false);
       }

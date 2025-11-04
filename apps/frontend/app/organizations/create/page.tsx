@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable no-console */
+ 
 
 /**
  * Create Organization Page
@@ -96,7 +96,6 @@ export default function CreateOrganizationPage() {
       // Navigate back to dashboard (selector will show if needed)
       router.replace('/dashboard');
     } catch (error: any) {
-      console.error('❌ Failed to create organization:', error);
       toast.error(
         error instanceof Error ? error.message : 'Organizasyon oluşturulamadı'
       );

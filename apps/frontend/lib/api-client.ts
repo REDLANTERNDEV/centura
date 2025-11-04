@@ -3,7 +3,7 @@
  * Simple and clean API wrapper
  */
 
-/* eslint-disable no-console */
+ 
 import axios, { AxiosError } from 'axios';
 
 // Get base URL from environment variable
@@ -40,23 +40,6 @@ apiClient.interceptors.request.use(
           config.headers['X-Organization-ID'] = storedOrgId;
         }
       }
-
-      // Get header value for debugging (support both methods)
-      const headerValue = config.headers.get
-        ? config.headers.get('X-Organization-ID')
-        : config.headers['X-Organization-ID'];
-
-      console.log('🌐 API Request:', {
-        url: config.url,
-        method: config.method,
-        org_id_header: headerValue,
-        from_storage: storedOrgId,
-        has_storage: Boolean(storedOrgId),
-        // Log all headers for debugging
-        all_headers: config.headers.toJSON
-          ? config.headers.toJSON()
-          : config.headers,
-      });
     }
     return config;
   },
@@ -104,19 +87,12 @@ apiClient.interceptors.response.use(
       originalRequest.url !== API_ENDPOINTS.AUTH.REFRESH_TOKEN &&
       originalRequest.url !== API_ENDPOINTS.AUTH.LOGIN
     ) {
-      console.log('🔄 Access token expired, attempting refresh...', {
-        url: originalRequest.url,
-        isRefreshing,
-      });
-
       if (isRefreshing) {
-        console.log('⏳ Already refreshing, queueing request...');
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then(() => {
-            console.log('✅ Retrying queued request after refresh');
             return apiClient(originalRequest);
           })
           .catch(err => {
@@ -128,11 +104,9 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        console.log('🔑 Calling refresh token endpoint...');
         // Try to refresh the token
         await apiClient.post(API_ENDPOINTS.AUTH.REFRESH_TOKEN);
 
-        console.log('✅ Token refreshed successfully');
         // Token refreshed successfully
         processQueue(null);
         isRefreshing = false;
@@ -140,14 +114,12 @@ apiClient.interceptors.response.use(
         // Retry the original request
         return apiClient(originalRequest);
       } catch (refreshError) {
-        console.error('❌ Token refresh failed:', refreshError);
         // Refresh failed - clear queue and redirect to login
         processQueue(new Error('Session expired'));
         isRefreshing = false;
 
         // Only redirect if we're in the browser
         if (globalThis.window !== undefined) {
-          console.log('🚪 Redirecting to login...');
           // Clear local storage
           localStorage.removeItem('centura_selected_org_id');
 

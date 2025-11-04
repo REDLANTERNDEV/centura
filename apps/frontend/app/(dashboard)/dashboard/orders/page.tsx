@@ -4,7 +4,7 @@
  */
 
 'use client';
-/* eslint-disable no-console */
+ 
 
 import { useState, useEffect } from 'react';
 import { useOrganization } from '@/lib/contexts/OrganizationContext';
@@ -108,11 +108,10 @@ export default function OrdersPage() {
       try {
         const revenueMetrics = await getRevenueMetrics();
         setTotalRevenue(revenueMetrics.totalRevenue || 0);
-      } catch (error: any) {
-        console.error('Could not fetch revenue metrics:', error);
+      } catch {
+        // Silently fail - revenue will be 0
       }
     } catch (error: any) {
-      console.error('Error fetching orders:', error);
       toast.error('Siparişler yüklenirken hata oluştu', {
         description:
           error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu',

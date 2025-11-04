@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable no-console */
+ 
 
 /**
  * Ayarlar Sayfası - Profesyonel ERP/CRM Ayarlar Yönetimi
@@ -107,8 +107,7 @@ export default function SettingsPage() {
       if (response.data.success) {
         setUserProfile(response.data.data);
       }
-    } catch (error: any) {
-      console.error('Kullanıcı profili yüklenemedi:', error);
+    } catch {
       toast.error('Kullanıcı profili yüklenemedi');
     }
   };
@@ -138,8 +137,7 @@ export default function SettingsPage() {
           userRole: data.userRole || '',
         });
       }
-    } catch (error: any) {
-      console.error('Organizasyon ayarları yüklenemedi:', error);
+    } catch {
       toast.error('Organizasyon ayarları yüklenemedi');
     }
   };
@@ -157,8 +155,8 @@ export default function SettingsPage() {
       if (response.data.success) {
         setTeamMembers(response.data.data.team || []);
       }
-    } catch (error: any) {
-      console.error('Ekip üyeleri yüklenemedi:', error);
+    } catch {
+      // Silently fail - team members section will show empty
     }
   };
 
@@ -703,7 +701,7 @@ export default function SettingsPage() {
                     <Label htmlFor='industry'>Sektör</Label>
                     <Select
                       value={orgSettings.industry}
-                      onValueChange={value =>
+                      onValueChange={(value: string) =>
                         setOrgSettings({ ...orgSettings, industry: value })
                       }
                       disabled={
@@ -936,7 +934,7 @@ export default function SettingsPage() {
                               ) ? (
                                 <Select
                                   value={member.role}
-                                  onValueChange={value =>
+                                  onValueChange={(value: string) =>
                                     handleUpdateUserRole(member.id, value)
                                   }
                                 >

@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable no-console */
+ 
 import {
   Home,
   ShoppingBag,
@@ -74,8 +74,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
       toast.success('Başarıyla çıkış yapıldı');
       router.push('/login');
-    } catch (error: any) {
-      console.error('Logout failed:', error);
+    } catch {
       toast.error('Çıkış yapılamadı');
     }
   };

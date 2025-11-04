@@ -5,7 +5,7 @@
  */
 
 'use client';
-/* eslint-disable no-console */
+ 
 
 import { useState, useEffect } from 'react';
 import { useOrganization } from '@/lib/contexts/OrganizationContext';
@@ -133,7 +133,6 @@ export default function ProductsPage() {
         });
       }
     } catch (error: any) {
-      console.error('❌ Failed to fetch products:', error);
       toast.error(
         error instanceof Error ? error.message : 'Ürünler yüklenemedi'
       );
@@ -159,7 +158,6 @@ export default function ProductsPage() {
       toast.success('Ürün başarıyla silindi');
       fetchProducts();
     } catch (error: any) {
-      console.error('❌ Failed to delete product:', error);
       toast.error(error instanceof Error ? error.message : 'Ürün silinemedi');
     }
   };

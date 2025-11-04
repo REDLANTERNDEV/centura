@@ -55,10 +55,14 @@ export default function LoginPage() {
 
       toast.success('Giriş başarılı! Yönlendiriliyorsunuz...');
 
-      // Redirect to dashboard or home page
-      setTimeout(() => {
+      // Force refresh and redirect - Critical for production builds
+      // Use window.location for reliable redirect in Docker/production
+      if (globalThis.window) {
+        globalThis.window.location.href = '/dashboard';
+      } else {
         router.push('/dashboard');
-      }, 1000);
+        router.refresh();
+      }
     } catch (error: any) {
       const message =
         error instanceof Error ? error.message : 'Giriş başarısız oldu';
