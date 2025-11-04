@@ -866,9 +866,10 @@ CREATE TABLE products (
   sku VARCHAR(100) NOT NULL,
   barcode VARCHAR(100),
   category VARCHAR(100) NOT NULL,
-  price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  cost_price DECIMAL(10, 2),
-  tax_rate DECIMAL(5, 2) DEFAULT 0.00,
+  base_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00, -- KDV hariç satış fiyatı (Base price excluding VAT)
+  price DECIMAL(10, 2) NOT NULL DEFAULT 0.00, -- KDV dahil satış fiyatı - müşterinin ödeyeceği (Price including VAT - calculated as base_price * (1 + tax_rate/100))
+  cost_price DECIMAL(10, 2), -- Tedarikçiden alış maliyeti - kar hesabı için (Supplier cost for profit calculation)
+  tax_rate DECIMAL(5, 2) DEFAULT 0.00, -- KDV oranı % (VAT rate percentage)
   stock_quantity INTEGER NOT NULL DEFAULT 0,
   low_stock_threshold INTEGER DEFAULT 10,
   unit VARCHAR(50) NOT NULL,
@@ -894,9 +895,10 @@ CREATE TABLE products (
 - `sku`: Stock Keeping Unit - unique identifier per organization
 - `barcode`: Product barcode (optional)
 - `category`: Product category (Electronics, Furniture, etc.)
-- `price`: Selling price (DECIMAL for financial accuracy)
-- `cost_price`: Purchase/cost price (for profit calculations)
-- `tax_rate`: Tax percentage (e.g., 18.00 for 18% VAT)
+- `base_price`: Base selling price excluding VAT (KDV hariç satış fiyatı)
+- `price`: Final selling price including VAT (KDV dahil - müşterinin ödeyeceği tutar). Automatically calculated as `base_price × (1 + tax_rate/100)`
+- `cost_price`: Purchase/cost price from supplier (tedarikçiden alış maliyeti - for profit calculations). **Profit = base_price - cost_price** (VAT excluded from profit)
+- `tax_rate`: Tax percentage (e.g., 20.00 for 20% VAT)
 - `stock_quantity`: Current stock quantity
 - `low_stock_threshold`: Alert threshold for low stock
 - `unit`: Unit of measurement (pcs, kg, liter, box, etc.)
@@ -924,10 +926,42 @@ CREATE INDEX idx_products_created_at ON products(created_at DESC);
 **Constraints:**
 
 - `unique_sku_per_org`: SKU must be unique within each organization
+- `check_base_price_positive`: Base price cannot be negative
 - `check_price_positive`: Price cannot be negative
 - `check_cost_price_positive`: Cost price cannot be negative (if provided)
 - `check_stock_non_negative`: Stock quantity cannot be negative
 - `check_tax_rate_valid`: Tax rate must be between 0 and 100
+
+**Pricing Logic (Turkish VAT System):**
+
+```text
+Example Product:
+├─ base_price: 100.00 TL (KDV Hariç - what we earn)
+├─ tax_rate: 20% (KDV Oranı)
+├─ price: 120.00 TL (KDV Dahil - customer pays this)
+└─ cost_price: 60.00 TL (Supplier cost - what we paid)
+
+Profit Calculation (KDV excluded):
+└─ profit = base_price - cost_price = 100 - 60 = 40 TL
+
+Customer Invoice:
+├─ Subtotal (KDV Hariç): 100.00 TL
+├─ KDV (20%): 20.00 TL
+└─ Total (KDV Dahil): 120.00 TL ← Customer pays this
+
+Government Gets:
+└─ 20.00 TL (VAT) - Not our revenue!
+
+Our Net Revenue:
+└─ 100.00 TL (base_price) - This is our actual revenue
+```
+
+**Important Notes:**
+
+1. **`price` is auto-calculated**: Backend automatically computes `price = base_price × (1 + tax_rate/100)`
+2. **VAT is not profit**: VAT goes to government, not included in profit calculations
+3. **Historical pricing**: Orders store `unit_price` (base_price) to maintain accurate records even if product prices change
+4. **Turkish accounting standards**: This follows standard Turkish accounting and invoicing practices
 
 ---
 

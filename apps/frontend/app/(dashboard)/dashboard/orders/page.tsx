@@ -4,7 +4,6 @@
  */
 
 'use client';
- 
 
 import { useState, useEffect } from 'react';
 import { useOrganization } from '@/lib/contexts/OrganizationContext';
@@ -259,7 +258,9 @@ export default function OrdersPage() {
         </Card>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Toplam Gelir</CardTitle>
+            <CardTitle className='text-sm font-medium'>
+              Toplam Gelir (KDV Dahil)
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-2xl font-bold'>

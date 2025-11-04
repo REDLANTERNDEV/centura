@@ -147,7 +147,7 @@ export const createProduct = async (productData, orgId, userId) => {
       sku,
       barcode,
       category,
-      price,
+      base_price,
       cost_price,
       tax_rate,
       stock_quantity,
@@ -156,11 +156,14 @@ export const createProduct = async (productData, orgId, userId) => {
       is_active = true,
     } = productData;
 
+    // Calculate price including VAT
+    const price = base_price * (1 + tax_rate / 100);
+
     const result = await pool.query(
       `INSERT INTO products (
-        org_id, name, description, sku, barcode, category, price, cost_price,
+        org_id, name, description, sku, barcode, category, base_price, price, cost_price,
         tax_rate, stock_quantity, low_stock_threshold, unit, is_active, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *`,
       [
         orgId,
@@ -169,6 +172,7 @@ export const createProduct = async (productData, orgId, userId) => {
         sku,
         barcode,
         category,
+        base_price,
         price,
         cost_price,
         tax_rate,
@@ -202,7 +206,7 @@ export const updateProduct = async (productId, productData, orgId) => {
       sku,
       barcode,
       category,
-      price,
+      base_price,
       cost_price,
       tax_rate,
       stock_quantity,
@@ -211,6 +215,9 @@ export const updateProduct = async (productId, productData, orgId) => {
       is_active,
     } = productData;
 
+    // Calculate price including VAT
+    const price = base_price * (1 + tax_rate / 100);
+
     const result = await pool.query(
       `UPDATE products SET
         name = $1,
@@ -218,15 +225,16 @@ export const updateProduct = async (productId, productData, orgId) => {
         sku = $3,
         barcode = $4,
         category = $5,
-        price = $6,
-        cost_price = $7,
-        tax_rate = $8,
-        stock_quantity = $9,
-        low_stock_threshold = $10,
-        unit = $11,
-        is_active = $12,
+        base_price = $6,
+        price = $7,
+        cost_price = $8,
+        tax_rate = $9,
+        stock_quantity = $10,
+        low_stock_threshold = $11,
+        unit = $12,
+        is_active = $13,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $13 AND org_id = $14
+      WHERE id = $14 AND org_id = $15
       RETURNING *`,
       [
         name,
@@ -234,6 +242,7 @@ export const updateProduct = async (productId, productData, orgId) => {
         sku,
         barcode,
         category,
+        base_price,
         price,
         cost_price,
         tax_rate,

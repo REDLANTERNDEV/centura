@@ -273,9 +273,10 @@ CREATE TABLE IF NOT EXISTS products (
   sku VARCHAR(100) NOT NULL,
   barcode VARCHAR(100),
   category VARCHAR(100) NOT NULL,
-  price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  cost_price DECIMAL(10, 2),
-  tax_rate DECIMAL(5, 2) DEFAULT 0.00,
+  base_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00, -- KDV hariç satış fiyatı
+  price DECIMAL(10, 2) NOT NULL DEFAULT 0.00, -- KDV dahil satış fiyatı (müşterinin ödeyeceği)
+  cost_price DECIMAL(10, 2), -- Tedarikçiden alış maliyeti (kar hesabı için)
+  tax_rate DECIMAL(5, 2) DEFAULT 0.00, -- KDV oranı (%)
   stock_quantity INTEGER NOT NULL DEFAULT 0,
   low_stock_threshold INTEGER DEFAULT 10,
   unit VARCHAR(50) NOT NULL,
@@ -289,6 +290,7 @@ CREATE TABLE IF NOT EXISTS products (
   last_restock_date TIMESTAMPTZ,
   times_out_of_stock INTEGER DEFAULT 0,
   CONSTRAINT unique_sku_per_org UNIQUE(org_id, sku),
+  CONSTRAINT check_base_price_positive CHECK (base_price >= 0),
   CONSTRAINT check_price_positive CHECK (price >= 0),
   CONSTRAINT check_cost_price_positive CHECK (cost_price >= 0 OR cost_price IS NULL),
   CONSTRAINT check_stock_non_negative CHECK (stock_quantity >= 0),

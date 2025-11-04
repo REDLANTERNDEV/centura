@@ -4,7 +4,6 @@
  */
 
 'use client';
- 
 
 import { useState } from 'react';
 import { useOrganization } from '@/lib/contexts/OrganizationContext';
@@ -51,14 +50,23 @@ export function CreateProductDialog({
     sku: '',
     barcode: '',
     category: 'Other',
-    price: '',
+    base_price: '',
     cost_price: '',
-    tax_rate: '0',
+    tax_rate: '20',
     stock_quantity: '0',
     low_stock_threshold: '10',
     unit: 'pcs',
     is_active: true,
   });
+
+  // Calculate price with VAT
+  const calculatedPrice =
+    formData.base_price && formData.tax_rate
+      ? (
+          Number.parseFloat(formData.base_price) *
+          (1 + Number.parseFloat(formData.tax_rate) / 100)
+        ).toFixed(2)
+      : '0.00';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,8 +87,8 @@ export function CreateProductDialog({
       return;
     }
 
-    if (!formData.price || Number.parseFloat(formData.price) <= 0) {
-      toast.error('Geçerli bir fiyat girilmelidir');
+    if (!formData.base_price || Number.parseFloat(formData.base_price) <= 0) {
+      toast.error('Geçerli bir baz fiyat (KDV hariç) girilmelidir');
       return;
     }
 
@@ -93,7 +101,7 @@ export function CreateProductDialog({
         sku: formData.sku.trim(),
         barcode: formData.barcode.trim() || undefined,
         category: formData.category,
-        price: Number.parseFloat(formData.price),
+        base_price: Number.parseFloat(formData.base_price),
         cost_price: formData.cost_price
           ? Number.parseFloat(formData.cost_price)
           : undefined,
@@ -113,9 +121,9 @@ export function CreateProductDialog({
         sku: '',
         barcode: '',
         category: 'Other',
-        price: '',
+        base_price: '',
         cost_price: '',
-        tax_rate: '0',
+        tax_rate: '20',
         stock_quantity: '0',
         low_stock_threshold: '10',
         unit: 'pcs',
@@ -232,38 +240,27 @@ export function CreateProductDialog({
           <div className='space-y-4'>
             <h3 className='font-semibold'>Fiyatlandırma</h3>
 
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='grid grid-cols-3 gap-4'>
               <div className='space-y-2'>
-                <Label htmlFor='price'>
-                  Satış Fiyatı <span className='text-destructive'>*</span>
+                <Label htmlFor='base_price'>
+                  Baz Fiyat (KDV Hariç){' '}
+                  <span className='text-destructive'>*</span>
                 </Label>
                 <Input
-                  id='price'
+                  id='base_price'
                   type='number'
                   step='0.01'
                   min='0'
-                  value={formData.price}
+                  value={formData.base_price}
                   onChange={e =>
-                    setFormData({ ...formData, price: e.target.value })
+                    setFormData({ ...formData, base_price: e.target.value })
                   }
                   placeholder='0.00'
                   required
                 />
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='cost_price'>Maliyet Fiyatı</Label>
-                <Input
-                  id='cost_price'
-                  type='number'
-                  step='0.01'
-                  min='0'
-                  value={formData.cost_price}
-                  onChange={e =>
-                    setFormData({ ...formData, cost_price: e.target.value })
-                  }
-                  placeholder='0.00'
-                />
+                <p className='text-xs text-muted-foreground'>
+                  Müşteriye KDV hariç satış fiyatı
+                </p>
               </div>
 
               <div className='space-y-2'>
@@ -278,9 +275,65 @@ export function CreateProductDialog({
                   onChange={e =>
                     setFormData({ ...formData, tax_rate: e.target.value })
                   }
-                  placeholder='0'
+                  placeholder='20'
                 />
+                <p className='text-xs text-muted-foreground'>
+                  Türkiye'de standart KDV: %20
+                </p>
               </div>
+
+              <div className='space-y-2'>
+                <Label htmlFor='calculated_price'>
+                  Satış Fiyatı (KDV Dahil)
+                </Label>
+                <Input
+                  id='calculated_price'
+                  type='text'
+                  value={`₺${calculatedPrice}`}
+                  disabled
+                  className='bg-muted font-semibold'
+                />
+                <p className='text-xs text-muted-foreground'>
+                  Müşterinin ödeyeceği tutar
+                </p>
+              </div>
+            </div>
+
+            <div className='grid grid-cols-2 gap-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='cost_price'>
+                  Alış Fiyatı (Tedarikçi Maliyeti)
+                </Label>
+                <Input
+                  id='cost_price'
+                  type='number'
+                  step='0.01'
+                  min='0'
+                  value={formData.cost_price}
+                  onChange={e =>
+                    setFormData({ ...formData, cost_price: e.target.value })
+                  }
+                  placeholder='0.00'
+                />
+                <p className='text-xs text-muted-foreground'>
+                  Ürünü tedarikçiden aldığınız fiyat (kar hesabı için)
+                </p>
+              </div>
+
+              {formData.base_price && formData.cost_price && (
+                <div className='space-y-2'>
+                  <Label>Brüt Kar (KDV Hariç)</Label>
+                  <Input
+                    type='text'
+                    value={`₺${(Number.parseFloat(formData.base_price) - Number.parseFloat(formData.cost_price)).toFixed(2)}`}
+                    disabled
+                    className='bg-muted font-semibold text-green-600'
+                  />
+                  <p className='text-xs text-muted-foreground'>
+                    KDV devlete gider, kara dahil değildir
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

@@ -125,7 +125,7 @@ export function OrdersTable({
               <TableHead>Tarih</TableHead>
               <TableHead>Durum</TableHead>
               <TableHead>Ödeme</TableHead>
-              <TableHead className='text-right'>Toplam</TableHead>
+              <TableHead className='text-right'>Toplam (KDV Dahil)</TableHead>
               <TableHead className='w-[60px]'></TableHead>
             </TableRow>
           </TableHeader>
@@ -268,7 +268,7 @@ function OrdersTableSkeleton() {
               <TableHead>Tarih</TableHead>
               <TableHead>Durum</TableHead>
               <TableHead>Ödeme</TableHead>
-              <TableHead className='text-right'>Toplam</TableHead>
+              <TableHead className='text-right'>Toplam (KDV Dahil)</TableHead>
               <TableHead className='w-[60px]'></TableHead>
             </TableRow>
           </TableHeader>

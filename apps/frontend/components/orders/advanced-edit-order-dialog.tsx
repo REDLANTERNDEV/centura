@@ -407,7 +407,7 @@ export function AdvancedEditOrderDialog({
                           {product && (
                             <div className='flex justify-between items-center bg-primary/5 rounded-md p-3 border border-primary/20'>
                               <span className='text-sm font-medium text-muted-foreground'>
-                                Ara Toplam
+                                Ara Toplam (KDV Dahil)
                               </span>
                               <span className='text-base font-bold text-primary'>
                                 {formatCurrency(product.price * item.quantity)}
@@ -437,11 +437,16 @@ export function AdvancedEditOrderDialog({
               {items.some(item => item.product_id > 0) && (
                 <div className='rounded-lg border p-4 bg-muted/30'>
                   <div className='flex justify-between items-center'>
-                    <span className='font-semibold text-lg'>Yeni Toplam:</span>
-                    <span className='font-bold text-2xl'>
+                    <span className='font-semibold text-lg'>
+                      Genel Toplam (KDV Dahil):
+                    </span>
+                    <span className='font-bold text-2xl text-primary'>
                       {formatCurrency(calculateTotal())}
                     </span>
                   </div>
+                  <p className='text-xs text-muted-foreground mt-2'>
+                    * Sipariş kaydedildiğinde KDV otomatik olarak ayrıştırılır
+                  </p>
                 </div>
               )}
             </div>
@@ -456,8 +461,10 @@ export function AdvancedEditOrderDialog({
                     <tr>
                       <th className='text-left p-3'>Ürün</th>
                       <th className='text-right p-3'>Miktar</th>
-                      <th className='text-right p-3'>Birim Fiyat</th>
-                      <th className='text-right p-3'>Toplam</th>
+                      <th className='text-right p-3'>
+                        Birim Fiyat (KDV Hariç)
+                      </th>
+                      <th className='text-right p-3'>Toplam (KDV Dahil)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -481,8 +488,10 @@ export function AdvancedEditOrderDialog({
               </div>
               <div className='rounded-lg border p-4 bg-muted/30'>
                 <div className='flex justify-between items-center'>
-                  <span className='font-semibold text-lg'>Toplam:</span>
-                  <span className='font-bold text-2xl'>
+                  <span className='font-semibold text-lg'>
+                    Genel Toplam (KDV Dahil):
+                  </span>
+                  <span className='font-bold text-2xl text-primary'>
                     {formatCurrency(order.total)}
                   </span>
                 </div>

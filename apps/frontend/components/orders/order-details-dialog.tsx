@@ -175,13 +175,13 @@ export function OrderDetailsDialog({
                         Miktar
                       </th>
                       <th className='text-right p-3 text-sm font-medium'>
-                        Birim Fiyat
+                        Birim Fiyat (KDV Hariç)
                       </th>
                       <th className='text-right p-3 text-sm font-medium'>
-                        KDV
+                        KDV Tutarı
                       </th>
                       <th className='text-right p-3 text-sm font-medium'>
-                        Toplam
+                        Toplam (KDV Dahil)
                       </th>
                     </tr>
                   </thead>
@@ -203,12 +203,19 @@ export function OrderDetailsDialog({
                           </td>
                           <td className='p-3 text-center'>{item.quantity}</td>
                           <td className='p-3 text-right'>
-                            {formatCurrency(item.unit_price)}
+                            <div className='flex flex-col items-end'>
+                              <span>{formatCurrency(item.unit_price)}</span>
+                              {item.tax_rate > 0 && (
+                                <span className='text-xs text-muted-foreground'>
+                                  KDV %{item.tax_rate}
+                                </span>
+                              )}
+                            </div>
                           </td>
-                          <td className='p-3 text-right'>
+                          <td className='p-3 text-right text-muted-foreground'>
                             {formatCurrency(item.tax_amount)}
                           </td>
-                          <td className='p-3 text-right font-semibold'>
+                          <td className='p-3 text-right font-semibold text-primary'>
                             {formatCurrency(item.total)}
                           </td>
                         </tr>
@@ -238,7 +245,9 @@ export function OrderDetailsDialog({
               </h4>
               <div className='rounded-lg border p-4 space-y-2'>
                 <div className='flex justify-between text-sm'>
-                  <span className='text-muted-foreground'>Ara Toplam:</span>
+                  <span className='text-muted-foreground'>
+                    Ara Toplam (KDV Hariç):
+                  </span>
                   <span>{formatCurrency(order.subtotal)}</span>
                 </div>
                 {order.discount_amount > 0 && (
@@ -252,13 +261,17 @@ export function OrderDetailsDialog({
                   </div>
                 )}
                 <div className='flex justify-between text-sm'>
-                  <span className='text-muted-foreground'>KDV:</span>
-                  <span>{formatCurrency(order.tax_amount)}</span>
+                  <span className='text-muted-foreground'>KDV Tutarı:</span>
+                  <span className='text-orange-600'>
+                    {formatCurrency(order.tax_amount)}
+                  </span>
                 </div>
                 <Separator />
                 <div className='flex justify-between font-semibold text-lg'>
-                  <span>Genel Toplam:</span>
-                  <span>{formatCurrency(order.total)}</span>
+                  <span>Genel Toplam (KDV Dahil):</span>
+                  <span className='text-primary'>
+                    {formatCurrency(order.total)}
+                  </span>
                 </div>
                 {order.payment_status !== 'pending' && (
                   <>

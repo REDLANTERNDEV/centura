@@ -1,5 +1,4 @@
 'use client';
- 
 
 import { useState, useEffect } from 'react';
 import { useOrganization } from '@/lib/contexts/OrganizationContext';
@@ -227,29 +226,41 @@ export default function DashboardPage() {
             )}
             {!isLoading && recentCustomers.length > 0 && (
               <div className='space-y-4'>
-                {recentCustomers.map(customer => (
-                  <div
-                    key={customer.customer_id}
-                    className='flex items-center justify-between border-b pb-3 last:border-0 last:pb-0'
-                  >
-                    <div className='space-y-1'>
-                      <Link
-                        href={`/dashboard/customers`}
-                        className='font-medium hover:underline'
-                      >
-                        {customer.name}
-                      </Link>
-                      <p className='text-xs text-muted-foreground'>
-                        {customer.email || 'Email yok'}
-                      </p>
+                {recentCustomers.map(customer => {
+                  // Translate customer type to Turkish
+                  const customerTypeMap: Record<string, string> = {
+                    Corporate: 'Kurumsal',
+                    Individual: 'Bireysel',
+                    Government: 'Kamu',
+                    Other: 'Diğer',
+                  };
+
+                  return (
+                    <div
+                      key={customer.customer_id}
+                      className='flex items-center justify-between border-b pb-3 last:border-0 last:pb-0'
+                    >
+                      <div className='space-y-1'>
+                        <Link
+                          href={`/dashboard/customers`}
+                          className='font-medium hover:underline'
+                        >
+                          {customer.name}
+                        </Link>
+                        <p className='text-xs text-muted-foreground'>
+                          {customer.email || 'Email yok'}
+                        </p>
+                      </div>
+                      <div className='text-right'>
+                        <Badge variant='outline' className='text-xs'>
+                          {customerTypeMap[
+                            customer.customer_type || 'Individual'
+                          ] || 'Bireysel'}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className='text-right'>
-                      <Badge variant='outline' className='text-xs'>
-                        {customer.customer_type || 'Bireysel'}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

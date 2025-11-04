@@ -178,8 +178,9 @@ export const createOrder = async (req, res) => {
         });
       }
 
-      // Use current product price if not provided
-      const unitPrice = item.unit_price || product.price;
+      // Use base_price (KDV hariç) for order calculations
+      // unit_price should be the base price, VAT is calculated separately
+      const unitPrice = item.unit_price || product.base_price;
       const taxRate =
         item.tax_rate === undefined ? product.tax_rate || 0 : item.tax_rate;
 
@@ -402,15 +403,18 @@ export const updateOrder = async (req, res) => {
           item.product_id,
           orgId
         );
-        const itemTotal = product.price * item.quantity;
+        // Use base_price for calculations, VAT calculated separately
+        const itemSubtotal = product.base_price * item.quantity;
+        const itemTax = itemSubtotal * (product.tax_rate / 100);
+        const itemTotal = itemSubtotal + itemTax;
         total += itemTotal;
 
         await orderModel.addOrderItem({
           order_id: id,
           product_id: item.product_id,
           quantity: item.quantity,
-          unit_price: product.price,
-          tax_rate: 0.2,
+          unit_price: product.base_price,
+          tax_rate: product.tax_rate,
         });
       }
 

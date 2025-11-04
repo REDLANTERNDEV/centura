@@ -135,8 +135,13 @@ export function ProductsTable({
               <TableHead>Ürün</TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>Kategori</TableHead>
-              <TableHead className='text-right'>Fiyat</TableHead>
-              <TableHead className='text-right'>Maliyet</TableHead>
+              <TableHead className='text-right'>
+                Baz Fiyat (KDV Hariç)
+              </TableHead>
+              <TableHead className='text-right'>
+                Satış Fiyatı (KDV Dahil)
+              </TableHead>
+              <TableHead className='text-right'>Alış Fiyatı</TableHead>
               <TableHead className='text-right'>Kar Marjı</TableHead>
               <TableHead className='text-right'>Stok</TableHead>
               <TableHead>Durum</TableHead>
@@ -170,30 +175,52 @@ export function ProductsTable({
                   <ProductCategoryBadge category={product.category} />
                 </TableCell>
 
-                {/* Price */}
-                <TableCell className='text-right font-medium'>
-                  {formatCurrency(product.price)}
+                {/* Base Price (KDV Hariç) */}
+                <TableCell className='text-right'>
+                  <div className='flex flex-col items-end'>
+                    <span className='font-medium'>
+                      {formatCurrency(product.base_price)}
+                    </span>
+                    <span className='text-xs text-muted-foreground'>
+                      KDV: %{product.tax_rate}
+                    </span>
+                  </div>
                 </TableCell>
 
-                {/* Cost */}
+                {/* Price (KDV Dahil) */}
+                <TableCell className='text-right'>
+                  <div className='flex flex-col items-end'>
+                    <span className='font-semibold text-primary'>
+                      {formatCurrency(product.price)}
+                    </span>
+                    <span className='text-xs text-muted-foreground'>
+                      Müşteri öder
+                    </span>
+                  </div>
+                </TableCell>
+
+                {/* Cost Price (Alış Fiyatı) */}
                 <TableCell className='text-right text-muted-foreground'>
                   {product.cost_price
                     ? formatCurrency(product.cost_price)
                     : '-'}
                 </TableCell>
 
-                {/* Margin */}
+                {/* Margin (Kar - KDV Hariç) */}
                 <TableCell className='text-right'>
                   {product.cost_price ? (
                     <Badge
                       variant={
-                        calculateMargin(product.price, product.cost_price) > 30
+                        calculateMargin(
+                          product.base_price,
+                          product.cost_price
+                        ) > 30
                           ? 'default'
                           : 'secondary'
                       }
                     >
                       {calculateMargin(
-                        product.price,
+                        product.base_price,
                         product.cost_price
                       ).toFixed(1)}
                       %

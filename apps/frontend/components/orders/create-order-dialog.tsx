@@ -338,14 +338,15 @@ export function CreateOrderDialog({
                 <div className='rounded-lg border p-4 bg-muted/30'>
                   <div className='flex justify-between items-center'>
                     <span className='font-semibold text-lg'>
-                      Sipariş Toplamı:
+                      Genel Toplam (KDV Dahil):
                     </span>
-                    <span className='font-bold text-2xl'>
+                    <span className='font-bold text-2xl text-primary'>
                       {formatCurrency(calculateTotal())}
                     </span>
                   </div>
                   <p className='text-xs text-muted-foreground mt-2'>
-                    * Fiyatlar ürünün mevcut fiyatı üzerinden hesaplanmaktadır
+                    * Ürün fiyatları KDV dahil olarak hesaplanır. Sipariş
+                    kaydedildiğinde KDV ayrıştırılır.
                   </p>
                 </div>
               </>

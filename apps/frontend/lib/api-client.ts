@@ -3,7 +3,6 @@
  * Simple and clean API wrapper
  */
 
- 
 import axios, { AxiosError } from 'axios';
 
 // Get base URL from environment variable
@@ -576,9 +575,10 @@ export interface Product {
   sku: string;
   barcode?: string;
   category: string;
-  price: number;
-  cost_price?: number;
-  tax_rate: number;
+  base_price: number; // KDV hariç satış fiyatı (Base price excluding VAT)
+  price: number; // KDV dahil satış fiyatı - müşterinin ödeyeceği (Price including VAT)
+  cost_price?: number; // Tedarikçiden alış maliyeti - kar hesabı için (Supplier cost for profit calculation)
+  tax_rate: number; // KDV oranı % (VAT rate percentage)
   stock_quantity: number;
   low_stock_threshold: number;
   unit: string;
@@ -623,9 +623,9 @@ export const createProduct = async (data: {
   sku: string;
   barcode?: string;
   category: string;
-  price: number;
-  cost_price?: number;
-  tax_rate: number;
+  base_price: number; // KDV hariç satış fiyatı
+  cost_price?: number; // Tedarikçi maliyeti
+  tax_rate: number; // KDV oranı
   stock_quantity: number;
   low_stock_threshold: number;
   unit: string;
@@ -646,9 +646,9 @@ export const updateProduct = async (
     sku?: string;
     barcode?: string;
     category?: string;
-    price?: number;
-    cost_price?: number;
-    tax_rate?: number;
+    base_price?: number; // KDV hariç satış fiyatı
+    cost_price?: number; // Tedarikçi maliyeti
+    tax_rate?: number; // KDV oranı
     stock_quantity?: number;
     low_stock_threshold?: number;
     unit?: string;

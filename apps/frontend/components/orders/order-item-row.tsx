@@ -1,4 +1,3 @@
- 
 import React, { useState, useEffect, memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -79,7 +78,9 @@ const OrderItemRow: React.FC<OrderItemRowProps> = ({
       </div>
 
       <div className='flex items-center gap-2 w-full sm:w-auto'>
-        <span className='text-sm font-medium sm:hidden'>Toplam:</span>
+        <span className='text-sm font-medium sm:hidden'>
+          Toplam (KDV Dahil):
+        </span>
         <div className='text-sm font-medium text-gray-700 dark:text-gray-300 w-full sm:w-auto text-right sm:text-left'>
           {selectedProduct
             ? `₺${(selectedProduct.price * quantity).toFixed(2)}`
