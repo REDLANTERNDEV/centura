@@ -45,6 +45,7 @@ export function CreateCustomerDialog({
 
   // Form state
   const [formData, setFormData] = useState({
+    customer_code: '',
     name: '',
     email: '',
     phone: '',
@@ -62,11 +63,63 @@ export function CreateCustomerDialog({
     notes: '',
   });
 
+  // Auto-generate customer code based on name and type (industry standard)
+  const generateCustomerCode = (name: string, type: string): string => {
+    if (!name.trim()) return '';
+
+    // Get prefix based on customer type (industry standard)
+    const prefixMap: Record<string, string> = {
+      Corporate: 'CORP',
+      Individual: 'IND',
+      Government: 'GOV',
+      Other: 'OTH',
+    };
+
+    const prefix = prefixMap[type] || 'CUST';
+
+    // Extract initials from name (up to 3 characters)
+    const nameParts = name.trim().toUpperCase().split(/\s+/);
+    let nameCode = '';
+
+    if (nameParts.length === 1) {
+      // Single word: take first 3 characters
+      nameCode = nameParts[0].substring(0, 3).replaceAll(/[^A-Z0-9]/g, '');
+    } else {
+      // Multiple words: take first letter of each word (up to 3)
+      nameCode = nameParts
+        .slice(0, 3)
+        .map(part => part[0])
+        .join('')
+        .replaceAll(/[^A-Z0-9]/g, '');
+    }
+
+    // Add timestamp for uniqueness
+    const timestamp = Date.now().toString().slice(-6);
+
+    // Format: PREFIX-NAMECODE-TIMESTAMP (e.g., CORP-ABC-123456)
+    return `${prefix}-${nameCode}-${timestamp}`;
+  };
+
   const handleInputChange = (
     field: string,
     value: string | number | boolean
   ) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+
+      // Auto-generate customer code when name or type changes
+      if (field === 'name' || field === 'customer_type') {
+        const newName = field === 'name' ? String(value) : prev.name;
+        const newType =
+          field === 'customer_type' ? String(value) : prev.customer_type;
+
+        if (newName.trim()) {
+          updated.customer_code = generateCustomerCode(newName, newType);
+        }
+      }
+
+      return updated;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,9 +131,15 @@ export function CreateCustomerDialog({
       return;
     }
 
+    if (!formData.customer_code.trim()) {
+      toast.error('Müşteri kodu oluşturulamadı');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const customerData: any = {
+        customer_code: formData.customer_code.trim(),
         name: formData.name.trim(),
         segment: formData.segment,
         customer_type: formData.customer_type,
@@ -116,6 +175,7 @@ export function CreateCustomerDialog({
 
       // Reset form
       setFormData({
+        customer_code: '',
         name: '',
         email: '',
         phone: '',
@@ -175,11 +235,31 @@ export function CreateCustomerDialog({
                 />
               </div>
 
+              <div className='sm:col-span-2'>
+                <Label htmlFor='customer_code'>
+                  Müşteri Kodu <span className='text-destructive'>*</span>
+                </Label>
+                <Input
+                  id='customer_code'
+                  value={formData.customer_code}
+                  onChange={e =>
+                    handleInputChange('customer_code', e.target.value)
+                  }
+                  placeholder='Otomatik oluşturulacak'
+                  className='font-mono text-sm bg-muted'
+                />
+                <p className='text-xs text-muted-foreground mt-1'>
+                  Müşteri adı girildiğinde otomatik oluşturulur. Düzenlenebilir.
+                </p>
+              </div>
+
               <div>
                 <Label htmlFor='segment'>Segment</Label>
                 <Select
                   value={formData.segment}
-                  onValueChange={value => handleInputChange('segment', value)}
+                  onValueChange={(value: string) =>
+                    handleInputChange('segment', value)
+                  }
                 >
                   <SelectTrigger id='segment'>
                     <SelectValue />
@@ -198,7 +278,7 @@ export function CreateCustomerDialog({
                 <Label htmlFor='customer_type'>Müşteri Tipi</Label>
                 <Select
                   value={formData.customer_type}
-                  onValueChange={value =>
+                  onValueChange={(value: string) =>
                     handleInputChange('customer_type', value)
                   }
                 >
