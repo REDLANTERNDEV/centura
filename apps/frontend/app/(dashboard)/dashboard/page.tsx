@@ -16,7 +16,14 @@ import {
   ArrowRight,
   BarChart3,
 } from 'lucide-react';
-import { getOrders, getCustomers, Order, Customer } from '@/lib/api-client';
+import {
+  getOrders,
+  getCustomers,
+  getProducts,
+  getInsights,
+  Order,
+  Customer,
+} from '@/lib/api-client';
 import { OrderStatusBadge } from '@/components/orders/order-status-badge';
 import { PaymentStatusBadge } from '@/components/orders/payment-status-badge';
 
@@ -26,6 +33,14 @@ export default function DashboardPage() {
   const [recentCustomers, setRecentCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Stats state
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalOrders: 0,
+    totalCustomers: 0,
+    totalProducts: 0,
+  });
+
   // Fetch recent data
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -33,25 +48,39 @@ export default function DashboardPage() {
 
       setIsLoading(true);
       try {
-        // Fetch recent orders (last 5)
-        const ordersResponse = await getOrders({
-          page: 1,
-          limit: 5,
-        });
+        // Fetch all data in parallel
+        const [
+          ordersResponse,
+          customersResponse,
+          productsResponse,
+          insightsResponse,
+        ] = await Promise.all([
+          getOrders({ page: 1, limit: 5 }),
+          getCustomers({ page: 1, limit: 5 }),
+          getProducts({ page: 1, limit: 1 }), // Just for count
+          getInsights(),
+        ]);
 
+        // Set recent orders
         if (ordersResponse.success && ordersResponse.data) {
           setRecentOrders(ordersResponse.data);
         }
 
-        // Fetch recent customers (last 5)
-        const customersResponse = await getCustomers({
-          page: 1,
-          limit: 5,
-        });
-
+        // Set recent customers
         if (customersResponse.success && customersResponse.data) {
           setRecentCustomers(customersResponse.data);
         }
+
+        // Set stats from responses
+        setStats({
+          totalRevenue:
+            insightsResponse?.data?.revenueMetrics?.totalRevenue || 0,
+          totalOrders: ordersResponse?.pagination?.total || 0,
+          totalCustomers: customersResponse?.pagination?.total || 0,
+          totalProducts: productsResponse?.pagination?.total || 0,
+        });
+      } catch (error) {
+        console.error('Dashboard data fetch error:', error);
       } finally {
         setIsLoading(false);
       }
@@ -109,8 +138,16 @@ export default function DashboardPage() {
             <DollarSign className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>₺0.00</div>
-            <p className='text-xs text-muted-foreground'>Geçen aydan +%0</p>
+            <div className='text-2xl font-bold'>
+              ₺
+              {stats.totalRevenue.toLocaleString('tr-TR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </div>
+            <p className='text-xs text-muted-foreground'>
+              Tüm zamanlar toplamı
+            </p>
           </CardContent>
         </Card>
 
@@ -120,8 +157,10 @@ export default function DashboardPage() {
             <ShoppingBag className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>0</div>
-            <p className='text-xs text-muted-foreground'>Geçen aydan +%0</p>
+            <div className='text-2xl font-bold'>{stats.totalOrders}</div>
+            <p className='text-xs text-muted-foreground'>
+              Toplam sipariş sayısı
+            </p>
           </CardContent>
         </Card>
 
@@ -131,8 +170,10 @@ export default function DashboardPage() {
             <Users className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>0</div>
-            <p className='text-xs text-muted-foreground'>Geçen aydan +%0</p>
+            <div className='text-2xl font-bold'>{stats.totalCustomers}</div>
+            <p className='text-xs text-muted-foreground'>
+              Kayıtlı müşteri sayısı
+            </p>
           </CardContent>
         </Card>
 
@@ -142,8 +183,8 @@ export default function DashboardPage() {
             <Package className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>0</div>
-            <p className='text-xs text-muted-foreground'>Geçen aydan +%0</p>
+            <div className='text-2xl font-bold'>{stats.totalProducts}</div>
+            <p className='text-xs text-muted-foreground'>Aktif ürün sayısı</p>
           </CardContent>
         </Card>
       </div>

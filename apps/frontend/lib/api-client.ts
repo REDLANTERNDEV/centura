@@ -721,6 +721,14 @@ export interface RevenueMetrics {
   averageOrderValue: number;
 }
 
+/**
+ * Get comprehensive insights dashboard data
+ */
+export const getInsights = async () => {
+  const response = await apiClient.get('/insights');
+  return response.data;
+};
+
 export const getRevenueMetrics = async (): Promise<RevenueMetrics> => {
   const response = await apiClient.get('/insights/revenue/metrics');
   return response.data.data;

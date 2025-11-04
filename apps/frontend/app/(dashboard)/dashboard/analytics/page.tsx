@@ -1,5 +1,4 @@
 'use client';
- 
 
 /**
  * Analytics Dashboard Page
@@ -392,7 +391,7 @@ function transformBackendData(backendData: any): AnalyticsData {
         backendData.customerAnalytics?.summary?.totalCustomers || 0,
       newCustomers: backendData.customerAnalytics?.summary?.newCustomers || 0,
       activeCustomers:
-        backendData.customerAnalytics?.summary?.activeCustomers || 0,
+        backendData.customerAnalytics?.summary?.totalCustomers || 0, // Backend'de activeCustomers yok, totalCustomers kullan
       customerRetentionRate:
         backendData.customerAnalytics?.summary?.retentionRate || 0,
       topCustomers: (backendData.salesPerformance?.topCustomers || []).map(
@@ -1105,11 +1104,14 @@ export default function AnalyticsPage() {
                   <XAxis dataKey='status' />
                   <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar
-                    dataKey='amount'
-                    fill={CHART_COLORS.primary}
-                    radius={[8, 8, 0, 0]}
-                  />
+                  <Bar dataKey='amount' radius={[8, 8, 0, 0]}>
+                    {data.revenueMetrics.revenueByStatus.map((entry, index) => (
+                      <Cell
+                        key={`revenue-cell-${entry.status}-${index}`}
+                        fill={PIE_COLORS[index % PIE_COLORS.length]}
+                      />
+                    ))}
+                  </Bar>
                 </RechartsBarChart>
               </ChartContainer>
             </CardContent>
@@ -1145,18 +1147,27 @@ export default function AnalyticsPage() {
                   <YAxis yAxisId='left' />
                   <YAxis yAxisId='right' orientation='right' />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar
-                    yAxisId='left'
-                    dataKey='revenue'
-                    fill={CHART_COLORS.primary}
-                    radius={[8, 8, 0, 0]}
-                  />
-                  <Bar
-                    yAxisId='right'
-                    dataKey='quantity'
-                    fill={CHART_COLORS.chart2}
-                    radius={[8, 8, 0, 0]}
-                  />
+                  <Bar yAxisId='left' dataKey='revenue' radius={[8, 8, 0, 0]}>
+                    {data.salesMetrics.categoryPerformance.map(
+                      (entry, index) => (
+                        <Cell
+                          key={`category-revenue-${entry.category}-${index}`}
+                          fill={PIE_COLORS[index % PIE_COLORS.length]}
+                        />
+                      )
+                    )}
+                  </Bar>
+                  <Bar yAxisId='right' dataKey='quantity' radius={[8, 8, 0, 0]}>
+                    {data.salesMetrics.categoryPerformance.map(
+                      (entry, index) => (
+                        <Cell
+                          key={`category-quantity-${entry.category}-${index}`}
+                          fill={PIE_COLORS[(index + 3) % PIE_COLORS.length]}
+                          opacity={0.7}
+                        />
+                      )
+                    )}
+                  </Bar>
                 </RechartsBarChart>
               </ChartContainer>
             </CardContent>

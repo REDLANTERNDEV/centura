@@ -273,8 +273,8 @@ function OrdersTableSkeleton() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {new Array(5).fill(null).map((_, i) => (
-              <TableRow key={`skeleton-${i}`}>
+            {Array.from({ length: 5 }, (_, i) => (
+              <TableRow key={`skeleton-order-${i}`}>
                 <TableCell>
                   <Skeleton className='h-4 w-24' />
                 </TableCell>
