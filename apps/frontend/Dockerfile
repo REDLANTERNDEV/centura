@@ -42,6 +42,10 @@ FROM base AS builder
 
 WORKDIR /app
 
+# Accept build arguments
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_BASE_URL
+
 # Copy node_modules from dependencies stage
 COPY --from=dependencies /app/node_modules ./node_modules
 
@@ -51,6 +55,8 @@ COPY apps/frontend ./apps/frontend
 # Set build-time environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 
 # Build the Next.js application
 WORKDIR /app/apps/frontend
