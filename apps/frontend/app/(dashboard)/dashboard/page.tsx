@@ -74,7 +74,7 @@ export default function DashboardPage() {
         // Set stats from responses
         setStats({
           totalRevenue:
-            insightsResponse?.data?.revenueMetrics?.totalRevenue || 0,
+            insightsResponse?.data?.revenueAnalytics?.totalRevenue || 0,
           totalOrders: ordersResponse?.pagination?.total || 0,
           totalCustomers: customersResponse?.pagination?.total || 0,
           totalProducts: productsResponse?.pagination?.total || 0,

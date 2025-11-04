@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
 
   // Ensure proper navigation in production
   skipTrailingSlashRedirect: false,
-  skipMiddlewareUrlNormalize: false,
+  skipProxyUrlNormalize: false,
 
   // Optimize production builds
   compress: true,
