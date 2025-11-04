@@ -1,13 +1,15 @@
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
+import { validateOrgContext } from '../middleware/orgContext.js';
 import * as insightsController from '../controllers/insightsController.js';
 
 const router = express.Router();
 
 /**
- * All insights routes require authentication
+ * All insights routes require authentication and organization context
  */
 router.use(verifyToken);
+router.use(validateOrgContext);
 
 /**
  * @route GET /api/v1/insights

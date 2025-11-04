@@ -12,10 +12,10 @@ import * as InsightsModel from '../models/insightsModel.js';
  */
 export const getInsights = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate, compareWithPrevious } = req.query;
 
-    // Validate organization access
+    // Validate organization access (should be validated by middleware)
     if (!orgId) {
       return res.status(400).json({
         success: false,
@@ -51,7 +51,7 @@ export const getInsights = async (req, res, next) => {
  */
 export const getTopCustomers = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate, limit } = req.query;
 
     if (!orgId) {
@@ -85,7 +85,7 @@ export const getTopCustomers = async (req, res, next) => {
  */
 export const getMonthlySales = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate } = req.query;
 
     if (!orgId) {
@@ -118,7 +118,7 @@ export const getMonthlySales = async (req, res, next) => {
  */
 export const getTopProducts = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate, limit } = req.query;
 
     if (!orgId) {
@@ -152,7 +152,7 @@ export const getTopProducts = async (req, res, next) => {
  */
 export const getCategoryPerformance = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate } = req.query;
 
     if (!orgId) {
@@ -188,7 +188,7 @@ export const getCategoryPerformance = async (req, res, next) => {
  */
 export const getCustomerSegmentAnalysis = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
 
     if (!orgId) {
       return res.status(400).json({
@@ -217,7 +217,7 @@ export const getCustomerSegmentAnalysis = async (req, res, next) => {
  */
 export const getRevenueMetrics = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate } = req.query;
 
     if (!orgId) {
@@ -253,7 +253,7 @@ export const getRevenueMetrics = async (req, res, next) => {
  */
 export const getOrderMetrics = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate } = req.query;
 
     if (!orgId) {
@@ -286,7 +286,7 @@ export const getOrderMetrics = async (req, res, next) => {
  */
 export const getInventoryHealth = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
 
     if (!orgId) {
       return res.status(400).json({
@@ -314,7 +314,7 @@ export const getInventoryHealth = async (req, res, next) => {
  */
 export const getGrowthMetrics = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
 
     if (!orgId) {
       return res.status(400).json({
@@ -342,7 +342,7 @@ export const getGrowthMetrics = async (req, res, next) => {
  */
 export const getPaymentAnalysis = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate } = req.query;
 
     if (!orgId) {
@@ -378,7 +378,7 @@ export const getPaymentAnalysis = async (req, res, next) => {
  */
 export const getCustomerRetention = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { days } = req.query;
 
     if (!orgId) {
@@ -410,7 +410,7 @@ export const getCustomerRetention = async (req, res, next) => {
  */
 export const getChurnRate = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { days } = req.query;
 
     if (!orgId) {
@@ -442,7 +442,7 @@ export const getChurnRate = async (req, res, next) => {
  */
 export const getDSO = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate } = req.query;
 
     if (!orgId) {
@@ -475,7 +475,7 @@ export const getDSO = async (req, res, next) => {
  */
 export const getInventoryTurnover = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate } = req.query;
 
     if (!orgId) {
@@ -511,7 +511,7 @@ export const getInventoryTurnover = async (req, res, next) => {
  */
 export const getGrossMargin = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
     const { startDate, endDate } = req.query;
 
     if (!orgId) {
@@ -544,7 +544,7 @@ export const getGrossMargin = async (req, res, next) => {
  */
 export const getRFMAnalysis = async (req, res, next) => {
   try {
-    const orgId = req.user.org_id;
+    const orgId = req.organization?.id;
 
     if (!orgId) {
       return res.status(400).json({

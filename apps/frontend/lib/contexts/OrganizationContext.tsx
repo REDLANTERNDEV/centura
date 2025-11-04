@@ -131,22 +131,19 @@ export function OrganizationProvider({
       name: org.name,
     });
 
-    setSelectedOrganization(org);
-
     // SECURITY: Only store org_id (number), not the full object
+    // The API interceptor will automatically read this from localStorage
     localStorage.setItem(ORG_STORAGE_KEY, org.org_id.toString());
 
-    // SECURITY: Send organization context with all future API requests
-    apiClient.defaults.headers.common['X-Organization-ID'] =
-      org.org_id.toString();
+    // Update state AFTER localStorage is set
+    // This ensures the interceptor can read the org_id immediately
+    setSelectedOrganization(org);
   }, []);
 
   // Clear organization (for logout or switching)
   const clearOrganization = useCallback(() => {
     setSelectedOrganization(null);
     localStorage.removeItem(ORG_STORAGE_KEY);
-    // SECURITY: Remove organization header
-    delete apiClient.defaults.headers.common['X-Organization-ID'];
   }, []);
 
   // Fetch organizations on mount
