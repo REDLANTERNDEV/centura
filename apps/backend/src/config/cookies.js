@@ -130,5 +130,12 @@ export const getClearCookieConfig = type => {
   if (type === 'refresh') {
     return clearRefreshCookieConfig;
   }
+  if (type === 'csrf') {
+    // CSRF tokens are not httpOnly, so we need different clear config
+    return {
+      ...clearCookieConfig,
+      httpOnly: false,
+    };
+  }
   return clearCookieConfig;
 };

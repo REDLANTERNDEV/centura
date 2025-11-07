@@ -191,12 +191,13 @@ const logout = async (req, res) => {
       await userModel.revokeRefreshToken(refreshToken);
     }
 
-    // Clear both access and refresh token cookies
+    // Clear all auth-related cookies
     res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, getClearCookieConfig('access'));
     res.clearCookie(
       COOKIE_NAMES.REFRESH_TOKEN,
       getClearCookieConfig('refresh')
     );
+    res.clearCookie(COOKIE_NAMES.CSRF_TOKEN, getClearCookieConfig('csrf'));
 
     return res.status(200).json({
       success: true,
@@ -211,6 +212,7 @@ const logout = async (req, res) => {
       COOKIE_NAMES.REFRESH_TOKEN,
       getClearCookieConfig('refresh')
     );
+    res.clearCookie(COOKIE_NAMES.CSRF_TOKEN, getClearCookieConfig('csrf'));
 
     return res.status(500).json({
       success: false,
