@@ -1,5 +1,6 @@
 'use client';
- 
+
+import { useState } from 'react';
 import {
   Home,
   ShoppingBag,
@@ -8,6 +9,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Loader2,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { apiClient, API_ENDPOINTS } from '@/lib/api-client';
@@ -64,8 +66,13 @@ const items = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    if (isLoggingOut) return; // Prevent double-clicks
+
+    setIsLoggingOut(true);
+
     try {
       // Clear organization context before logout
       localStorage.removeItem('centura_selected_org_id');
@@ -73,9 +80,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
       toast.success('Başarıyla çıkış yapıldı');
-      router.push('/login');
+
+      // Use window.location for reliable redirect
+      if (globalThis.window) {
+        globalThis.window.location.href = '/login';
+      } else {
+        router.push('/login');
+      }
     } catch {
       toast.error('Çıkış yapılamadı');
+      setIsLoggingOut(false);
     }
   };
 
@@ -109,9 +123,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton
               onClick={handleLogout}
               className='cursor-pointer'
+              disabled={isLoggingOut}
             >
-              <LogOut />
-              <span>Çıkış Yap</span>
+              {isLoggingOut ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <LogOut />
+              )}
+              <span>{isLoggingOut ? 'Çıkış yapılıyor...' : 'Çıkış Yap'}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
