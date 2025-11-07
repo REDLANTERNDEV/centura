@@ -1,6 +1,13 @@
 /**
  * Professional Cookie Configuration
  * Implements secure HTTP-only cookies following industry best practices
+ *
+ * Environment Variables Used:
+ * - NODE_ENV: 'production' | 'development' (affects secure, sameSite settings)
+ * - COOKIE_DOMAIN: Domain for cookies (e.g., '.yourdomain.com' or 'app.yourdomain.com')
+ *   - Leave empty for development
+ *   - Use '.yourdomain.com' to share cookies across subdomains
+ *   - Use 'app.yourdomain.com' for specific subdomain only
  */
 
 /**
@@ -27,10 +34,10 @@ export const COOKIE_DURATIONS = {
 const baseCookieConfig = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  // TEMPORARY: Using 'lax' for testing (change back to 'none' after SSL is confirmed)
-  // Use 'none' for cross-domain cookies (requires HTTPS)
-  // Use 'lax' for same-site or testing
-  sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
+  // Using 'lax' for better compatibility with modern browsers
+  // 'lax' allows cookies on top-level navigation (e.g., clicking links)
+  // Use 'none' only if you need cross-site requests (requires HTTPS)
+  sameSite: 'lax',
   path: '/',
   domain:
     process.env.NODE_ENV === 'production'
@@ -78,7 +85,7 @@ export const csrfTokenCookieConfig = {
 export const clearCookieConfig = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax', // Match baseCookieConfig (temporarily lax)
+  sameSite: 'lax', // Match baseCookieConfig
   path: '/',
   domain:
     process.env.NODE_ENV === 'production'
