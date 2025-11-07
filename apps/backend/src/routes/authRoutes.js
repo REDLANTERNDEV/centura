@@ -1,10 +1,6 @@
 import express from 'express';
 import userController from '../controllers/userController.js';
-import {
-  authLimiter,
-  verifyLimiter,
-  generateCSRFToken,
-} from '../middleware/security.js';
+import { authLimiter, verifyLimiter } from '../middleware/security.js';
 import {
   verifyRefreshToken as verifyRefreshMiddleware,
   verifyToken as verifyAccessMiddleware,
@@ -15,7 +11,7 @@ const router = express.Router();
 
 // Auth routes with rate limiting
 router.post('/signup', authLimiter, userController.signup);
-router.post('/login', authLimiter, generateCSRFToken, userController.login);
+router.post('/login', authLimiter, userController.login);
 
 // Logout - requires refresh token verification (but handles missing gracefully in controller)
 router.post('/logout', userController.logout);
@@ -24,7 +20,6 @@ router.post('/logout', userController.logout);
 router.post(
   '/refresh-token',
   verifyRefreshMiddleware,
-  generateCSRFToken,
   userController.refreshToken
 );
 

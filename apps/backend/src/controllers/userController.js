@@ -1,11 +1,13 @@
 import argon2 from 'argon2';
 import userModel from '../models/userModel.js';
 import jwt from 'jsonwebtoken';
+import crypto from 'node:crypto';
 import {
   COOKIE_NAMES,
   accessTokenCookieConfig,
   refreshTokenCookieConfig,
   getClearCookieConfig,
+  csrfTokenCookieConfig,
 } from '../config/cookies.js';
 import { getMessage } from '../config/messages.js';
 
@@ -155,6 +157,9 @@ const login = async (req, res) => {
     // Store refresh token in database (automatically hashed in userModel.storeRefreshToken)
     await userModel.storeRefreshToken(user.id, refreshToken, expiresAt);
 
+    // Generate CSRF token
+    const csrfToken = crypto.randomBytes(32).toString('hex');
+
     // Set secure HTTP-only cookies
     res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, accessTokenCookieConfig);
     res.cookie(
@@ -162,6 +167,8 @@ const login = async (req, res) => {
       refreshToken,
       refreshTokenCookieConfig
     );
+    // Set CSRF token cookie (not HTTP-only so client can read it)
+    res.cookie(COOKIE_NAMES.CSRF_TOKEN, csrfToken, csrfTokenCookieConfig);
 
     return res.status(200).json({
       success: true,
@@ -291,6 +298,9 @@ const refreshToken = async (req, res) => {
       expiresAt
     );
 
+    // Generate new CSRF token
+    const csrfToken = crypto.randomBytes(32).toString('hex');
+
     // Set new secure HTTP-only cookies
     res.cookie(
       COOKIE_NAMES.ACCESS_TOKEN,
@@ -302,6 +312,8 @@ const refreshToken = async (req, res) => {
       newRefreshToken,
       refreshTokenCookieConfig
     );
+    // Set CSRF token cookie (not HTTP-only so client can read it)
+    res.cookie(COOKIE_NAMES.CSRF_TOKEN, csrfToken, csrfTokenCookieConfig);
 
     return res.status(200).json({
       success: true,
