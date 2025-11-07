@@ -221,49 +221,51 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-4 sm:space-y-6'>
       {/* Page Header */}
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>Siparişler</h1>
-          <p className='text-muted-foreground mt-1'>
+      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+        <div className='min-w-0'>
+          <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
+            Siparişler
+          </h1>
+          <p className='text-sm sm:text-base text-muted-foreground mt-1'>
             Siparişlerinizi görüntüleyin ve yönetin
           </p>
         </div>
-        <div className='flex gap-2'>
-          <Button variant='outline' onClick={fetchOrders}>
-            <RefreshCw className='h-4 w-4 mr-2' />
-            Yenile
+        <div className='flex gap-2 shrink-0'>
+          <Button variant='outline' onClick={fetchOrders} size='sm'>
+            <RefreshCw className='h-4 w-4 sm:mr-2' />
+            <span className='hidden sm:inline'>Yenile</span>
           </Button>
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <Plus className='h-4 w-4 mr-2' />
-            Yeni Sipariş
+          <Button onClick={() => setIsCreateOpen(true)} size='sm'>
+            <Plus className='h-4 w-4 sm:mr-2' />
+            <span className='hidden sm:inline'>Yeni Sipariş</span>
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className='grid gap-4 md:grid-cols-5'>
+      <div className='grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5'>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+            <CardTitle className='text-xs sm:text-sm font-medium'>
               Toplam Sipariş
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-lg sm:text-2xl font-bold'>
               {data?.pagination.total || 0}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+            <CardTitle className='text-xs sm:text-sm font-medium'>
               Toplam Gelir (KDV Dahil)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-base sm:text-2xl font-bold truncate'>
               ₺
               {totalRevenue.toLocaleString('tr-TR', {
                 minimumFractionDigits: 2,
@@ -274,10 +276,12 @@ export default function OrdersPage() {
         </Card>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Bekleyen</CardTitle>
+            <CardTitle className='text-xs sm:text-sm font-medium'>
+              Bekleyen
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-lg sm:text-2xl font-bold'>
               {data?.orders.filter(o => o.status === 'confirmed').length || 0}
             </div>
           </CardContent>
@@ -294,10 +298,12 @@ export default function OrdersPage() {
         </Card>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Teslim Edildi</CardTitle>
+            <CardTitle className='text-xs sm:text-sm font-medium'>
+              Teslim Edildi
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-lg sm:text-2xl font-bold'>
               {data?.orders.filter(o => o.status === 'delivered').length || 0}
             </div>
           </CardContent>
@@ -306,60 +312,62 @@ export default function OrdersPage() {
 
       {/* Filters */}
       <Card>
-        <CardContent className='pt-6'>
-          <div className='flex flex-col md:flex-row gap-4'>
-            <div className='flex-1'>
-              <div className='flex gap-2'>
-                <Input
-                  placeholder='Sipariş no, müşteri ara...'
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      handleSearch();
-                    }
-                  }}
-                  className='flex-1'
-                />
-                <Button onClick={handleSearch}>
-                  <Search className='h-4 w-4' />
+        <CardContent className='pt-4 sm:pt-6'>
+          <div className='flex flex-col gap-3 sm:gap-4'>
+            <div className='flex flex-col sm:flex-row gap-2 sm:gap-4'>
+              <div className='flex-1'>
+                <div className='flex gap-2'>
+                  <Input
+                    placeholder='Sipariş no, müşteri ara...'
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        handleSearch();
+                      }
+                    }}
+                    className='flex-1'
+                  />
+                  <Button onClick={handleSearch} size='sm'>
+                    <Search className='h-4 w-4' />
+                  </Button>
+                </div>
+              </div>
+              <div className='flex flex-wrap gap-2'>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className='w-full sm:w-40'>
+                    <Filter className='h-4 w-4 mr-2' />
+                    <SelectValue placeholder='Durum' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='all'>Tüm Durumlar</SelectItem>
+                    <SelectItem value='draft'>Taslak</SelectItem>
+                    <SelectItem value='confirmed'>Onaylandı</SelectItem>
+                    <SelectItem value='processing'>İşleniyor</SelectItem>
+                    <SelectItem value='shipped'>Kargoya Verildi</SelectItem>
+                    <SelectItem value='delivered'>Teslim Edildi</SelectItem>
+                    <SelectItem value='cancelled'>İptal Edildi</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                  <SelectTrigger className='w-full sm:w-40'>
+                    <SelectValue placeholder='Ödeme' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='all'>Tüm Ödemeler</SelectItem>
+                    <SelectItem value='pending'>Bekliyor</SelectItem>
+                    <SelectItem value='partial'>Kısmi</SelectItem>
+                    <SelectItem value='paid'>Ödendi</SelectItem>
+                    <SelectItem value='refunded'>İade</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button variant='outline' size='sm' className='hidden sm:flex'>
+                  <Download className='h-4 w-4 mr-2' />
+                  Dışa Aktar
                 </Button>
               </div>
-            </div>
-            <div className='flex gap-2'>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className='w-40'>
-                  <Filter className='h-4 w-4 mr-2' />
-                  <SelectValue placeholder='Durum' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='all'>Tüm Durumlar</SelectItem>
-                  <SelectItem value='draft'>Taslak</SelectItem>
-                  <SelectItem value='confirmed'>Onaylandı</SelectItem>
-                  <SelectItem value='processing'>İşleniyor</SelectItem>
-                  <SelectItem value='shipped'>Kargoya Verildi</SelectItem>
-                  <SelectItem value='delivered'>Teslim Edildi</SelectItem>
-                  <SelectItem value='cancelled'>İptal Edildi</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                <SelectTrigger className='w-40'>
-                  <SelectValue placeholder='Ödeme' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='all'>Tüm Ödemeler</SelectItem>
-                  <SelectItem value='pending'>Bekliyor</SelectItem>
-                  <SelectItem value='partial'>Kısmi</SelectItem>
-                  <SelectItem value='paid'>Ödendi</SelectItem>
-                  <SelectItem value='refunded'>İade</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button variant='outline'>
-                <Download className='h-4 w-4 mr-2' />
-                Dışa Aktar
-              </Button>
             </div>
           </div>
         </CardContent>

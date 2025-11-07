@@ -704,21 +704,21 @@ export default function AnalyticsPage() {
   const data = analyticsData;
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-4 sm:space-y-6'>
       {/* Header */}
-      <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>
+      <div className='flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between'>
+        <div className='min-w-0'>
+          <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>
             Analitik & İstatistikler
           </h1>
-          <p className='text-muted-foreground'>
+          <p className='text-sm sm:text-base text-muted-foreground truncate'>
             {selectedOrganization.name || selectedOrganization.org_name} için
             kapsamlı iş zekası
           </p>
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-2 flex-wrap'>
           <Select value={timePeriod} onValueChange={setTimePeriod}>
-            <SelectTrigger className='w-[180px]'>
+            <SelectTrigger className='w-full sm:w-[180px]'>
               <Calendar className='mr-2 h-4 w-4' />
               <SelectValue />
             </SelectTrigger>
@@ -740,7 +740,7 @@ export default function AnalyticsPage() {
               className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
             />
           </Button>
-          <Button variant='outline'>
+          <Button variant='outline' size='sm' className='hidden sm:flex'>
             <Download className='mr-2 h-4 w-4' />
             Dışa Aktar
           </Button>
@@ -748,22 +748,24 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Key Performance Indicators */}
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
+      <div className='grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4'>
         {/* Total Revenue */}
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Toplam Gelir</CardTitle>
+            <CardTitle className='text-xs sm:text-sm font-medium'>
+              Toplam Gelir
+            </CardTitle>
             <DollarSign className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-lg sm:text-2xl font-bold truncate'>
               {formatCurrency(data.revenueMetrics.periodRevenue)}
             </div>
             <div className='flex items-center text-xs mt-1'>
               {data.revenueMetrics.growthRate >= 0 ? (
-                <TrendingUp className='mr-1 h-3 w-3 text-green-600' />
+                <TrendingUp className='mr-1 h-3 w-3 text-green-600 shrink-0' />
               ) : (
-                <TrendingDown className='mr-1 h-3 w-3 text-red-600' />
+                <TrendingDown className='mr-1 h-3 w-3 text-red-600 shrink-0' />
               )}
               <span
                 className={
@@ -774,7 +776,7 @@ export default function AnalyticsPage() {
               >
                 {formatPercentage(data.revenueMetrics.growthRate)}
               </span>
-              <span className='text-muted-foreground ml-1'>
+              <span className='text-muted-foreground ml-1 truncate'>
                 önceki döneme göre
               </span>
             </div>
@@ -784,20 +786,20 @@ export default function AnalyticsPage() {
         {/* Total Orders */}
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+            <CardTitle className='text-xs sm:text-sm font-medium'>
               Toplam Sipariş
             </CardTitle>
             <ShoppingCart className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-lg sm:text-2xl font-bold'>
               {formatNumber(data.orderMetrics.totalOrders)}
             </div>
             <div className='flex items-center text-xs mt-1'>
               {data.growthMetrics.orderGrowth >= 0 ? (
-                <TrendingUp className='mr-1 h-3 w-3 text-green-600' />
+                <TrendingUp className='mr-1 h-3 w-3 text-green-600 shrink-0' />
               ) : (
-                <TrendingDown className='mr-1 h-3 w-3 text-red-600' />
+                <TrendingDown className='mr-1 h-3 w-3 text-red-600 shrink-0' />
               )}
               <span
                 className={
@@ -808,7 +810,7 @@ export default function AnalyticsPage() {
               >
                 {formatPercentage(data.growthMetrics.orderGrowth)}
               </span>
-              <span className='text-muted-foreground ml-1'>
+              <span className='text-muted-foreground ml-1 truncate'>
                 önceki döneme göre
               </span>
             </div>
@@ -818,15 +820,17 @@ export default function AnalyticsPage() {
         {/* Active Customers */}
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>Aktif Müşteri</CardTitle>
+            <CardTitle className='text-xs sm:text-sm font-medium'>
+              Aktif Müşteri
+            </CardTitle>
             <Users className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-lg sm:text-2xl font-bold'>
               {formatNumber(data.customerMetrics.activeCustomers)}
             </div>
             <div className='flex items-center text-xs mt-1'>
-              <span className='text-muted-foreground'>
+              <span className='text-muted-foreground truncate'>
                 {data.customerMetrics.newCustomers} yeni müşteri
               </span>
             </div>
@@ -836,17 +840,17 @@ export default function AnalyticsPage() {
         {/* Average Order Value */}
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-            <CardTitle className='text-sm font-medium'>
+            <CardTitle className='text-xs sm:text-sm font-medium'>
               Ort. Sipariş Değeri
             </CardTitle>
             <Target className='h-4 w-4 text-muted-foreground' />
           </CardHeader>
           <CardContent>
-            <div className='text-2xl font-bold'>
+            <div className='text-lg sm:text-2xl font-bold truncate'>
               {formatCurrency(data.revenueMetrics.averageOrderValue)}
             </div>
             <div className='flex items-center text-xs mt-1'>
-              <span className='text-muted-foreground'>
+              <span className='text-muted-foreground truncate'>
                 %{data.orderMetrics.fulfillmentRate.toFixed(1)} tamamlanma oranı
               </span>
             </div>
@@ -856,126 +860,156 @@ export default function AnalyticsPage() {
 
       {/* Detailed Analytics Tabs */}
       <Tabs defaultValue='overview' className='space-y-4'>
-        <TabsList className='grid w-full grid-cols-5'>
-          <TabsTrigger value='overview'>
-            <Activity className='mr-2 h-4 w-4' />
-            Genel Bakış
+        <TabsList className='grid w-full grid-cols-5 overflow-x-auto'>
+          <TabsTrigger value='overview' className='text-xs sm:text-sm'>
+            <Activity className='mr-0 sm:mr-2 h-4 w-4' />
+            <span className='hidden sm:inline'>Genel Bakış</span>
           </TabsTrigger>
-          <TabsTrigger value='revenue'>
-            <DollarSign className='mr-2 h-4 w-4' />
-            Gelir
+          <TabsTrigger value='revenue' className='text-xs sm:text-sm'>
+            <DollarSign className='mr-0 sm:mr-2 h-4 w-4' />
+            <span className='hidden sm:inline'>Gelir</span>
           </TabsTrigger>
-          <TabsTrigger value='sales'>
-            <BarChart3 className='mr-2 h-4 w-4' />
-            Satışlar
+          <TabsTrigger value='sales' className='text-xs sm:text-sm'>
+            <BarChart3 className='mr-0 sm:mr-2 h-4 w-4' />
+            <span className='hidden sm:inline'>Satışlar</span>
           </TabsTrigger>
-          <TabsTrigger value='customers'>
-            <Users className='mr-2 h-4 w-4' />
-            Müşteriler
+          <TabsTrigger value='customers' className='text-xs sm:text-sm'>
+            <Users className='mr-0 sm:mr-2 h-4 w-4' />
+            <span className='hidden sm:inline'>Müşteriler</span>
           </TabsTrigger>
-          <TabsTrigger value='inventory'>
-            <Package className='mr-2 h-4 w-4' />
-            Envanter
+          <TabsTrigger value='inventory' className='text-xs sm:text-sm'>
+            <Package className='mr-0 sm:mr-2 h-4 w-4' />
+            <span className='hidden sm:inline'>Envanter</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value='overview' className='space-y-4'>
-          <div className='grid gap-4 md:grid-cols-2'>
+          <div className='grid gap-3 sm:gap-4 lg:grid-cols-2'>
             {/* Monthly Sales Trend */}
-            <Card className='col-span-2'>
+            <Card className='lg:col-span-2'>
               <CardHeader>
-                <CardTitle>Satış Trendi</CardTitle>
-                <CardDescription>
+                <CardTitle className='text-base sm:text-lg'>
+                  Satış Trendi
+                </CardTitle>
+                <CardDescription className='text-xs sm:text-sm'>
                   Aylık gelir ve sipariş performansı
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    revenue: {
-                      label: 'Gelir',
-                      color: CHART_COLORS.primary,
-                    },
-                    orders: {
-                      label: 'Siparişler',
-                      color: CHART_COLORS.chart2,
-                    },
-                  }}
-                  className='h-[300px]'
-                >
-                  <RechartsLineChart data={data.salesMetrics.monthlySales}>
-                    <CartesianGrid strokeDasharray='3 3' />
-                    <XAxis dataKey='month' />
-                    <YAxis yAxisId='left' />
-                    <YAxis yAxisId='right' orientation='right' />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line
-                      yAxisId='left'
-                      type='monotone'
-                      dataKey='revenue'
-                      stroke={CHART_COLORS.primary}
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                    />
-                    <Line
-                      yAxisId='right'
-                      type='monotone'
-                      dataKey='orders'
-                      stroke={CHART_COLORS.chart2}
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                    />
-                  </RechartsLineChart>
-                </ChartContainer>
+              <CardContent className='px-2 sm:px-6'>
+                <div className='w-full overflow-x-auto'>
+                  <ChartContainer
+                    config={{
+                      revenue: {
+                        label: 'Gelir',
+                        color: CHART_COLORS.primary,
+                      },
+                      orders: {
+                        label: 'Siparişler',
+                        color: CHART_COLORS.chart2,
+                      },
+                    }}
+                    className='h-[250px] sm:h-[300px] min-w-[300px] w-full'
+                  >
+                    <RechartsLineChart data={data.salesMetrics.monthlySales}>
+                      <CartesianGrid strokeDasharray='3 3' />
+                      <XAxis
+                        dataKey='month'
+                        tick={{ fontSize: 10 }}
+                        tickMargin={6}
+                        angle={-45}
+                        textAnchor='end'
+                        height={60}
+                      />
+                      <YAxis
+                        yAxisId='left'
+                        tick={{ fontSize: 10 }}
+                        tickMargin={4}
+                        width={45}
+                      />
+                      <YAxis
+                        yAxisId='right'
+                        orientation='right'
+                        tick={{ fontSize: 10 }}
+                        tickMargin={4}
+                        width={45}
+                      />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Line
+                        yAxisId='left'
+                        type='monotone'
+                        dataKey='revenue'
+                        stroke={CHART_COLORS.primary}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                      <Line
+                        yAxisId='right'
+                        type='monotone'
+                        dataKey='orders'
+                        stroke={CHART_COLORS.chart2}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    </RechartsLineChart>
+                  </ChartContainer>
+                </div>
               </CardContent>
             </Card>
 
             {/* Order Status Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle>Sipariş Durumu</CardTitle>
-                <CardDescription>
+                <CardTitle className='text-base sm:text-lg'>
+                  Sipariş Durumu
+                </CardTitle>
+                <CardDescription className='text-xs sm:text-sm'>
                   Siparişlerin duruma göre dağılımı
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    count: {
-                      label: 'Siparişler',
-                    },
-                  }}
-                  className='h-[250px]'
-                >
-                  <RechartsPieChart>
-                    <Pie
-                      data={data.orderMetrics.ordersByStatus}
-                      dataKey='count'
-                      nameKey='status'
-                      cx='50%'
-                      cy='50%'
-                      outerRadius={80}
-                      label
-                    >
-                      {data.orderMetrics.ordersByStatus.map((entry, index) => (
-                        <Cell
-                          key={entry.status}
-                          fill={PIE_COLORS[index % PIE_COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                  </RechartsPieChart>
-                </ChartContainer>
+              <CardContent className='px-2 sm:px-6'>
+                <div className='w-full overflow-x-auto'>
+                  <ChartContainer
+                    config={{
+                      count: {
+                        label: 'Siparişler',
+                      },
+                    }}
+                    className='h-[250px] sm:h-[300px] min-w-[280px] w-full'
+                  >
+                    <RechartsPieChart>
+                      <Pie
+                        data={data.orderMetrics.ordersByStatus}
+                        dataKey='count'
+                        nameKey='status'
+                        cx='50%'
+                        cy='50%'
+                        outerRadius={70}
+                        label={entry => entry.status}
+                      >
+                        {data.orderMetrics.ordersByStatus.map(
+                          (entry, index) => (
+                            <Cell
+                              key={entry.status}
+                              fill={PIE_COLORS[index % PIE_COLORS.length]}
+                            />
+                          )
+                        )}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                    </RechartsPieChart>
+                  </ChartContainer>
+                </div>
               </CardContent>
             </Card>
 
             {/* Top Products */}
             <Card>
               <CardHeader>
-                <CardTitle>En Çok Satan Ürünler</CardTitle>
-                <CardDescription>
+                <CardTitle className='text-base sm:text-lg'>
+                  En Çok Satan Ürünler
+                </CardTitle>
+                <CardDescription className='text-xs sm:text-sm'>
                   Gelire göre en iyi performans gösterenler
                 </CardDescription>
               </CardHeader>
@@ -986,23 +1020,23 @@ export default function AnalyticsPage() {
                     .map((product, index) => (
                       <div
                         key={`top-product-${product.id}-${index}`}
-                        className='flex items-center justify-between'
+                        className='flex items-center justify-between gap-2'
                       >
-                        <div className='flex items-center gap-3'>
-                          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm'>
+                        <div className='flex items-center gap-2 sm:gap-3 min-w-0 flex-1'>
+                          <div className='flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-xs sm:text-sm'>
                             {index + 1}
                           </div>
-                          <div>
-                            <p className='font-medium text-sm'>
+                          <div className='min-w-0 flex-1'>
+                            <p className='font-medium text-xs sm:text-sm truncate'>
                               {product.name}
                             </p>
-                            <p className='text-xs text-muted-foreground'>
+                            <p className='text-xs text-muted-foreground truncate'>
                               {product.category}
                             </p>
                           </div>
                         </div>
-                        <div className='text-right'>
-                          <p className='font-semibold text-sm'>
+                        <div className='text-right shrink-0'>
+                          <p className='font-semibold text-xs sm:text-sm truncate'>
                             {formatCurrency(product.revenue)}
                           </p>
                           <p className='text-xs text-muted-foreground'>
@@ -1019,16 +1053,16 @@ export default function AnalyticsPage() {
 
         {/* Revenue Tab */}
         <TabsContent value='revenue' className='space-y-4'>
-          <div className='grid gap-4 md:grid-cols-3'>
+          <div className='grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'>
             <Card>
               <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium'>
+                <CardTitle className='text-xs sm:text-sm font-medium'>
                   Toplam Gelir
                 </CardTitle>
                 <DollarSign className='h-4 w-4 text-muted-foreground' />
               </CardHeader>
               <CardContent>
-                <div className='text-2xl font-bold'>
+                <div className='text-lg sm:text-2xl font-bold truncate'>
                   {formatCurrency(data.revenueMetrics.totalRevenue)}
                 </div>
                 <p className='text-xs text-muted-foreground mt-1'>
@@ -1039,13 +1073,13 @@ export default function AnalyticsPage() {
 
             <Card>
               <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium'>
+                <CardTitle className='text-xs sm:text-sm font-medium'>
                   Dönem Geliri
                 </CardTitle>
                 <Activity className='h-4 w-4 text-muted-foreground' />
               </CardHeader>
               <CardContent>
-                <div className='text-2xl font-bold'>
+                <div className='text-lg sm:text-2xl font-bold truncate'>
                   {formatCurrency(data.revenueMetrics.periodRevenue)}
                 </div>
                 <p className='text-xs text-muted-foreground mt-1'>
@@ -1056,7 +1090,7 @@ export default function AnalyticsPage() {
 
             <Card>
               <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium'>
+                <CardTitle className='text-xs sm:text-sm font-medium'>
                   Büyüme Oranı
                 </CardTitle>
                 {data.revenueMetrics.growthRate >= 0 ? (
@@ -1067,7 +1101,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div
-                  className={`text-2xl font-bold ${
+                  className={`text-lg sm:text-2xl font-bold ${
                     data.revenueMetrics.growthRate >= 0
                       ? 'text-green-600'
                       : 'text-red-600'
@@ -1084,36 +1118,49 @@ export default function AnalyticsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Duruma Göre Gelir</CardTitle>
-              <CardDescription>
+              <CardTitle className='text-base sm:text-lg'>
+                Duruma Göre Gelir
+              </CardTitle>
+              <CardDescription className='text-xs sm:text-sm'>
                 Sipariş durumlarına göre gelir dağılımı
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  amount: {
-                    label: 'Gelir',
-                    color: CHART_COLORS.primary,
-                  },
-                }}
-                className='h-[300px]'
-              >
-                <RechartsBarChart data={data.revenueMetrics.revenueByStatus}>
-                  <CartesianGrid strokeDasharray='3 3' />
-                  <XAxis dataKey='status' />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey='amount' radius={[8, 8, 0, 0]}>
-                    {data.revenueMetrics.revenueByStatus.map((entry, index) => (
-                      <Cell
-                        key={`revenue-cell-${entry.status}-${index}`}
-                        fill={PIE_COLORS[index % PIE_COLORS.length]}
-                      />
-                    ))}
-                  </Bar>
-                </RechartsBarChart>
-              </ChartContainer>
+            <CardContent className='px-2 sm:px-6'>
+              <div className='w-full overflow-x-auto'>
+                <ChartContainer
+                  config={{
+                    amount: {
+                      label: 'Gelir',
+                      color: CHART_COLORS.primary,
+                    },
+                  }}
+                  className='h-[250px] sm:h-[300px] min-w-[300px] w-full'
+                >
+                  <RechartsBarChart data={data.revenueMetrics.revenueByStatus}>
+                    <CartesianGrid strokeDasharray='3 3' />
+                    <XAxis
+                      dataKey='status'
+                      tick={{ fontSize: 10 }}
+                      tickMargin={6}
+                      angle={-45}
+                      textAnchor='end'
+                      height={60}
+                    />
+                    <YAxis tick={{ fontSize: 10 }} tickMargin={4} width={50} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey='amount' radius={[8, 8, 0, 0]}>
+                      {data.revenueMetrics.revenueByStatus.map(
+                        (entry, index) => (
+                          <Cell
+                            key={`revenue-cell-${entry.status}-${index}`}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                          />
+                        )
+                      )}
+                    </Bar>
+                  </RechartsBarChart>
+                </ChartContainer>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1122,97 +1169,134 @@ export default function AnalyticsPage() {
         <TabsContent value='sales' className='space-y-4'>
           <Card>
             <CardHeader>
-              <CardTitle>Kategori Performansı</CardTitle>
-              <CardDescription>
+              <CardTitle className='text-base sm:text-lg'>
+                Kategori Performansı
+              </CardTitle>
+              <CardDescription className='text-xs sm:text-sm'>
                 Ürün kategorisine göre gelir ve büyüme
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  revenue: {
-                    label: 'Gelir',
-                    color: CHART_COLORS.primary,
-                  },
-                  quantity: {
-                    label: 'Satılan Miktar',
-                    color: CHART_COLORS.chart2,
-                  },
-                }}
-                className='h-[300px]'
-              >
-                <RechartsBarChart data={data.salesMetrics.categoryPerformance}>
-                  <CartesianGrid strokeDasharray='3 3' />
-                  <XAxis dataKey='category' />
-                  <YAxis yAxisId='left' />
-                  <YAxis yAxisId='right' orientation='right' />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar yAxisId='left' dataKey='revenue' radius={[8, 8, 0, 0]}>
-                    {data.salesMetrics.categoryPerformance.map(
-                      (entry, index) => (
-                        <Cell
-                          key={`category-revenue-${entry.category}-${index}`}
-                          fill={PIE_COLORS[index % PIE_COLORS.length]}
-                        />
-                      )
-                    )}
-                  </Bar>
-                  <Bar yAxisId='right' dataKey='quantity' radius={[8, 8, 0, 0]}>
-                    {data.salesMetrics.categoryPerformance.map(
-                      (entry, index) => (
-                        <Cell
-                          key={`category-quantity-${entry.category}-${index}`}
-                          fill={PIE_COLORS[(index + 3) % PIE_COLORS.length]}
-                          opacity={0.7}
-                        />
-                      )
-                    )}
-                  </Bar>
-                </RechartsBarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          <div className='grid gap-4 md:grid-cols-2'>
-            <Card>
-              <CardHeader>
-                <CardTitle>Aylık Satış Performansı</CardTitle>
-                <CardDescription>Zaman içindeki gelir trendi</CardDescription>
-              </CardHeader>
-              <CardContent>
+            <CardContent className='px-2 sm:px-6'>
+              <div className='w-full overflow-x-auto'>
                 <ChartContainer
                   config={{
                     revenue: {
                       label: 'Gelir',
                       color: CHART_COLORS.primary,
                     },
+                    quantity: {
+                      label: 'Satılan Miktar',
+                      color: CHART_COLORS.chart2,
+                    },
                   }}
-                  className='h-[250px]'
+                  className='h-[250px] sm:h-[300px] min-w-[300px] w-full'
                 >
-                  <RechartsAreaChart data={data.salesMetrics.monthlySales}>
+                  <RechartsBarChart
+                    data={data.salesMetrics.categoryPerformance}
+                  >
                     <CartesianGrid strokeDasharray='3 3' />
-                    <XAxis dataKey='month' />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      type='monotone'
-                      dataKey='revenue'
-                      stroke={CHART_COLORS.primary}
-                      fill={CHART_COLORS.primary}
-                      fillOpacity={0.2}
+                    <XAxis
+                      dataKey='category'
+                      tick={{ fontSize: 10 }}
+                      angle={-45}
+                      textAnchor='end'
+                      height={60}
                     />
-                  </RechartsAreaChart>
+                    <YAxis yAxisId='left' tick={{ fontSize: 10 }} width={45} />
+                    <YAxis
+                      yAxisId='right'
+                      orientation='right'
+                      tick={{ fontSize: 10 }}
+                      width={45}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar yAxisId='left' dataKey='revenue' radius={[8, 8, 0, 0]}>
+                      {data.salesMetrics.categoryPerformance.map(
+                        (entry, index) => (
+                          <Cell
+                            key={`category-revenue-${entry.category}-${index}`}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                          />
+                        )
+                      )}
+                    </Bar>
+                    <Bar
+                      yAxisId='right'
+                      dataKey='quantity'
+                      radius={[8, 8, 0, 0]}
+                    >
+                      {data.salesMetrics.categoryPerformance.map(
+                        (entry, index) => (
+                          <Cell
+                            key={`category-quantity-${entry.category}-${index}`}
+                            fill={PIE_COLORS[(index + 3) % PIE_COLORS.length]}
+                            opacity={0.7}
+                          />
+                        )
+                      )}
+                    </Bar>
+                  </RechartsBarChart>
                 </ChartContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className='grid gap-3 sm:gap-4 lg:grid-cols-2'>
+            <Card>
+              <CardHeader>
+                <CardTitle className='text-base sm:text-lg'>
+                  Aylık Satış Performansı
+                </CardTitle>
+                <CardDescription className='text-xs sm:text-sm'>
+                  Zaman içindeki gelir trendi
+                </CardDescription>
+              </CardHeader>
+              <CardContent className='px-2 sm:px-6'>
+                <div className='w-full overflow-x-auto'>
+                  <ChartContainer
+                    config={{
+                      revenue: {
+                        label: 'Gelir',
+                        color: CHART_COLORS.primary,
+                      },
+                    }}
+                    className='h-[200px] sm:h-[250px] min-w-[280px] w-full'
+                  >
+                    <RechartsAreaChart data={data.salesMetrics.monthlySales}>
+                      <CartesianGrid strokeDasharray='3 3' />
+                      <XAxis
+                        dataKey='month'
+                        tick={{ fontSize: 10 }}
+                        angle={-45}
+                        textAnchor='end'
+                        height={50}
+                      />
+                      <YAxis tick={{ fontSize: 10 }} width={45} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Area
+                        type='monotone'
+                        dataKey='revenue'
+                        stroke={CHART_COLORS.primary}
+                        fill={CHART_COLORS.primary}
+                        fillOpacity={0.2}
+                      />
+                    </RechartsAreaChart>
+                  </ChartContainer>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>En İyi Ürün Performansı</CardTitle>
-                <CardDescription>En yüksek gelir oluşturanlar</CardDescription>
+                <CardTitle className='text-base sm:text-lg'>
+                  En İyi Ürün Performansı
+                </CardTitle>
+                <CardDescription className='text-xs sm:text-sm'>
+                  En yüksek gelir oluşturanlar
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className='space-y-4'>
+                <div className='space-y-3 sm:space-y-4'>
                   {data.salesMetrics.topProducts
                     .slice(0, 5)
                     .map((product, index) => (

@@ -10,11 +10,16 @@
     text-rendering: optimizeLegibility;
     font-feature-settings: 'kern' 1;
     font-kerning: normal;
+    overflow-x: hidden;
+    width: 100%;
   }
 
   body {
     min-height: 100vh;
     overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    position: relative;
     font-family:
       var(--font-source-sans-3),
       -apple-system,
@@ -28,6 +33,74 @@
       'Droid Sans',
       'Helvetica Neue',
       sans-serif;
+  }
+
+  /* Root container fix */
+  #__next,
+  [data-slot='sidebar-wrapper'] {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Prevent horizontal scroll on all elements - but allow flex/grid to work */
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Specific overflow prevention for common culprits */
+  main,
+  section,
+  article,
+  div[class*='container'] {
+    max-width: 100%;
+  }
+
+  /* Allow specific elements to exceed parent width when needed */
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: none;
+  }
+
+  /* Recharts responsive fix for very small screens */
+  .recharts-wrapper {
+    min-width: 100% !important;
+  }
+
+  .recharts-surface {
+    overflow: visible;
+  }
+
+  /* Ensure chart containers don't cause horizontal scroll */
+  [class*='recharts-'] {
+    max-width: 100%;
+  }
+
+  /* Sidebar layout responsive fixes */
+  [data-sidebar] {
+    width: 100%;
+  }
+
+  /* Prevent any element from exceeding viewport width */
+  @media (max-width: 480px) {
+    *:not(svg):not(canvas) {
+      max-width: 100vw !important;
+    }
+
+    /* Ensure tables are scrollable on small screens */
+    table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    /* Ensure cards and containers respect viewport */
+    [class*='card'],
+    [class*='Card'] {
+      max-width: 100% !important;
+    }
   }
 }
 

@@ -77,9 +77,11 @@ export default function DashboardLayoutContent({
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar />
-      <main className='w-full'>
+      <main className='flex-1 w-full overflow-x-hidden'>
         <OrgNavbar />
-        <div className='p-6'>{children}</div>
+        <div className='w-full max-w-[100vw] mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-6 lg:py-8 2xl:px-8'>
+          {children}
+        </div>
       </main>
     </SidebarProvider>
   );

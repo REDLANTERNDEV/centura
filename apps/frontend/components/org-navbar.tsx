@@ -33,11 +33,13 @@ export function OrgNavbar() {
   const pageTitle = getPageTitle(pathname);
 
   return (
-    <header className='flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-16'>
-      <div className='flex w-full items-center gap-2 px-4'>
-        <SidebarTrigger className='-ml-1 cursor-pointer' />
-        <Separator orientation='vertical' className='mr-2 h-4' />
-        <h1 className='text-lg font-semibold'>{pageTitle}</h1>
+    <header className='sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-14 max-w-full overflow-hidden'>
+      <div className='flex w-full items-center gap-2 px-3 sm:px-4 max-w-full'>
+        <SidebarTrigger className='-ml-1 cursor-pointer shrink-0' />
+        <Separator orientation='vertical' className='mr-2 h-4 shrink-0' />
+        <h1 className='text-sm sm:text-base lg:text-lg font-semibold truncate flex-1 min-w-0'>
+          {pageTitle}
+        </h1>
       </div>
     </header>
   );
