@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { COOKIE_NAMES } from '../config/cookies.js';
 import { getMessage } from '../config/messages.js';
+import roleModel from '../models/roleModel.js';
 
 /**
  * JWT Authentication Middleware - Cookie-based with Multi-Tenant Role Support
@@ -93,12 +94,8 @@ export const requireOrgRole = (...allowedRoles) => {
         });
       }
 
-      // Get user's role in this organization
-      const roleModel = await import('../models/roleModel.js');
-      const userRole = await roleModel.default.getUserRoleInOrg(
-        req.user.id,
-        orgId
-      );
+      // Get user's role in this organization (using pre-imported model)
+      const userRole = await roleModel.getUserRoleInOrg(req.user.id, orgId);
 
       if (!userRole) {
         return res.status(403).json({

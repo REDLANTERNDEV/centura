@@ -12,7 +12,17 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   // Türkçe karakter desteği için UTF-8 encoding
   client_encoding: 'UTF8',
-  connectionTimeoutMillis: 5000,
+  // Connection pool optimization for Docker environment
+  connectionTimeoutMillis: 10000, // Increased from 5000 to 10000ms
+  idleTimeoutMillis: 30000, // Close idle clients after 30s
+  max: 20, // Maximum pool size (adjust based on your needs)
+  min: 2, // Minimum pool connections to keep alive
+  // Query timeout for long-running queries
+  query_timeout: 30000, // 30 seconds timeout for queries
+  // Connection retry
+  connectionString: undefined,
+  keepAlive: true, // Enable TCP keepalive
+  keepAliveInitialDelayMillis: 10000,
 });
 
 // Her bağlantıda UTF-8 encoding'i zorla

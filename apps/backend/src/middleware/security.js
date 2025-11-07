@@ -1,6 +1,6 @@
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { COOKIE_NAMES, csrfTokenCookieConfig } from '../config/cookies.js';
 
 /**
@@ -215,11 +215,17 @@ export const cookieSecurity = (req, res, next) => {
 
 /**
  * Request logging middleware with security context
+ * OPTIMIZED: Only logs in development mode to improve production performance
  */
 export const securityLogger = (req, res, next) => {
+  // Skip logging in production for better performance
+  if (process.env.NODE_ENV === 'production') {
+    return next();
+  }
+
   const startTime = Date.now();
 
-  // Log security-relevant request information
+  // Log security-relevant request information (development only)
   const logData = {
     timestamp: new Date().toISOString(),
     method: req.method,
@@ -237,7 +243,7 @@ export const securityLogger = (req, res, next) => {
 
   console.log('Security Request:', JSON.stringify(logData));
 
-  // Log response information
+  // Log response information (development only)
   const originalSend = res.send;
   res.send = function (body) {
     const responseTime = Date.now() - startTime;

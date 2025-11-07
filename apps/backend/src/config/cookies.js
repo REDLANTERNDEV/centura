@@ -27,14 +27,16 @@ export const COOKIE_DURATIONS = {
 const baseCookieConfig = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  // TEMPORARY: Using 'lax' for testing (change back to 'none' after SSL is confirmed)
+  // Use 'none' for cross-domain cookies (requires HTTPS)
+  // Use 'lax' for same-site or testing
+  sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
   path: '/',
   domain:
     process.env.NODE_ENV === 'production'
       ? process.env.COOKIE_DOMAIN
       : undefined,
 };
-
 /**
  * Access token cookie configuration
  * Short-lived, HTTP-only, secure cookie for access tokens
@@ -42,8 +44,8 @@ const baseCookieConfig = {
 export const accessTokenCookieConfig = {
   ...baseCookieConfig,
   maxAge: COOKIE_DURATIONS.ACCESS_TOKEN,
-  // Additional security for access tokens
-  sameSite: 'strict',
+  // Use baseCookieConfig's sameSite (none for production cross-domain)
+  // sameSite: 'strict' would block cross-subdomain cookies
 };
 
 /**
@@ -71,11 +73,12 @@ export const csrfTokenCookieConfig = {
 /**
  * Cookie clearing configuration
  * Used when logging out or clearing cookies
+ * MUST match the sameSite setting used when setting cookies
  */
 export const clearCookieConfig = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax', // Match baseCookieConfig (temporarily lax)
   path: '/',
   domain:
     process.env.NODE_ENV === 'production'

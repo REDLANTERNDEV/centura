@@ -58,9 +58,16 @@ const storeRefreshToken = async (userId, token, expiresAt) => {
 };
 
 const validateRefreshToken = async token => {
-  // Get all non-expired, non-revoked tokens for validation
+  // OPTIMIZED: Limit query to recent tokens only (last 50)
+  // This significantly reduces database load and Argon2 verification overhead
   const result = await pool.query(
-    'SELECT rt.*, u.id as user_id, u.email FROM refresh_tokens rt JOIN users u ON rt.user_id = u.id WHERE rt.expires_at > NOW() AND rt.is_revoked = FALSE',
+    `SELECT rt.*, u.id as user_id, u.email 
+     FROM refresh_tokens rt 
+     JOIN users u ON rt.user_id = u.id 
+     WHERE rt.expires_at > NOW() 
+       AND rt.is_revoked = FALSE
+     ORDER BY rt.created_at DESC
+     LIMIT 50`,
     []
   );
 
@@ -81,9 +88,14 @@ const validateRefreshToken = async token => {
 };
 
 const revokeRefreshToken = async token => {
-  // First find the token by comparing hashes
+  // OPTIMIZED: Limit query to recent tokens only
   const result = await pool.query(
-    'SELECT id, token_hash FROM refresh_tokens WHERE expires_at > NOW() AND is_revoked = FALSE',
+    `SELECT id, token_hash 
+     FROM refresh_tokens 
+     WHERE expires_at > NOW() 
+       AND is_revoked = FALSE
+     ORDER BY created_at DESC
+     LIMIT 50`,
     []
   );
 
