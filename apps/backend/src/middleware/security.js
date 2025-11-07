@@ -1,6 +1,6 @@
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import crypto from 'node:crypto';
+import crypto from 'crypto';
 import { COOKIE_NAMES, csrfTokenCookieConfig } from '../config/cookies.js';
 
 /**
