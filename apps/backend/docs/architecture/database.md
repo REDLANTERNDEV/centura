@@ -181,10 +181,26 @@ CREATE TABLE refresh_tokens (
 **Indexes:**
 
 ```sql
+-- Basic indexes for lookups
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+CREATE INDEX idx_refresh_tokens_created_at ON refresh_tokens(created_at DESC);
+
+-- Optimized composite indexes for performance
+CREATE INDEX idx_refresh_tokens_active ON refresh_tokens(expires_at, is_revoked)
+  WHERE is_revoked = FALSE AND expires_at > NOW();
+
+CREATE INDEX idx_refresh_tokens_lookup ON refresh_tokens(expires_at DESC, is_revoked, created_at DESC)
+  WHERE is_revoked = FALSE;
 ```
+
+**Performance Notes:**
+
+- `idx_refresh_tokens_active`: Partial index for active token validation (login/logout optimization)
+- `idx_refresh_tokens_lookup`: Composite index for the most common query pattern
+- `idx_refresh_tokens_created_at`: Speeds up sorting by creation date
+- Partial indexes reduce index size by only indexing active tokens
 
 ---
 

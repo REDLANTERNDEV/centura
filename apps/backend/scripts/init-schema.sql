@@ -83,9 +83,20 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   is_revoked BOOLEAN DEFAULT FALSE
 );
 
+-- Basic indexes for lookups
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_created_at ON refresh_tokens(created_at DESC);
+
+-- Optimized composite indexes for performance (login/logout optimization)
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_active 
+  ON refresh_tokens(expires_at, is_revoked) 
+  WHERE is_revoked = FALSE AND expires_at > NOW();
+
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_lookup 
+  ON refresh_tokens(expires_at DESC, is_revoked, created_at DESC) 
+  WHERE is_revoked = FALSE;
 
 -- ============================================
 -- TABLE: user_organization_roles
