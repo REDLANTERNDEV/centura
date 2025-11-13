@@ -20,6 +20,7 @@ import { getMessage } from '../config/messages.js';
 /**
  * Validates organization context from request header
  * Should be used AFTER verifyToken middleware
+ * Supports both UUID (industry standard) and numeric ID (backward compatibility)
  */
 export const validateOrgContext = async (req, res, next) => {
   try {
@@ -31,19 +32,19 @@ export const validateOrgContext = async (req, res, next) => {
     }
 
     // Get organization ID from header
-    const orgIdHeader = req.headers['x-organization-id'];
+    const orgIdentifier = req.headers['x-organization-id'];
 
     console.log('🔍 Organization Context Debug:', {
       url: req.url,
       method: req.method,
       headers: {
-        'x-organization-id': orgIdHeader,
+        'x-organization-id': orgIdentifier,
         'content-type': req.headers['content-type'],
       },
       user: req.user?.email,
     });
 
-    if (!orgIdHeader) {
+    if (!orgIdentifier) {
       console.warn('⚠️ Missing X-Organization-ID header');
       return res.status(400).json({
         success: false,
@@ -53,9 +54,27 @@ export const validateOrgContext = async (req, res, next) => {
       });
     }
 
-    const orgId = Number.parseInt(orgIdHeader);
+    // Determine if identifier is UUID or numeric ID
+    const isUUID =
+      typeof orgIdentifier === 'string' && orgIdentifier.includes('-');
 
-    if (Number.isNaN(orgId)) {
+    // Validate UUID format if it looks like a UUID
+    if (isUUID) {
+      const UUID_REGEX =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!UUID_REGEX.test(orgIdentifier)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid UUID format',
+          code: 'INVALID_UUID_FORMAT',
+        });
+      }
+    }
+
+    // Convert to number if it's numeric
+    const orgId = isUUID ? null : Number.parseInt(orgIdentifier);
+
+    if (!isUUID && Number.isNaN(orgId)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid organization ID format',
@@ -63,11 +82,25 @@ export const validateOrgContext = async (req, res, next) => {
       });
     }
 
+    // Get organization by UUID or ID
+    const organizationModel = await import('../models/organizationModel.js');
+    const organization = await organizationModel.getOrganizationById(
+      isUUID ? orgIdentifier : orgId
+    );
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Organization not found',
+        code: 'ORG_NOT_FOUND',
+      });
+    }
+
     // SECURITY: Verify user has access to this organization
     const roleModel = await import('../models/roleModel.js');
     const userRole = await roleModel.getUserRoleInOrganization(
       req.user.id,
-      orgId
+      organization.org_id // Always use numeric ID for role lookup
     );
 
     if (!userRole) {
@@ -98,14 +131,16 @@ export const validateOrgContext = async (req, res, next) => {
 
     // Add validated organization context to request
     req.organization = {
-      id: orgId,
+      id: organization.org_id, // Internal numeric ID
+      uuid: organization.org_uuid, // Public UUID
       role: userRole.role,
       name: userRole.org_name,
     };
 
     console.log('✅ Organization context validated:', {
       user_id: req.user.id,
-      org_id: orgId,
+      org_id: organization.org_id,
+      org_uuid: organization.org_uuid,
       role: userRole.role,
     });
 

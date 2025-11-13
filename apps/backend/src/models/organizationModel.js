@@ -36,16 +36,20 @@ export const getAllOrganizations = async (userId = null, isAdmin = false) => {
 };
 
 /**
- * Get organization by ID
- * @param {number} orgId - Organization ID
+ * Get organization by ID (supports both org_id and org_uuid)
+ * @param {number|string} identifier - Organization ID (number) or UUID (string)
  * @returns {Promise<object|null>} Organization object or null
  */
-export const getOrganizationById = async orgId => {
+export const getOrganizationById = async identifier => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM organizations WHERE org_id = $1',
-      [orgId]
-    );
+    // Determine if identifier is UUID or numeric ID
+    const isUUID = typeof identifier === 'string' && identifier.includes('-');
+
+    const query = isUUID
+      ? 'SELECT * FROM organizations WHERE org_uuid = $1'
+      : 'SELECT * FROM organizations WHERE org_id = $1';
+
+    const result = await pool.query(query, [identifier]);
     return result.rows[0] || null;
   } catch (error) {
     console.error('Error in getOrganizationById:', error);

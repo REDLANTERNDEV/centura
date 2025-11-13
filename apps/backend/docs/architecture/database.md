@@ -4,17 +4,29 @@
 
 This document describes the database schema for the Mini SaaS ERP/CRM application.
 
+**Latest Update (November 2024):**
+
+- ✅ Added UUID support to `organizations` table
+- ✅ Industry-standard security implementation (prevents enumeration attacks)
+- ✅ Dual identifier system: `org_id` (internal) + `org_uuid` (public API)
+- ✅ Backward compatible with existing code
+
 ## Database: saasdb (PostgreSQL in Docker)
+
+**Extensions:**
+
+- `uuid-ossp` - UUID generation support (Nov 2024)
 
 ## Tables
 
 ### organizations
 
-Organization/Company master table for multi-tenancy.
+Organization/Company master table for multi-tenancy with UUID support.
 
 ```sql
 CREATE TABLE organizations (
   org_id SERIAL PRIMARY KEY,
+  org_uuid UUID DEFAULT uuid_generate_v4() UNIQUE NOT NULL,
   org_name VARCHAR(255) NOT NULL,
   industry VARCHAR(100),
   phone VARCHAR(20),
@@ -31,7 +43,8 @@ CREATE TABLE organizations (
 
 **Columns:**
 
-- `org_id`: Auto-incrementing primary key (sufficient for unique identification)
+- `org_id`: Auto-incrementing primary key (internal use, foreign keys)
+- `org_uuid`: UUID identifier for public-facing API (industry standard, Nov 2024)
 - `org_name`: Organization/Company name
 - `industry`: Business industry/sector
 - `phone`: Organization phone number
@@ -44,11 +57,43 @@ CREATE TABLE organizations (
 - `created_at`: Record creation timestamp
 - `updated_at`: Last update timestamp (auto-updated via trigger)
 
+**UUID Implementation (November 2024):**
+
+Industry-standard practice for security and scalability:
+
+- **Public API**: Uses `org_uuid` (prevents enumeration attacks)
+- **Internal Relations**: Uses `org_id` (faster joins, backward compatible)
+- **Security**: UUIDs prevent information leakage (can't guess total organizations)
+- **Examples**: Slack (`T0123ABC`), Stripe (`cus_xxx`), GitHub (internal UUIDs)
+
+**Why Both org_id and org_uuid?**
+
+```text
+org_id (SERIAL):
+├─ Internal database relations (foreign keys)
+├─ Faster joins and indexes
+└─ Backward compatibility
+
+org_uuid (UUID):
+├─ Public-facing API endpoints
+├─ URL parameters and headers (X-Organization-ID)
+├─ No information leakage
+└─ Industry standard security
+```
+
 **Indexes:**
 
 ```sql
+CREATE INDEX idx_organizations_uuid ON organizations(org_uuid);
 CREATE INDEX idx_organizations_is_active ON organizations(is_active);
 CREATE INDEX idx_organizations_org_name ON organizations(org_name);
+```
+
+**Comments:**
+
+```sql
+COMMENT ON COLUMN organizations.org_uuid IS 'Public-facing UUID identifier (industry standard)';
+COMMENT ON COLUMN organizations.org_id IS 'Internal numeric ID for database relations';
 ```
 
 ---
@@ -1158,9 +1203,16 @@ CREATE INDEX idx_order_items_product_id ON order_items(product_id);
 
 ## Migration Files
 
+- **UUID Extension (November 2024)**
+  - Added `uuid-ossp` PostgreSQL extension
+  - Added `org_uuid` column to organizations table
+  - Industry-standard security implementation
+  - Dual ID support (numeric for internal, UUID for public API)
+  - Migration script: `apps/backend/scripts/migrations/add-uuid-to-organizations.sql`
+
 - **Analytics Enhancement (Nov 2024)**
-- Adds enhanced audit logging fields
-- Improves analytics data structure
+  - Adds enhanced audit logging fields
+  - Improves analytics data structure
 
 **Migration Note (October 2024):**
 
@@ -1174,7 +1226,7 @@ CREATE INDEX idx_order_items_product_id ON order_items(product_id);
 
 Tables in production:
 
-1. ✅ organizations - Multi-tenant organization management
+1. ✅ organizations - Multi-tenant organization management **with UUID support**
 2. ✅ users - User authentication with single name field
 3. ✅ refresh_tokens - JWT token management
 4. ✅ user_organization_roles - Multi-tenant RBAC
@@ -1189,12 +1241,110 @@ Tables in production:
 13. ✅ order_summary (VIEW) - Order analytics
 14. ✅ v_user_organization_access (VIEW) - User-organization relationships
 
+**UUID Implementation Details:**
+
+See documentation for comprehensive guide:
+
+- Technical: `docs/architecture/organization-context-and-uuid.md`
+- VPS Migration: `docs/deployment/UUID-MIGRATION-VPS-GUIDE.md`
+- Quick Start: `docs/deployment/UUID-MIGRATION-QUICKSTART.md`
+
+---
+
+## UUID Usage Guide
+
+### When to Use org_uuid vs org_id
+
+**Use `org_uuid` (UUID) for:**
+
+- ✅ Public API endpoints (`GET /api/v1/organizations/:uuid`)
+- ✅ URL parameters in frontend
+- ✅ HTTP headers (`X-Organization-ID: uuid`)
+- ✅ External integrations
+- ✅ Customer-facing features
+
+**Use `org_id` (Integer) for:**
+
+- ✅ Database foreign keys (`customers.org_id → organizations.org_id`)
+- ✅ Internal database queries
+- ✅ JOIN operations
+- ✅ Performance-critical queries
+
+### API Examples
+
+```javascript
+// ✅ GOOD: Public API with UUID
+GET /api/v1/organizations/550e8400-e29b-41d4-a716-446655440000
+Headers: { 'X-Organization-ID': '550e8400-e29b-41d4-a716-446655440000' }
+
+// ✅ ACCEPTABLE: Backward compatibility (numeric ID still works)
+GET /api/v1/organizations/1
+Headers: { 'X-Organization-ID': '1' }
+
+// 🔍 Response includes both
+{
+  "org_id": 1,                                      // Internal
+  "org_uuid": "550e8400-e29b-41d4-a716-446655440000", // Public
+  "org_name": "Acme Corporation"
+}
+```
+
+### Database Query Examples
+
+```sql
+-- ✅ External lookup (API endpoint)
+SELECT * FROM organizations
+WHERE org_uuid = '550e8400-e29b-41d4-a716-446655440000';
+
+-- ✅ Internal join (foreign key)
+SELECT c.*, o.org_name
+FROM customers c
+JOIN organizations o ON c.org_id = o.org_id
+WHERE c.org_id = 1;
+
+-- ✅ Both supported in model
+SELECT * FROM organizations
+WHERE org_uuid = $1 OR org_id = $1;
+```
+
+### Security Benefits
+
+**Sequential IDs (OLD):**
+
+```
+❌ GET /orgs/1    → exists
+❌ GET /orgs/2    → exists
+❌ GET /orgs/3    → exists
+💀 "They have ~1000 organizations, growing ~100/month"
+```
+
+**UUIDs (NEW):**
+
+```
+✅ GET /orgs/550e8400-... → exists
+✅ GET /orgs/7c9e6679-... → exists
+✅ "Can't determine total count or growth rate"
+🔒 No information leakage!
+```
+
+### Migration Path
+
+Organizations created after November 2024 automatically get UUIDs.
+
+For existing organizations without UUIDs, run:
+
+```bash
+# See: docs/deployment/UUID-MIGRATION-QUICKSTART.md
+docker-compose exec postgres psql -U saasadmin -d saasdb -f /docker-entrypoint-initdb.d/migrations/add-uuid-to-organizations.sql
+```
+
 ---
 
 ## Performance Optimizations
 
 1. **Indexes on frequently queried columns:**
    - `org_id` (for multi-tenancy filtering)
+   - `org_uuid` (for UUID lookups - added Nov 2024)
    - `city` (for geographic analysis)
    - `segment` (for customer segmentation)
    - `is_active` (for filtering active records)

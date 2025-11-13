@@ -10,6 +10,12 @@
 ALTER DATABASE saasdb SET timezone TO 'UTC';
 
 -- ============================================
+-- EXTENSION: UUID support
+-- ============================================
+-- Industry standard: Use UUIDs for public-facing identifiers
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================
 -- FUNCTION: Auto-update timestamps
 -- ============================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -25,6 +31,7 @@ $$ language 'plpgsql';
 -- ============================================
 CREATE TABLE IF NOT EXISTS organizations (
   org_id SERIAL PRIMARY KEY,
+  org_uuid UUID DEFAULT uuid_generate_v4() UNIQUE NOT NULL,
   org_name VARCHAR(255) NOT NULL,
   industry VARCHAR(100),
   phone VARCHAR(20),
@@ -38,6 +45,10 @@ CREATE TABLE IF NOT EXISTS organizations (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+COMMENT ON COLUMN organizations.org_uuid IS 'Public-facing UUID identifier (industry standard)';
+COMMENT ON COLUMN organizations.org_id IS 'Internal numeric ID for database relations';
+
+CREATE INDEX IF NOT EXISTS idx_organizations_uuid ON organizations(org_uuid);
 CREATE INDEX IF NOT EXISTS idx_organizations_is_active ON organizations(is_active);
 CREATE INDEX IF NOT EXISTS idx_organizations_org_name ON organizations(org_name);
 
