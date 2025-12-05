@@ -226,19 +226,21 @@ export const generateOrderNumber = async (orgId, client = null) => {
       [orgId]
     );
 
-    // Now safely get the latest order number for this org
+    // Now safely get the latest order number for this org with correct pattern
+    // Pattern: ORD-{orgId}-2025-% to match ORD-1-2025-000001, ORD-1-2025-000002, etc.
     const result = await db.query(
       `SELECT order_number FROM orders 
        WHERE org_id = $1 
        AND order_number LIKE $2
        ORDER BY order_number DESC 
        LIMIT 1`,
-      [orgId, `${prefix}${year}%`]
+      [orgId, `${prefix}-${orgId}-${year}-%`]
     );
 
     let sequence = 1;
     if (result.rows.length > 0) {
       const lastNumber = result.rows[0].order_number;
+      // Extract sequence from the end: ORD-1-2025-000001 -> 000001 (last 6 chars)
       const lastSequence = Number.parseInt(lastNumber.slice(-6));
       sequence = lastSequence + 1;
     }
