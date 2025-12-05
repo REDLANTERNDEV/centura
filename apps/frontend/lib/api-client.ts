@@ -123,7 +123,7 @@ apiClient.interceptors.response.use(
           localStorage.removeItem('centura_selected_org_id');
 
           // Redirect to login page
-          globalThis.window.location.href = '/auth/login';
+          globalThis.window.location.href = '/login';
         }
 
         throw refreshError;

@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Middleware that protects routes by verifying tokens.
+ * Middleware/Proxy that protects routes by verifying tokens.
+ *
+ * In Next.js 16, the middleware file convention is renamed to proxy.ts
+ * and the function must be exported as default.
  *
  * Behavior:
  * - If `access_token` cookie exists -> allow.
@@ -14,7 +17,7 @@ import type { NextRequest } from 'next/server';
  * - Set `NEXT_PUBLIC_API_URL` in your Next.js environment to your backend (e.g. http://localhost:5000).
  *   Middleware will fall back to `http://localhost:5000` if the var is not set in development.
  */
-export async function proxy(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const token = req.cookies.get('access_token')?.value;
   const { pathname } = req.nextUrl;
 
