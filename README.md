@@ -309,7 +309,14 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 ## 📝 Lisans
 
-Bu proje MIT Lisansı altında lisanslanmıştır. Detaylar için [LICENSE](./LICENSE) dosyasını görün.
+Bu proje **GNU Affero General Public License v3 (AGPL-3.0)** altında lisanslanmıştır. Detaylar için [LICENSE](./LICENSE) dosyasını görün.
+
+**AGPL-3.0 Özet:**
+
+- ✅ Özgür kullanım, değiştirme ve dağıtma
+- ✅ Ticari kullanım mümkün
+- ⚠️ Değişiklikler açık kaynak olmalı
+- ⚠️ Ağ üzerinden sunulan değiştirilmiş sürümler açıklanmalı
 
 ---
 

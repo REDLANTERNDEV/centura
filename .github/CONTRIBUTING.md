@@ -96,7 +96,7 @@ Hataları izlemek için GitHub issues kullanıyoruz. [Yeni bir issue açarak](ht
 
 ## Lisans
 
-Katkıda bulunarak, katkılarınızın MIT Lisansı altında lisanslanacağını kabul etmiş olursunuz.
+Katkıda bulunarak, katkılarınızın GNU Affero General Public License v3 (AGPL-3.0) altında lisanslanacağını kabul etmiş olursunuz.
 
 ## Sorularınız mı var?
 
