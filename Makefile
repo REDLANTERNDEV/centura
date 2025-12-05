@@ -1,6 +1,6 @@
 # ============================================
-# Makefile for Mini SaaS ERP
-# Cross-platform development & deployment
+# Centura CRM - Makefile
+# Geliştirme ve Deployment Komutları
 # ============================================
 
 .PHONY: help build up down logs clean dev prod restart backup
@@ -13,139 +13,121 @@ COMPOSE_DEV = docker-compose -f docker-compose.yml -f docker-compose.dev.yml
 COMPOSE_PROD = docker-compose -f docker-compose.yml -f docker-compose.prod.yml
 
 # ============================================
-# Help
+# Yardım
 # ============================================
-help: ## Show this help message
-	@echo "Mini SaaS ERP - Docker Commands"
+help: ## Bu yardım mesajını göster
+	@echo "Centura CRM - Docker Komutları"
 	@echo "================================"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 # ============================================
-# Development
+# Geliştirme
 # ============================================
-dev: ## Start development environment with hot reload
+dev: ## Geliştirme ortamını hot reload ile başlat
 	$(COMPOSE_DEV) up --build
 
-dev-d: ## Start development environment in detached mode
+dev-d: ## Geliştirme ortamını arka planda başlat
 	$(COMPOSE_DEV) up -d --build
 
-dev-logs: ## Show development logs
+dev-logs: ## Geliştirme loglarını göster
 	$(COMPOSE_DEV) logs -f
 
-dev-down: ## Stop development environment
+dev-down: ## Geliştirme ortamını durdur
 	$(COMPOSE_DEV) down
 
 # ============================================
-# Production
+# Üretim
 # ============================================
-prod: ## Start production environment
+prod: ## Üretim ortamını başlat
 	$(COMPOSE_PROD) up -d --build
 
-prod-logs: ## Show production logs
+prod-logs: ## Üretim loglarını göster
 	$(COMPOSE_PROD) logs -f
 
-prod-down: ## Stop production environment
+prod-down: ## Üretim ortamını durdur
 	$(COMPOSE_PROD) down
 
-prod-scale: ## Scale production services (e.g., make prod-scale service=backend replicas=3)
-	$(COMPOSE_PROD) up -d --scale $(service)=$(replicas)
-
 # ============================================
-# General Commands
+# Genel Komutlar
 # ============================================
-build: ## Build all Docker images
+build: ## Tüm Docker imajlarını derle
 	docker-compose build
 
-up: ## Start all services
+up: ## Tüm servisleri başlat
 	docker-compose up -d
 
-down: ## Stop all services
+down: ## Tüm servisleri durdur
 	docker-compose down
 
-restart: ## Restart all services
+restart: ## Tüm servisleri yeniden başlat
 	docker-compose restart
 
-logs: ## Show logs for all services
+logs: ## Tüm servisler için logları göster
 	docker-compose logs -f
 
-ps: ## List running containers
+ps: ## Çalışan konteynerları listele
 	docker-compose ps
 
 # ============================================
-# Database
+# Veritabanı
 # ============================================
-db-backup: ## Backup PostgreSQL database
+db-backup: ## PostgreSQL veritabanını yedekle
 	@mkdir -p backups
-	docker-compose exec -T postgres pg_dump -U postgres mini_saas_erp > backups/backup_$(shell date +%Y%m%d_%H%M%S).sql
-	@echo "Backup created in backups/"
+	docker-compose exec -T postgres pg_dump -U postgres centura_crm > backups/backup_$(shell date +%Y%m%d_%H%M%S).sql
+	@echo "Yedek oluşturuldu: backups/"
 
-db-restore: ## Restore PostgreSQL database (file=backups/backup.sql)
-	docker-compose exec -T postgres psql -U postgres mini_saas_erp < $(file)
+db-restore: ## PostgreSQL veritabanını geri yükle (file=backups/backup.sql)
+	docker-compose exec -T postgres psql -U postgres centura_crm < $(file)
 
-db-shell: ## Open PostgreSQL shell
-	docker-compose exec postgres psql -U postgres -d mini_saas_erp
+db-shell: ## PostgreSQL Shell'ini aç
+	docker-compose exec postgres psql -U postgres -d centura_crm
 
-db-logs: ## Show database logs
+db-logs: ## Veritabanı loglarını göster
 	docker-compose logs -f postgres
 
 # ============================================
-# Service Management
+# Servis Yönetimi
 # ============================================
-backend-shell: ## Open backend container shell
+backend-shell: ## Backend konteyner shell'ini aç
 	docker-compose exec backend sh
 
-frontend-shell: ## Open frontend container shell
+frontend-shell: ## Frontend konteyner shell'ini aç
 	docker-compose exec frontend sh
 
-backend-logs: ## Show backend logs
+backend-logs: ## Backend loglarını göster
 	docker-compose logs -f backend
 
-frontend-logs: ## Show frontend logs
+frontend-logs: ## Frontend loglarını göster
 	docker-compose logs -f frontend
 
 # ============================================
-# Cleanup
+# Temizleme
 # ============================================
-clean: ## Remove all containers, volumes, and images
+clean: ## Tüm konteynerleri, volume'ları ve imajları sil
 	docker-compose down -v --remove-orphans
 	docker system prune -af --volumes
 
-clean-volumes: ## Remove all volumes (WARNING: deletes data!)
+clean-volumes: ## Tüm volume'ları sil (UYARI: veriyi siler!)
 	docker-compose down -v
 
-clean-images: ## Remove all project images
+clean-images: ## Proje imajlarını sil
 	docker-compose down --rmi all
 
 # ============================================
-# Health & Monitoring
+# Durum & Izleme
 # ============================================
-health: ## Check health of all services
-	@echo "Checking service health..."
+health: ## Tüm servislerin durumunu kontrol et
+	@echo "Servis durumu kontrol ediliyor..."
 	@docker-compose ps
 
-stats: ## Show container resource usage
+stats: ## Konteyner kaynak kullanımını göster
 	docker stats
 
 # ============================================
-# Testing
+# Kurulum
 # ============================================
-test: ## Run tests (placeholder)
-	@echo "Running tests..."
-	# Add test commands here
-
-# ============================================
-# Security
-# ============================================
-security-scan: ## Scan images for vulnerabilities
-	@echo "Scanning images for vulnerabilities..."
-	docker scout cves mini-saas-backend || true
-	docker scout cves mini-saas-frontend || true
-
-# ============================================
-# Installation
-# ============================================
-install: ## Initial setup - copy env files and build
-	@echo "Setting up Mini SaaS ERP..."
-	@if not exist .env (copy .env.docker.example .env)
-	@echo "Please edit .env file with your configuration"
-	@echo "Then run: make dev or make prod"
+install: ## İlk kurulum - .env dosyasını kopyala ve derle
+	@echo "Centura CRM kurulumu başlıyor..."
+	@if not exist .env copy .env.example .env
+	@echo ".env dosyasını düzenleyerek konfigürasyonunu tamamla"
+	@echo "Sonra çalıştır: make dev veya make prod"

@@ -1,111 +1,107 @@
-# Contributing to Mini SaaS
+# Centura CRM'e Katkıda Bulunma
 
-We love your input! We want to make contributing to Mini SaaS as easy and transparent as possible, whether it's:
+Katkılarınızı bekliyoruz! Centura CRM'e katkıda bulunmayı mümkün olduğunca kolay ve şeffaf hale getirmek istiyoruz:
 
-- Reporting a bug
-- Discussing the current state of the code
-- Submitting a fix
-- Proposing new features
-- Becoming a maintainer
+- Hata bildirimi
+- Mevcut kodun tartışılması
+- Düzeltme gönderme
+- Yeni özellik önerme
+- Bakımcı olma
 
-## Development Process
+## Geliştirme Süreci
 
-We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
+Kodu barındırmak, sorunları ve özellik taleplerini izlemek ve pull request'leri kabul etmek için GitHub kullanıyoruz.
 
-1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints.
-6. Issue that pull request!
+1. Repo'yu fork edin ve `main` dalından kendi dalınızı oluşturun.
+2. Test edilmesi gereken kod eklediyseniz, testler ekleyin.
+3. API'leri değiştirdiyseniz, dokümantasyonu güncelleyin.
+4. Test paketinin geçtiğinden emin olun.
+5. Kodunuzun lint kontrolünden geçtiğinden emin olun.
+6. Pull request gönderin!
 
-## Pull Request Process
+## Pull Request Süreci
 
-1. Update the README.md with details of changes to the interface, this includes new environment variables, exposed ports, useful file locations and container parameters.
-2. Update the CHANGELOG.md with notes on your changes.
-3. The PR will be merged once you have the sign-off of the maintainers.
+1. Arayüz değişikliklerinin ayrıntılarıyla README.md'yi güncelleyin (yeni ortam değişkenleri, açık portlar, dosya konumları ve container parametreleri dahil).
+2. Değişikliklerinizle ilgili notlarla CHANGELOG.md'yi güncelleyin.
+3. Bakımcıların onayını aldıktan sonra PR birleştirilecektir.
 
-## Coding Conventions
+## Kodlama Kuralları
 
-Start reading our code and you'll get the hang of it. We optimize for readability:
+Kodumuzu okumaya başlayın ve alışacaksınız. Okunabilirlik için optimize ediyoruz:
 
-- We use **TypeScript** for type safety
-- We use **ESLint** and **Prettier** for code formatting
-- We use **kebab-case** for file names
-- We use **camelCase** for variables and functions
-- We use **PascalCase** for classes and components
-- We indent using **2 spaces** (soft tabs)
-- We follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages
+- Tip güvenliği için **TypeScript** kullanıyoruz
+- Kod formatlama için **ESLint** ve **Prettier** kullanıyoruz
+- Dosya adları için **kebab-case** kullanıyoruz
+- Değişkenler ve fonksiyonlar için **camelCase** kullanıyoruz
+- Sınıflar ve bileşenler için **PascalCase** kullanıyoruz
+- **2 boşluk** ile girinti yapıyoruz (soft tabs)
+- Commit mesajları için [Conventional Commits](https://www.conventionalcommits.org/) takip ediyoruz
 
-### Commit Message Format
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-**Types:**
-
-- `feat`: A new feature
-- `fix`: A bug fix
-- `docs`: Documentation only changes
-- `style`: Changes that do not affect the meaning of the code
-- `refactor`: A code change that neither fixes a bug nor adds a feature
-- `perf`: A code change that improves performance
-- `test`: Adding missing tests or correcting existing tests
-- `chore`: Changes to the build process or auxiliary tools
-
-**Example:**
+### Commit Mesajı Formatı
 
 ```
-feat(analytics): add customer segmentation analysis
+<tip>(<kapsam>): <konu>
 
-Implemented RFM (Recency, Frequency, Monetary) analysis for customer segmentation.
-Includes new API endpoints and frontend visualizations.
+<gövde>
+
+<altbilgi>
+```
+
+**Tipler:**
+
+- `feat`: Yeni bir özellik
+- `fix`: Hata düzeltmesi
+- `docs`: Sadece dokümantasyon değişiklikleri
+- `style`: Kodun anlamını etkilemeyen değişiklikler
+- `refactor`: Hata düzeltmeyen veya özellik eklemeyen kod değişikliği
+- `perf`: Performansı artıran kod değişikliği
+- `test`: Eksik testlerin eklenmesi veya mevcut testlerin düzeltilmesi
+- `chore`: Build süreci veya yardımcı araçlardaki değişiklikler
+
+**Örnek:**
+
+```
+feat(analytics): müşteri segmentasyon analizi eklendi
+
+Müşteri segmentasyonu için RFM (Recency, Frequency, Monetary) analizi uygulandı.
+Yeni API endpoint'leri ve frontend görselleştirmeleri içerir.
 
 Closes #123
 ```
 
-## Bug Reports
+## Hata Raporları
 
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/REDLANTERNDEV/mini-saas-erp/issues/new).
+Hataları izlemek için GitHub issues kullanıyoruz. [Yeni bir issue açarak](https://github.com/REDLANTERNDEV/centura/issues/new) hata bildirin.
 
-**Great Bug Reports** tend to have:
+**İyi Hata Raporları** genellikle şunları içerir:
 
-- A quick summary and/or background
-- Steps to reproduce
-  - Be specific!
-  - Give sample code if you can
-- What you expected would happen
-- What actually happens
-- Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
+- Kısa bir özet ve/veya arka plan
+- Yeniden oluşturma adımları
+  - Spesifik olun!
+  - Mümkünse örnek kod verin
+- Ne olmasını beklediğiniz
+- Gerçekte ne olduğu
+- Notlar (bunun neden olabileceğini düşündüğünüz veya deneyip işe yaramayan şeyler dahil)
 
-## Feature Requests
+## Özellik İstekleri
 
-We use GitHub issues to track feature requests. Suggest a feature by [opening a new issue](https://github.com/REDLANTERNDEV/mini-saas-erp/issues/new) with the "feature request" label.
+Özellik taleplerini izlemek için GitHub issues kullanıyoruz. "feature request" etiketi ile [yeni bir issue açarak](https://github.com/REDLANTERNDEV/centura/issues/new) özellik önerin.
 
-**Great Feature Requests** tend to have:
+**İyi Özellik İstekleri** genellikle şunları içerir:
 
-- A clear and concise description of the problem you're trying to solve
-- A description of the solution you'd like
-- Alternative solutions you've considered
-- Additional context or screenshots
+- Çözmeye çalıştığınız sorunun net ve öz bir açıklaması
+- İstediğiniz çözümün açıklaması
+- Değerlendirdiğiniz alternatif çözümler
+- Ek bağlam veya ekran görüntüleri
 
-## Code of Conduct
+## Lisans
 
-This project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+Katkıda bulunarak, katkılarınızın MIT Lisansı altında lisanslanacağını kabul etmiş olursunuz.
 
-## License
+## Sorularınız mı var?
 
-By contributing, you agree that your contributions will be licensed under its MIT License.
-
-## Questions?
-
-Don't hesitate to ask questions by opening an issue with the "question" label.
+"question" etiketi ile bir issue açarak soru sormaktan çekinmeyin.
 
 ---
 
-Thank you for contributing to Mini SaaS! 🎉
+Centura CRM'e katkıda bulunduğunuz için teşekkürler! 🎉

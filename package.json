@@ -1,13 +1,13 @@
 {
-  "name": "mini-saas-erp",
+  "name": "centura",
   "type": "module",
   "private": true,
   "workspaces": [
     "apps/*"
   ],
   "scripts": {
-    "dev:backend": "npm run dev --workspace mini-saas-erp-be",
-    "dev:frontend": "npm run dev --workspace mini-saas-erp-fe",
+    "dev:backend": "npm run dev --workspace centura-be",
+    "dev:frontend": "npm run dev --workspace centura-fe",
     "sync:bruno": "node scripts/sync-bruno-env.js",
     "format": "prettier --write .",
     "lint": "eslint .",

@@ -7,7 +7,7 @@
 
 set -e
 
-echo "🐳 Mini SaaS ERP - Docker Setup"
+echo "🐳 Centura - Docker Setup"
 echo "================================"
 
 # Check if Docker is installed

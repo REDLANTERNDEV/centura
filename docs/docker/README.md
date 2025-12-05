@@ -33,7 +33,7 @@ Production-ready Docker configuration for Mini SaaS ERP with industry best pract
 ```bash
 # Clone repository
 git clone <your-repo-url>
-cd mini-saas-erp
+cd centura
 
 # Copy environment file
 cp .env.docker.example .env

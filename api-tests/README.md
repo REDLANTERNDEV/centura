@@ -1,20 +1,20 @@
-# 📁 Mini SaaS API - Bruno Collection
+# 📁 Centura API - Bruno Koleksiyonu
 
-This folder contains the professional Bruno API collection for the Mini SaaS ERP/CRM application.
+Bu klasör, Centura CRM/ERP uygulaması için profesyonel Bruno API koleksiyonunu içerir.
 
-## 📂 Folder Structure
+## 📂 Klasör Yapısı
 
 ```text
-api-tests/mini-saas-api/
-├── bruno.json                    # Collection config
-├── environments/                 # Environment variables
-│   ├── Development.bru          # Development environment
-│   └── Production.bru           # Production environment
-├── Auth/                        # Authentication endpoints
+api-tests/centura-api/
+├── bruno.json                    # Koleksiyon yapılandırması
+├── environments/                 # Ortam değişkenleri
+│   ├── Development.bru          # Geliştirme ortamı
+│   └── Production.bru           # Üretim ortamı
+├── Auth/                        # Kimlik doğrulama uç noktaları
 │   ├── Login.bru
-│   ├── Register.bru
+│   ├── Signup.bru
 │   └── Logout.bru
-├── Products/                    # Product management (8 endpoints)
+├── Products/                    # Ürün yönetimi (8 uç nokta)
 │   ├── Get All Products.bru
 │   ├── Get Product by ID.bru
 │   ├── Create Product.bru
@@ -23,7 +23,7 @@ api-tests/mini-saas-api/
 │   ├── Update Stock - Subtract.bru
 │   ├── Get Low Stock Products.bru
 │   └── Delete Product.bru
-├── Orders/                      # Order management (8 endpoints)
+├── Orders/                      # Sipariş yönetimi (8 uç nokta)
 │   ├── Get All Orders.bru
 │   ├── Get Order by ID.bru
 │   ├── Create Order.bru
@@ -32,201 +32,201 @@ api-tests/mini-saas-api/
 │   ├── Update Payment Status.bru
 │   ├── Cancel Order.bru
 │   └── Delete Order.bru
-├── Analytics/                   # Sales analytics (3 endpoints)
+├── Analytics/                   # Satış analitikleri (3 uç nokta)
 │   ├── Sales Statistics.bru
 │   ├── Top Selling Products.bru
 │   └── Customer Orders.bru
-└── Customers/                   # Customer management
+└── Customers/                   # Müşteri yönetimi
     ├── Get All Customers.bru
     └── Create Customer.bru
 ```
 
-## 🚀 Usage
+## 🚀 Kullanım
 
-### 1. Download and Install Bruno
+### 1. Bruno'yu İndir ve Kur
 
-Download from: <https://www.usebruno.com/>
+İndir: <https://www.usebruno.com/>
 
-### 2. Open Collection
+### 2. Koleksiyonu Aç
 
-1. Launch Bruno
-2. Click **"Open Collection"** button
-3. Select the `api-tests/mini-saas-api` folder
+1. Bruno'yu başlat
+2. **"Open Collection"** düğmesine tıkla
+3. `api-tests/centura-api` klasörünü seç
 
-### 3. Select Environment
+### 3. Ortamı Seç
 
-Choose **Development** or **Production** environment from the top right corner.
+Sağ üst köşeden **Geliştirme** veya **Üretim** ortamını seç.
 
-**Important:** After cloning the project or if backend port changes, sync the environment:
+**Önemli:** Proje klonladıktan sonra veya backend portu değiştiyse, ortamı senkronize et:
 
 ```bash
-# Sync Bruno environment with backend .env PORT
+# Bruno ortamını backend .env PORT ile senkronize et
 npm run sync:bruno
 ```
 
-This ensures Bruno's `baseUrl` matches your backend server port automatically!
+Bu, Bruno'nun `baseUrl`'sinin backend sunucusu portuna otomatik olarak uyması sağlar!
 
-### 4. Set Up Token
+### 4. Token'ı Ayarla
 
-#### Method 1: Get Token from Login Request
+#### Yöntem 1: Login İsteğinden Token Al
 
-1. Run the `Auth > Login` request
-2. Copy the cookie value from the response
-3. Save to environment:
-   - Top right → Environment settings
-   - Paste into `token` variable
+1. `Auth > Login` isteğini çalıştır
+2. Yanıttan cookie değerini kopyala
+3. Ortama kaydet:
+   - Sağ üst → Environment settings
+   - `token` değişkenine yapıştır
 
-#### Method 2: Get Token from Browser
+#### Yöntem 2: Tarayıcıdan Token Al
 
-1. Login to the web application
+1. Web uygulamasına giriş yap
 2. Developer Tools → Application → Cookies
-3. Copy the `token` cookie value
-4. Save to environment
+3. `token` cookie değerini kopyala
+4. Ortama kaydet
 
-### 5. Run Requests
+### 5. İstekleri Çalıştır
 
-You can test each request in the folders sequentially!
+Her klasördeki istekleri sırayla test edebilirsin!
 
-## 🎯 Test Scenario
+## 🎯 Test Senaryosu
 
-### Complete Workflow
+### Tam İş Akışı
 
-1. **Auth/Login** → Get token
-2. **Customers/Create Customer** → Create customer
-3. **Products/Create Product** → Create products (several)
-4. **Orders/Create Order** → Create order
-5. **Orders/Update Order Status** → confirmed
-6. **Orders/Update Payment Status** → paid
-7. **Analytics/Sales Statistics** → View statistics
-8. **Analytics/Top Selling Products** → Top sellers
+1. **Auth/Login** → Token al
+2. **Customers/Create Customer** → Müşteri oluştur
+3. **Products/Create Product** → Ürünler oluştur (birden fazla)
+4. **Orders/Create Order** → Sipariş oluştur
+5. **Orders/Update Order Status** → onaylı yap
+6. **Orders/Update Payment Status** → ödendi yap
+7. **Analytics/Sales Statistics** → İstatistikleri görüntüle
+8. **Analytics/Top Selling Products** → En çok satılan ürünler
 
-## 🔧 Environment Variables
+## 🔧 Ortam Değişkenleri
 
-### Development
+### Geliştirme
 
-**Auto-Sync Available!** Run `npm run sync:bruno` to automatically sync with backend `.env` file.
+**Otomatik Senkronizasyon Mevcut!** Backend `.env` dosyası ile otomatik senkronizasyon için `npm run sync:bruno` çalıştır.
 
 ```env
-baseUrl: http://localhost:4974/api/v1  # Auto-synced from backend PORT
-token: [Token will be placed here after login]
+baseUrl: http://localhost:8765/api/v1  # Backend PORT'tan otomatik senkronize
+token: [Login sonrası token burada olacak]
 ```
 
-**How it works:**
+**Nasıl çalışır:**
 
-1. Backend `.env` has `PORT=4974`
-2. Run `npm run sync:bruno`
-3. Bruno `Development.bru` automatically updates `baseUrl`
+1. Backend `.env`'de `PORT=8765` var
+2. `npm run sync:bruno` çalıştır
+3. Bruno `Development.bru` otomatik olarak `baseUrl` günceller
 
-**Manual sync:** If port changes in backend `.env`, always run:
+**Manuel senkronizasyon:** Backend `.env`'deki port değişirse, her zaman çalıştır:
 
 ```bash
 npm run sync:bruno
 ```
 
-### Production
+### Üretim
 
 ```env
-baseUrl: https://api.yourapp.com/v1
-token: [Production token]
+baseUrl: https://centuraapi.example.com/api/v1
+token: [Üretim token'ı]
 ```
 
-## 💡 Tips
+## 💡 İpuçları
 
-### Query Parameters
+### Sorgu Parametreleri
 
-Disabled parameters (with `~` prefix) are not sent by default. Remove the `~` to activate them.
+Devre dışı bırakılan parametreler (`~` öneki olanlar) varsayılan olarak gönderilmez. Etkinleştirmek için `~` kaldır.
 
-Example:
+Örnek:
 
 ```text
 params:query {
-  page: 1                     # Active
-  limit: 50                   # Active
-  ~category: Electronics      # Disabled
+  page: 1                     # Aktif
+  limit: 50                   # Aktif
+  ~category: Electronics      # Devre dışı
 }
 ```
 
-### Request Sequence
+### İstek Sırası
 
-Each request has a `seq` number. Bruno displays them in order.
+Her isteğin bir `seq` numarası vardır. Bruno onları sırayla gösterir.
 
-### Documentation
+### Dokümantasyon
 
-Each request has a `docs` section. Open the request for detailed explanations.
+Her isteğin bir `docs` bölümü vardır. Ayrıntılı açıklamalar için isteği aç.
 
-## 📊 Features
+## 📊 Özellikler
 
-### Automatic Operations
+### Otomatik İşlemler
 
-- ✅ Stock automatically decreases when order is created
-- ✅ Stock automatically restores when order is cancelled
-- ✅ Total amounts are calculated automatically
-- ✅ Order number is generated automatically (ORD2025000001)
+- ✅ Sipariş oluşturulduğunda stok otomatik azalır
+- ✅ Sipariş iptal edildiğinde stok otomatik eski haline gelir
+- ✅ Toplam tutarlar otomatik hesaplanır
+- ✅ Sipariş numarası otomatik oluşturulur (ORD2025000001)
 
-### Workflows
+### İş Akışları
 
-**Order Status:**
+**Sipariş Durumu:**
 
 ```text
-draft → confirmed → processing → shipped → delivered
+taslak → onaylı → işlenmesi → gönderimi → teslim edildi
            ↓
-       cancelled (anytime, except delivered)
+       iptal edildi (her zaman, teslim edildi hariç)
 ```
 
-**Payment Status:**
+**Ödeme Durumu:**
 
 ```text
-pending → partial → paid → refunded
+beklemede → kısmi → ödendi → iade
 ```
 
-## 🔍 Filter Examples
+## 🔍 Filtre Örnekleri
 
-### Products
+### Ürünler
 
-- By category: `?category=Electronics`
-- Price range: `?min_price=100&max_price=500`
-- Low stock: `?low_stock=true`
-- Search: `?search=laptop`
+- Kategoriye göre: `?category=Electronics`
+- Fiyat aralığı: `?min_price=100&max_price=500`
+- Düşük stok: `?low_stock=true`
+- Arama: `?search=laptop`
 
-### Orders
+### Siparişler
 
-- By status: `?status=confirmed`
-- Payment status: `?payment_status=paid`
-- Date range: `?start_date=2025-10-01&end_date=2025-10-31`
-- By customer: `?customer_id=1`
+- Duruma göre: `?status=confirmed`
+- Ödeme durumu: `?payment_status=paid`
+- Tarih aralığı: `?start_date=2025-10-01&end_date=2025-10-31`
+- Müşteriye göre: `?customer_id=1`
 
-### Customers
+### Müşteriler
 
-- By city: `?city=Istanbul`
-- By segment: `?segment=Premium`
-- Search: `?search=acme`
+- Şehre göre: `?city=Istanbul`
+- Segmente göre: `?segment=Premium`
+- Arama: `?search=acme`
 
-## 🛠️ Troubleshooting
+## 🛠️ Sorun Giderme
 
-### 401 Unauthorized
+### 401 Yetkisiz
 
-- Make sure the token is correct
-- Token expires in 15 minutes, login again
-- Check if token variable is set in environment
+- Token'ın doğru olduğundan emin ol
+- Token 15 dakika içinde sona erer, tekrar giriş yap
+- Token değişkeninin ortamda ayarlanıp ayarlanmadığını kontrol et
 
-### 404 Not Found
+### 404 Bulunamadı
 
-- Check if backend server is running
-- Verify port number matches backend (run `npm run sync:bruno` if needed)
-- Verify endpoint URL is correct
+- Backend sunucusunun çalışıp çalışmadığını kontrol et
+- Port numarasının backend ile eşleştiğini doğrula (gerekirse `npm run sync:bruno` çalıştır)
+- Uç nokta URL'sinin doğru olduğunu doğrula
 
 ### ECONNREFUSED
 
-- Start backend server: `npm start` or `npm run dev:backend`
-- Check if correct port is being used
-- **Run `npm run sync:bruno`** to ensure Bruno uses the correct port
-- Check if port is used by another application
+- Backend sunucusunu başlat: `npm start` veya `npm run dev:backend`
+- Doğru portun kullanılıp kullanılmadığını kontrol et
+- **`npm run sync:bruno` çalıştır** Bruno'nun doğru portu kullandığından emin olmak için
+- Portun başka bir uygulama tarafından kullanılıp kullanılmadığını kontrol et
 
-## 📚 More Information
+## 📚 Daha Fazla Bilgi
 
-- **API Documentation**: `apps/backend/docs/ORDERS_API_GUIDE.md`
-- **Database Schema**: `apps/backend/docs/DATABASE.md`
+- **API Dokümantasyonu**: `apps/backend/docs/ORDERS_API_GUIDE.md`
+- **Veritabanı Şeması**: `apps/backend/docs/DATABASE.md`
 
 ---
 
-**🎉 You're ready!** Start testing your API with Bruno! 🚀
+**🎉 Hazırsın!** Bruno ile API'nini test etmeye başla! 🚀

@@ -3,7 +3,7 @@
 # For PowerShell
 # ============================================
 
-Write-Host "🐳 Mini SaaS ERP - Docker Setup" -ForegroundColor Cyan
+Write-Host "🐳 Centura - Docker Setup" -ForegroundColor Cyan
 Write-Host "================================" -ForegroundColor Cyan
 
 # Check if Docker is installed
