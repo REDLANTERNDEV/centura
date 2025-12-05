@@ -208,7 +208,7 @@ export const getOrderByNumber = async (orderNumber, orgId) => {
 };
 
 /**
- * Generate unique order number (thread-safe version with FOR UPDATE lock)
+ * Generate unique order number (thread-safe version with FOR UPDATE lock per org)
  * @param {number} orgId - Organization ID
  * @param {object} client - Database client (for use within transaction)
  * @returns {Promise<string>} Generated order number
@@ -219,14 +219,20 @@ export const generateOrderNumber = async (orgId, client = null) => {
     const prefix = 'ORD';
     const year = new Date().getFullYear();
 
-    // Use FOR UPDATE to lock rows and prevent race conditions
+    // First, lock the organization row to prevent race conditions across all orgs
+    // This ensures only one request can generate order numbers for this org at a time
+    await db.query(
+      'SELECT org_id FROM organizations WHERE org_id = $1 FOR UPDATE',
+      [orgId]
+    );
+
+    // Now safely get the latest order number for this org
     const result = await db.query(
       `SELECT order_number FROM orders 
        WHERE org_id = $1 
        AND order_number LIKE $2
        ORDER BY order_number DESC 
-       LIMIT 1
-       FOR UPDATE`,
+       LIMIT 1`,
       [orgId, `${prefix}${year}%`]
     );
 
@@ -237,8 +243,9 @@ export const generateOrderNumber = async (orgId, client = null) => {
       sequence = lastSequence + 1;
     }
 
-    // Format: ORD2025000001
-    const orderNumber = `${prefix}${year}${sequence.toString().padStart(6, '0')}`;
+    // Format: ORD-OrgID-2025-000001 (e.g., ORD-1-2025-000001)
+    // This makes it unique per organization
+    const orderNumber = `${prefix}-${orgId}-${year}-${sequence.toString().padStart(6, '0')}`;
     return orderNumber;
   } catch (error) {
     console.error('Error in generateOrderNumber:', error);
