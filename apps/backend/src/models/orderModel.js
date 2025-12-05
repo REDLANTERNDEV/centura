@@ -208,22 +208,25 @@ export const getOrderByNumber = async (orderNumber, orgId) => {
 };
 
 /**
- * Generate unique order number
+ * Generate unique order number (thread-safe version with FOR UPDATE lock)
  * @param {number} orgId - Organization ID
+ * @param {object} client - Database client (for use within transaction)
  * @returns {Promise<string>} Generated order number
  */
-export const generateOrderNumber = async orgId => {
+export const generateOrderNumber = async (orgId, client = null) => {
+  const db = client || pool;
   try {
     const prefix = 'ORD';
     const year = new Date().getFullYear();
 
-    // Get the latest order number for this year
-    const result = await pool.query(
+    // Use FOR UPDATE to lock rows and prevent race conditions
+    const result = await db.query(
       `SELECT order_number FROM orders 
        WHERE org_id = $1 
        AND order_number LIKE $2
        ORDER BY order_number DESC 
-       LIMIT 1`,
+       LIMIT 1
+       FOR UPDATE`,
       [orgId, `${prefix}${year}%`]
     );
 
@@ -273,8 +276,8 @@ export const createOrder = async (orderData, orgId, userId) => {
       items = [],
     } = orderData;
 
-    // Generate order number
-    const orderNumber = await generateOrderNumber(orgId);
+    // Generate order number (pass client for thread-safety within transaction)
+    const orderNumber = await generateOrderNumber(orgId, client);
 
     // Calculate totals
     let subtotal = 0;
