@@ -49,30 +49,30 @@ Centura, kurumsal ERP sistemlerinin müşteri ilişkileri yönetimi (CRM) modül
 
 ## 📸 Ekran Görüntüleri
 
-### Müşteri Dashboard
+### Dashboard
 
-![Customer Dashboard](./docs/screenshots/01-dashboard.png)
-_Müşteri CRM merkezi - tüm müşteri metrikleri ve aktiviteleri bir bakışta_
+![Dashboard](./docs/screenshots/01-dashboard.png)
+_Ana kontrol paneli - toplam satışlar, müşteri sayısı ve önemli metrikleri bir bakışta görün_
 
-### Müşteri Yönetimi & İletişim Geçmişi
+### Satış Analitikleri
 
-![Customer Management](./docs/screenshots/02-customers.png)
-_Detaylı müşteri profilleri, iletişim geçmişi ve satış aktiviteleri_
+![Sales Analytics](./docs/screenshots/02-sales-analytics.png)
+_Detaylı satış grafikleri, trend çizgileri ve tarih bazlı filtreleme_
 
-### Satış Analitikleri & Raporlar
+### Müşteri Yönetimi
 
-![Sales Analytics](./docs/screenshots/03-sales-analytics.png)
-_CRM analytics - satış trend'leri, müşteri segmentasyonu ve performans metrikleri_
+![Customer Management](./docs/screenshots/03-customers.png)
+_Müşteri listesi, arama ve detaylı müşteri profilleri_
 
-### Satış Sipariş Yönetimi
+### Envanter & Ürün Yönetimi
 
-![Orders Management](./docs/screenshots/04-orders.png)
-_Müşteri siparişlerini yönetin, ödeme ve kargo takibi yapın_
+![Inventory Management](./docs/screenshots/04-inventory.png)
+_Ürün kataloğu, stok durumu ve kategori yönetimi_
 
-### Envanter & Ürün Katalog
+### Raporlar & İçgörüler
 
-![Inventory Management](./docs/screenshots/05-inventory.png)
-_ERP entegrasyonu - stok seviyelerini gerçek zamanlı takip edin_
+![Reports & Insights](./docs/screenshots/05-reports.png)
+_Detaylı raporlar, analiz grafikleri ve dışa aktarma seçenekleri_
 
 ---
 
