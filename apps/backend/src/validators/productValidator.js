@@ -10,7 +10,8 @@
  */
 export const validateProductCreate = data => {
   const errors = [];
-  const { name, sku, category, price, cost_price, stock_quantity, unit } = data;
+  const { name, sku, category, base_price, cost_price, stock_quantity, unit } =
+    data;
 
   // Required fields
   if (!name || name.trim().length === 0) {
@@ -29,11 +30,11 @@ export const validateProductCreate = data => {
     errors.push('Category is required');
   }
 
-  // Price validation
-  if (price === undefined || price === null) {
-    errors.push('Price is required');
-  } else if (typeof price !== 'number' || price < 0) {
-    errors.push('Price must be a positive number');
+  // Base price validation (price without tax)
+  if (base_price === undefined || base_price === null) {
+    errors.push('Base price is required');
+  } else if (typeof base_price !== 'number' || base_price < 0) {
+    errors.push('Base price must be a positive number');
   }
 
   // Cost price validation (optional but must be valid if provided)
@@ -100,7 +101,7 @@ export const validateProductUpdate = data => {
     'sku',
     'barcode',
     'category',
-    'price',
+    'base_price',
     'cost_price',
     'tax_rate',
     'stock_quantity',
@@ -141,9 +142,9 @@ export const validateProductUpdate = data => {
     }
   }
 
-  if (data.price !== undefined) {
-    if (typeof data.price !== 'number' || data.price < 0) {
-      errors.push('Price must be a positive number');
+  if (data.base_price !== undefined) {
+    if (typeof data.base_price !== 'number' || data.base_price < 0) {
+      errors.push('Base price must be a positive number');
     }
   }
 

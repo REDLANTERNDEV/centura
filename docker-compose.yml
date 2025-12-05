@@ -139,6 +139,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
+      INTERNAL_API_URL: http://backend:${BACKEND_PORT:-8765}/api/v1
     ports:
       - '${FRONTEND_PORT:-4321}:4321'
     networks:

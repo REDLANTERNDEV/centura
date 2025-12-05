@@ -24,13 +24,12 @@ export default async function proxy(req: NextRequest) {
   // If there's an access token, verify it with the backend before trusting it.
   if (token) {
     const backendBase =
+      process.env.INTERNAL_API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
       process.env.NEXT_PUBLIC_API_BASE_URL ||
-      'http://localhost:5000';
-    const verifyAccessUrl = new URL(
-      '/api/auth/verify-access',
-      backendBase
-    ).toString();
+      'http://localhost:5000/api/v1';
+    // backendBase already includes /api/v1, so just append the route
+    const verifyAccessUrl = `${backendBase}/auth/verify-access`;
 
     try {
       const cookieHeader = req.headers.get('cookie') || '';
@@ -64,10 +63,12 @@ export default async function proxy(req: NextRequest) {
   if (pathname.startsWith('/dashboard')) {
     // Build backend verify URL. Use NEXT_PUBLIC_API_URL in env for edge runtime.
     const backendBase =
+      process.env.INTERNAL_API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
       process.env.NEXT_PUBLIC_API_BASE_URL ||
-      'http://localhost:5000';
-    const verifyUrl = new URL('/api/auth/verify-token', backendBase).toString();
+      'http://localhost:5000/api/v1';
+    // backendBase already includes /api/v1, so just append the route
+    const verifyUrl = `${backendBase}/auth/verify-token`;
 
     try {
       // Forward cookie header so backend can read HttpOnly refresh_token
