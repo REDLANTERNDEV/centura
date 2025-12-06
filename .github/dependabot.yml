@@ -5,8 +5,33 @@
 
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
       interval: "weekly"
- 
+      day: "monday"
+    
+    open-pull-requests-limit: 5
+    
+    commit-message:
+      prefix: "chore(deps)"
+    
+    # Önem/Risk sırasına göre gruplama
+    groups:
+      # 🟢 Düşük risk - Otomatik merge edilebilir
+      patch-updates:
+        update-types:
+          - "patch"
+      
+      # 🟡 Orta risk - Review gerekir
+      minor-updates:
+        update-types:
+          - "minor"
+      
+      # 🔴 Major güncellemeler GRUPLANMAZ! 
+      # Her biri ayrı PR olarak gelir - dikkatli review
+    
+    # İstemediğiniz paketler (örnek)
+    # ignore:
+    #   - dependency-name: "example-package"
+    #     update-types: ["version-update:semver-major"]
