@@ -81,7 +81,7 @@ router.patch(
 
 /**
  * @route   DELETE /api/products/:id
- * @desc    Delete product
+ * @desc    Soft delete product (arşivle)
  * @access  Private
  */
 router.delete(
@@ -89,6 +89,18 @@ router.delete(
   verifyToken,
   flexibleOrgContext,
   productController.deleteProduct
+);
+
+/**
+ * @route   POST /api/products/:id/restore
+ * @desc    Restore a soft-deleted product
+ * @access  Private
+ */
+router.post(
+  '/:id/restore',
+  verifyToken,
+  flexibleOrgContext,
+  productController.restoreProduct
 );
 
 export default router;

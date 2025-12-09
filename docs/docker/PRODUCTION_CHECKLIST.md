@@ -150,9 +150,9 @@ sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 
 # Create application directory
-sudo mkdir -p /opt/mini-saas-erp
-sudo chown $USER:$USER /opt/mini-saas-erp
-cd /opt/mini-saas-erp
+sudo mkdir -p /opt/centura
+sudo chown $USER:$USER /opt/centura
+cd /opt/centura
 ```
 
 ### 2. Code Deployment
@@ -162,7 +162,7 @@ cd /opt/mini-saas-erp
 git clone <your-repo-url> .
 
 # Or use rsync to copy files
-# rsync -avz --exclude 'node_modules' ./ user@server:/opt/mini-saas-erp/
+# rsync -avz --exclude 'node_modules' ./ user@server:/opt/centura/
 ```
 
 ### 3. Environment Configuration
@@ -253,14 +253,14 @@ chmod +x scripts/backup-db.sh
 crontab -e
 
 # Add this line:
-0 2 * * * /opt/mini-saas-erp/scripts/backup-db.sh >> /var/log/mini-saas-backup.log 2>&1
+0 2 * * * /opt/centura/scripts/backup-db.sh >> /var/log/centura-backup.log 2>&1
 ```
 
 ### 8. Configure Monitoring
 
 ```bash
 # Set up log rotation
-sudo nano /etc/logrotate.d/mini-saas-erp
+sudo nano /etc/logrotate.d/centura
 
 # Add monitoring scripts/tools
 # - Uptime Robot
@@ -376,7 +376,7 @@ sudo systemctl list-unit-files --type=service --state=enabled
 
 ```bash
 # Create update script
-cat > /opt/mini-saas-erp/scripts/update-system.sh << 'EOF'
+cat > /opt/centura/scripts/update-system.sh << 'EOF'
 #!/bin/bash
 sudo apt update
 sudo apt upgrade -y
@@ -384,10 +384,10 @@ docker-compose pull
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 EOF
 
-chmod +x /opt/mini-saas-erp/scripts/update-system.sh
+chmod +x /opt/centura/scripts/update-system.sh
 
 # Schedule weekly (Sunday 3 AM)
-0 3 * * 0 /opt/mini-saas-erp/scripts/update-system.sh >> /var/log/mini-saas-update.log 2>&1
+0 3 * * 0 /opt/centura/scripts/update-system.sh >> /var/log/centura-update.log 2>&1
 ```
 
 ## 📈 Scaling Considerations

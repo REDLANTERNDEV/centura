@@ -132,108 +132,99 @@ export function ProductsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Ürün</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead className='text-right'>
-                Baz Fiyat (KDV Hariç)
+              <TableHead className='min-w-[200px]'>Ürün</TableHead>
+              <TableHead className='hidden md:table-cell'>Kategori</TableHead>
+              <TableHead className='text-right'>Fiyat</TableHead>
+              <TableHead className='text-right hidden lg:table-cell'>
+                Maliyet / Kar
               </TableHead>
-              <TableHead className='text-right'>
-                Satış Fiyatı (KDV Dahil)
-              </TableHead>
-              <TableHead className='text-right'>Alış Fiyatı</TableHead>
-              <TableHead className='text-right'>Kar Marjı</TableHead>
               <TableHead className='text-right'>Stok</TableHead>
-              <TableHead>Durum</TableHead>
-              <TableHead className='text-right'>İşlemler</TableHead>
+              <TableHead className='hidden sm:table-cell'>Durum</TableHead>
+              <TableHead className='w-[50px]'></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.map(product => (
               <TableRow key={product.id} className='hover:bg-muted/50'>
-                {/* Product Info */}
+                {/* Product Info - Ürün adı, SKU ve açıklama birleştirildi */}
                 <TableCell>
-                  <div className='flex flex-col'>
+                  <div className='flex flex-col gap-0.5'>
                     <span className='font-medium'>{product.name}</span>
+                    <div className='flex items-center gap-2'>
+                      <code className='text-xs rounded bg-muted px-1.5 py-0.5 text-muted-foreground'>
+                        {product.sku}
+                      </code>
+                      {/* Mobilde kategoriyi burada göster */}
+                      <span className='md:hidden'>
+                        <ProductCategoryBadge
+                          category={product.category}
+                          size='sm'
+                        />
+                      </span>
+                    </div>
                     {product.description && (
-                      <span className='text-xs text-muted-foreground line-clamp-1'>
+                      <span className='text-xs text-muted-foreground line-clamp-1 max-w-[200px]'>
                         {product.description}
                       </span>
                     )}
                   </div>
                 </TableCell>
 
-                {/* SKU */}
-                <TableCell>
-                  <code className='text-xs rounded bg-muted px-2 py-1'>
-                    {product.sku}
-                  </code>
-                </TableCell>
-
-                {/* Category */}
-                <TableCell>
+                {/* Category - Sadece md ve üstünde göster */}
+                <TableCell className='hidden md:table-cell'>
                   <ProductCategoryBadge category={product.category} />
                 </TableCell>
 
-                {/* Base Price (KDV Hariç) */}
-                <TableCell className='text-right'>
-                  <div className='flex flex-col items-end'>
-                    <span className='font-medium'>
-                      {formatCurrency(product.base_price)}
-                    </span>
-                    <span className='text-xs text-muted-foreground'>
-                      KDV: %{product.tax_rate}
-                    </span>
-                  </div>
-                </TableCell>
-
-                {/* Price (KDV Dahil) */}
+                {/* Fiyat - Baz ve satış fiyatı birleştirildi */}
                 <TableCell className='text-right'>
                   <div className='flex flex-col items-end'>
                     <span className='font-semibold text-primary'>
                       {formatCurrency(product.price)}
                     </span>
                     <span className='text-xs text-muted-foreground'>
-                      Müşteri öder
+                      {formatCurrency(product.base_price)} + %{product.tax_rate}{' '}
+                      KDV
                     </span>
                   </div>
                 </TableCell>
 
-                {/* Cost Price (Alış Fiyatı) */}
-                <TableCell className='text-right text-muted-foreground'>
-                  {product.cost_price
-                    ? formatCurrency(product.cost_price)
-                    : '-'}
-                </TableCell>
-
-                {/* Margin (Kar - KDV Hariç) */}
-                <TableCell className='text-right'>
-                  {product.cost_price ? (
-                    <Badge
-                      variant={
-                        calculateMargin(
-                          product.base_price,
-                          product.cost_price
-                        ) > 30
-                          ? 'default'
-                          : 'secondary'
-                      }
-                    >
-                      {calculateMargin(
-                        product.base_price,
-                        product.cost_price
-                      ).toFixed(1)}
-                      %
-                    </Badge>
-                  ) : (
-                    '-'
-                  )}
+                {/* Maliyet ve Kar - Sadece lg ve üstünde göster */}
+                <TableCell className='text-right hidden lg:table-cell'>
+                  <div className='flex flex-col items-end gap-0.5'>
+                    {product.cost_price ? (
+                      <>
+                        <span className='text-sm text-muted-foreground'>
+                          {formatCurrency(product.cost_price)}
+                        </span>
+                        <Badge
+                          variant={
+                            calculateMargin(
+                              product.base_price,
+                              product.cost_price
+                            ) > 30
+                              ? 'default'
+                              : 'secondary'
+                          }
+                          className='text-xs'
+                        >
+                          %
+                          {calculateMargin(
+                            product.base_price,
+                            product.cost_price
+                          ).toFixed(0)}{' '}
+                          kar
+                        </Badge>
+                      </>
+                    ) : (
+                      <span className='text-muted-foreground'>-</span>
+                    )}
+                  </div>
                 </TableCell>
 
                 {/* Stock */}
                 <TableCell className='text-right'>
-                  <div className='flex flex-col items-end gap-1'>
-                    <span className='font-medium'>
+                  <div className='flex flex-col items-end gap-0.5'>
+                    <span className='font-medium whitespace-nowrap'>
                       {product.stock_quantity} {translateUnit(product.unit)}
                     </span>
                     <StockStatusBadge
@@ -243,18 +234,18 @@ export function ProductsTable({
                   </div>
                 </TableCell>
 
-                {/* Status */}
-                <TableCell>
+                {/* Status - Sadece sm ve üstünde göster */}
+                <TableCell className='hidden sm:table-cell'>
                   <Badge variant={product.is_active ? 'default' : 'secondary'}>
                     {product.is_active ? 'Aktif' : 'Pasif'}
                   </Badge>
                 </TableCell>
 
                 {/* Actions */}
-                <TableCell className='text-right'>
+                <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant='ghost' size='icon'>
+                      <Button variant='ghost' size='icon' className='h-8 w-8'>
                         <MoreVertical className='h-4 w-4' />
                       </Button>
                     </DropdownMenuTrigger>

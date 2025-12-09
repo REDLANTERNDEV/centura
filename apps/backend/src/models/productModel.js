@@ -8,7 +8,7 @@ import pool from '../config/db.js';
 /**
  * Get all products for a specific organization
  * @param {number} orgId - Organization ID
- * @param {object} filters - Optional filters (category, is_active, search, min_price, max_price)
+ * @param {object} filters - Optional filters (category, is_active, search, min_price, max_price, include_deleted)
  * @param {object} pagination - Optional pagination (limit, offset)
  * @returns {Promise<Array>} Array of products
  */
@@ -25,6 +25,11 @@ export const getAllProducts = async (orgId, filters = {}, pagination = {}) => {
 
     const params = [orgId];
     let paramCount = 1;
+
+    // Varsayılan olarak silinmiş ürünleri gösterme (soft delete)
+    if (!filters.include_deleted) {
+      query += ` AND p.deleted_at IS NULL`;
+    }
 
     // Add filters
     if (filters.category) {
@@ -95,17 +100,25 @@ export const getAllProducts = async (orgId, filters = {}, pagination = {}) => {
  * Get product by ID
  * @param {number} productId - Product ID
  * @param {number} orgId - Organization ID
+ * @param {boolean} includeDeleted - Include soft-deleted products
  * @returns {Promise<object|null>} Product object or null
  */
-export const getProductById = async (productId, orgId) => {
+export const getProductById = async (
+  productId,
+  orgId,
+  includeDeleted = false
+) => {
   try {
-    const result = await pool.query(
-      `SELECT p.*, u.email as creator_email
+    let query = `SELECT p.*, u.email as creator_email
        FROM products p
        LEFT JOIN users u ON p.created_by = u.id
-       WHERE p.id = $1 AND p.org_id = $2`,
-      [productId, orgId]
-    );
+       WHERE p.id = $1 AND p.org_id = $2`;
+
+    if (!includeDeleted) {
+      query += ` AND p.deleted_at IS NULL`;
+    }
+
+    const result = await pool.query(query, [productId, orgId]);
     return result.rows[0] || null;
   } catch (error) {
     console.error('Error in getProductById:', error);
@@ -122,7 +135,7 @@ export const getProductById = async (productId, orgId) => {
 export const getProductBySKU = async (sku, orgId) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM products WHERE sku = $1 AND org_id = $2',
+      'SELECT * FROM products WHERE sku = $1 AND org_id = $2 AND deleted_at IS NULL',
       [sku, orgId]
     );
     return result.rows[0] || null;
@@ -288,7 +301,32 @@ export const updateProductStock = async (productId, quantity, orgId) => {
 };
 
 /**
- * Delete a product (soft delete)
+ * Check if product is used in any orders
+ * @param {number} productId - Product ID
+ * @param {number} orgId - Organization ID
+ * @returns {Promise<boolean>} True if product has orders
+ */
+export const hasProductOrders = async (productId, orgId) => {
+  try {
+    const result = await pool.query(
+      `SELECT EXISTS(
+        SELECT 1 FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        WHERE oi.product_id = $1 AND o.org_id = $2
+      ) as has_orders`,
+      [productId, orgId]
+    );
+    return result.rows[0].has_orders;
+  } catch (error) {
+    console.error('Error in hasProductOrders:', error);
+    throw error;
+  }
+};
+
+/**
+ * Soft delete a product (endüstri standardı)
+ * Ürün silinmez, deleted_at alanı set edilir
+ * Siparişlerdeki snapshot veriler korunur
  * @param {number} productId - Product ID
  * @param {number} orgId - Organization ID
  * @returns {Promise<object>} Deleted product
@@ -296,8 +334,11 @@ export const updateProductStock = async (productId, quantity, orgId) => {
 export const deleteProduct = async (productId, orgId) => {
   try {
     const result = await pool.query(
-      `UPDATE products SET is_active = false, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND org_id = $2
+      `UPDATE products 
+       SET deleted_at = CURRENT_TIMESTAMP, 
+           is_active = false,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL
        RETURNING *`,
       [productId, orgId]
     );
@@ -305,6 +346,54 @@ export const deleteProduct = async (productId, orgId) => {
     return result.rows[0];
   } catch (error) {
     console.error('Error in deleteProduct:', error);
+    throw error;
+  }
+};
+
+/**
+ * Permanently delete a product (hard delete)
+ * DİKKAT: Sadece siparişi olmayan ürünler için kullanın!
+ * @param {number} productId - Product ID
+ * @param {number} orgId - Organization ID
+ * @returns {Promise<object>} Deleted product
+ */
+export const hardDeleteProduct = async (productId, orgId) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM products 
+       WHERE id = $1 AND org_id = $2
+       RETURNING *`,
+      [productId, orgId]
+    );
+
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error in hardDeleteProduct:', error);
+    throw error;
+  }
+};
+
+/**
+ * Restore a soft-deleted product
+ * @param {number} productId - Product ID
+ * @param {number} orgId - Organization ID
+ * @returns {Promise<object>} Restored product
+ */
+export const restoreProduct = async (productId, orgId) => {
+  try {
+    const result = await pool.query(
+      `UPDATE products 
+       SET deleted_at = NULL, 
+           is_active = true,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND org_id = $2 AND deleted_at IS NOT NULL
+       RETURNING *`,
+      [productId, orgId]
+    );
+
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error in restoreProduct:', error);
     throw error;
   }
 };

@@ -286,6 +286,7 @@ CREATE TRIGGER update_customers_updated_at
 
 -- ============================================
 -- TABLE: products
+-- Soft delete: deleted_at NULL değilse ürün silinmiş demektir
 -- ============================================
 CREATE TABLE IF NOT EXISTS products (
   id SERIAL PRIMARY KEY,
@@ -303,6 +304,7 @@ CREATE TABLE IF NOT EXISTS products (
   low_stock_threshold INTEGER DEFAULT 10,
   unit VARCHAR(50) NOT NULL,
   is_active BOOLEAN DEFAULT TRUE,
+  deleted_at TIMESTAMPTZ DEFAULT NULL,  -- Soft delete: NULL = aktif, tarih = silinmiş
   created_by INTEGER REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -323,6 +325,8 @@ CREATE INDEX IF NOT EXISTS idx_products_org_id ON products(org_id);
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_is_active ON products(is_active);
+CREATE INDEX IF NOT EXISTS idx_products_deleted_at ON products(deleted_at);  -- Soft delete index
+CREATE INDEX IF NOT EXISTS idx_products_active_not_deleted ON products(org_id) WHERE deleted_at IS NULL;  -- Aktif ürünler için partial index
 CREATE INDEX IF NOT EXISTS idx_products_low_stock ON products(stock_quantity, low_stock_threshold);
 CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
 
@@ -392,11 +396,16 @@ CREATE TRIGGER update_orders_updated_at
 
 -- ============================================
 -- TABLE: order_items
+-- Ürün bilgileri snapshot olarak saklanır (ürün silinse bile sipariş geçmişi korunur)
 -- ============================================
 CREATE TABLE IF NOT EXISTS order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,  -- Ürün silinirse NULL olur
+  -- Ürün Snapshot (sipariş anındaki değerler)
+  product_name VARCHAR(255) NOT NULL,           -- Ürün adı snapshot
+  product_sku VARCHAR(100),                     -- SKU snapshot
+  product_category VARCHAR(100),                -- Kategori snapshot
   quantity INTEGER NOT NULL,
   unit_price DECIMAL(10, 2) NOT NULL,
   tax_rate DECIMAL(5, 2) DEFAULT 0.00,

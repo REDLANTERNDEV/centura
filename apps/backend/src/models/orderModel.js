@@ -361,16 +361,19 @@ export const createOrder = async (orderData, orgId, userId) => {
       const itemTaxAmount = (itemSubtotal - discount_amount) * (tax_rate / 100);
       const itemTotal = itemSubtotal - discount_amount + itemTaxAmount;
 
-      // Create order item
+      // Create order item with product snapshot (endüstri standardı)
       const itemResult = await client.query(
         `INSERT INTO order_items (
-          order_id, product_id, quantity, unit_price, tax_rate,
-          discount_amount, subtotal, tax_amount, total
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          order_id, product_id, product_name, product_sku, product_category,
+          quantity, unit_price, tax_rate, discount_amount, subtotal, tax_amount, total
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *`,
         [
           order.id,
           product_id,
+          product.name, // Snapshot: ürün adı
+          product.sku, // Snapshot: SKU
+          product.category, // Snapshot: kategori
           quantity,
           unit_price,
           tax_rate,
@@ -557,9 +560,10 @@ export const deleteOrderItems = async (orderId, orgId) => {
 /**
  * Add order item
  * @param {object} itemData - Item data
+ * @param {object} productSnapshot - Product snapshot data (name, sku, category)
  * @returns {Promise<object>} Created item
  */
-export const addOrderItem = async itemData => {
+export const addOrderItem = async (itemData, productSnapshot = {}) => {
   const {
     order_id,
     product_id,
@@ -569,6 +573,8 @@ export const addOrderItem = async itemData => {
     discount_amount = 0,
   } = itemData;
 
+  const { product_name, product_sku, product_category } = productSnapshot;
+
   // Calculate item totals
   const itemSubtotal = quantity * unit_price;
   const itemTaxAmount = (itemSubtotal - discount_amount) * (tax_rate / 100);
@@ -576,13 +582,16 @@ export const addOrderItem = async itemData => {
 
   const result = await pool.query(
     `INSERT INTO order_items (
-      order_id, product_id, quantity, unit_price, tax_rate,
-      discount_amount, subtotal, tax_amount, total
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      order_id, product_id, product_name, product_sku, product_category,
+      quantity, unit_price, tax_rate, discount_amount, subtotal, tax_amount, total
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *`,
     [
       order_id,
       product_id,
+      product_name,
+      product_sku,
+      product_category,
       quantity,
       unit_price,
       tax_rate,

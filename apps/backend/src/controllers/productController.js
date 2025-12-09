@@ -271,19 +271,28 @@ export const updateProductStock = async (req, res) => {
 };
 
 /**
- * Delete product (soft delete)
+ * Delete product (soft delete - endüstri standardı)
+ * Ürün arşivlenir, sipariş geçmişi korunur
  */
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const orgId = getOrgId(req);
 
-    // Check if product exists
-    const existingProduct = await productModel.getProductById(id, orgId);
+    // Check if product exists (include deleted to give proper message)
+    const existingProduct = await productModel.getProductById(id, orgId, true);
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
         message: getMessage('PRODUCT.NOT_FOUND'),
+      });
+    }
+
+    // Check if already deleted
+    if (existingProduct.deleted_at) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bu ürün zaten silinmiş.',
       });
     }
 
@@ -299,6 +308,47 @@ export const deleteProduct = async (req, res) => {
     res.status(500).json({
       success: false,
       message: getMessage('PRODUCT.DELETE_ERROR'),
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Restore a soft-deleted product
+ */
+export const restoreProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const orgId = getOrgId(req);
+
+    // Check if product exists and is deleted
+    const existingProduct = await productModel.getProductById(id, orgId, true);
+    if (!existingProduct) {
+      return res.status(404).json({
+        success: false,
+        message: getMessage('PRODUCT.NOT_FOUND'),
+      });
+    }
+
+    if (!existingProduct.deleted_at) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bu ürün zaten aktif.',
+      });
+    }
+
+    const product = await productModel.restoreProduct(id, orgId);
+
+    res.json({
+      success: true,
+      message: 'Ürün başarıyla geri yüklendi.',
+      data: product,
+    });
+  } catch (error) {
+    console.error('Error in restoreProduct controller:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ürün geri yüklenirken bir hata oluştu.',
       error: error.message,
     });
   }

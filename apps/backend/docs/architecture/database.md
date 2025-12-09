@@ -918,6 +918,8 @@ INSERT INTO customers (
 
 Product catalog with inventory management for ERP system.
 
+**Soft Delete Support (December 2024):** Products use soft delete (`deleted_at` timestamp) to preserve order history integrity.
+
 ```sql
 CREATE TABLE products (
   id SERIAL PRIMARY KEY,
@@ -935,6 +937,7 @@ CREATE TABLE products (
   low_stock_threshold INTEGER DEFAULT 10,
   unit VARCHAR(50) NOT NULL,
   is_active BOOLEAN DEFAULT TRUE,
+  deleted_at TIMESTAMPTZ DEFAULT NULL, -- Soft delete: NULL = active, timestamp = deleted
   created_by INTEGER REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -963,7 +966,8 @@ CREATE TABLE products (
 - `stock_quantity`: Current stock quantity
 - `low_stock_threshold`: Alert threshold for low stock
 - `unit`: Unit of measurement (pcs, kg, liter, box, etc.)
-- `is_active`: Product active status (for soft delete)
+- `is_active`: Product active status (legacy, use deleted_at for soft delete)
+- `deleted_at`: Soft delete timestamp (NULL = active, timestamp = deleted) - **Added December 2024**
 - `created_by`: User who created this product
 - `created_at`: Record creation timestamp
 - `updated_at`: Last update timestamp (auto-updated via trigger)
@@ -980,6 +984,8 @@ CREATE INDEX idx_products_org_id ON products(org_id);
 CREATE INDEX idx_products_sku ON products(sku);
 CREATE INDEX idx_products_category ON products(category);
 CREATE INDEX idx_products_is_active ON products(is_active);
+CREATE INDEX idx_products_deleted_at ON products(deleted_at);
+CREATE INDEX idx_products_active_not_deleted ON products(org_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_products_low_stock ON products(stock_quantity, low_stock_threshold);
 CREATE INDEX idx_products_created_at ON products(created_at DESC);
 ```
@@ -1135,11 +1141,19 @@ CREATE INDEX idx_orders_date_range ON orders(org_id, order_date DESC);
 
 Individual line items within orders.
 
+**Product Snapshot (December 2024):** Order items now store product information at the time of order creation. This ensures order history remains accurate even if products are modified or deleted.
+
 ```sql
 CREATE TABLE order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL, -- NULL if product deleted
+
+  -- Product Snapshot (values at time of order - preserved even if product is deleted/changed)
+  product_name VARCHAR(255) NOT NULL,      -- Product name snapshot
+  product_sku VARCHAR(100),                -- SKU snapshot
+  product_category VARCHAR(100),           -- Category snapshot
+
   quantity INTEGER NOT NULL,
   unit_price DECIMAL(10, 2) NOT NULL,
   tax_rate DECIMAL(5, 2) DEFAULT 0.00,
@@ -1165,7 +1179,10 @@ CREATE TABLE order_items (
 
 - `id`: Auto-incrementing primary key
 - `order_id`: Foreign key to orders table
-- `product_id`: Foreign key to products table
+- `product_id`: Foreign key to products table (nullable - becomes NULL if product is deleted)
+- `product_name`: **Snapshot** - Product name at time of order (preserved forever)
+- `product_sku`: **Snapshot** - SKU at time of order
+- `product_category`: **Snapshot** - Category at time of order
 - `quantity`: Quantity ordered
 - `unit_price`: Price per unit (stored for historical accuracy - doesn't change if product price changes)
 - `tax_rate`: Tax percentage for this item
@@ -1184,7 +1201,7 @@ CREATE TABLE order_items (
 **Foreign Keys:**
 
 - `order_id` → `orders(id)` ON DELETE CASCADE
-- `product_id` → `products(id)` ON DELETE RESTRICT
+- `product_id` → `products(id)` ON DELETE SET NULL (product deletion sets to NULL, snapshot data preserved)
 
 **Indexes:**
 
@@ -1195,13 +1212,40 @@ CREATE INDEX idx_order_items_product_id ON order_items(product_id);
 
 **Important Notes:**
 
+- **Product Snapshot (December 2024)**: `product_name`, `product_sku`, `product_category` store values at order time
 - Prices and tax rates are **stored** (not referenced) to maintain historical accuracy
+- If a product is deleted, `product_id` becomes NULL but snapshot data remains
 - If a product's price changes after an order is placed, the order retains the original price
 - This is essential for financial accuracy and invoice generation
+
+**Why Snapshot + SET NULL?**
+
+```text
+Industry Standard Pattern (used by Shopify, Amazon, Stripe):
+
+1. Customer orders "iPhone 15" at $999
+2. Order stores: product_id=123, product_name="iPhone 15", unit_price=999
+
+3. Later, product is renamed to "iPhone 15 (Discontinued)"
+   → Order still shows "iPhone 15" (snapshot preserved)
+
+4. Later, product is deleted
+   → product_id becomes NULL
+   → Order still shows "iPhone 15", $999 (snapshot preserved)
+   → Financial records remain accurate
+   → Reports work correctly
+```
 
 ---
 
 ## Migration Files
+
+- **Product Soft Delete & Order Snapshot (December 2024)**
+  - Added `deleted_at` column to products table (soft delete support)
+  - Added snapshot columns to order_items (`product_name`, `product_sku`, `product_category`)
+  - Changed `product_id` foreign key from RESTRICT to SET NULL
+  - Industry-standard pattern for order history preservation
+  - Migration script: `apps/backend/scripts/migrate-product-soft-delete.sql`
 
 - **UUID Extension (November 2024)**
   - Added `uuid-ossp` PostgreSQL extension
