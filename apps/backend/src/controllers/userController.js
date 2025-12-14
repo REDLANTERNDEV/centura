@@ -154,8 +154,19 @@ const login = async (req, res) => {
 
     const expiresAt = new Date(Date.now() + refreshExpiryMs);
 
-    // Store refresh token in database (automatically hashed in userModel.storeRefreshToken)
-    await userModel.storeRefreshToken(user.id, refreshToken, expiresAt);
+    // Get device info from user-agent for session identification
+    const deviceInfo = req.headers['user-agent'] || 'Unknown Device';
+
+    // Store refresh token in database with new token family (new session)
+    // Industry Standard: Each login creates a NEW session, doesn't affect other sessions
+    // This allows multiple concurrent logins from different devices/browsers
+    await userModel.storeRefreshToken(
+      user.id,
+      refreshToken,
+      expiresAt,
+      null,
+      deviceInfo
+    );
 
     // Generate CSRF token
     const csrfToken = crypto.randomBytes(32).toString('hex');
@@ -290,12 +301,18 @@ const refreshToken = async (req, res) => {
 
     const expiresAt = new Date(Date.now() + refreshExpiryMs);
 
-    // Revoke old token and store new one (token rotation for security)
-    await userModel.revokeRefreshToken(refreshToken);
+    // Industry Standard Token Rotation:
+    // 1. Revoke ALL tokens in this token family (same session/device)
+    // 2. Store new token with the SAME token family (maintains session identity)
+    // This ensures token rotation only affects the current session, not other devices
+    const tokenFamily = tokenData.token_family;
+    await userModel.revokeTokenFamily(tokenFamily);
     await userModel.storeRefreshToken(
       tokenData.user_id,
       newRefreshToken,
-      expiresAt
+      expiresAt,
+      tokenFamily, // Keep the same token family for this session
+      tokenData.device_info
     );
 
     // Generate new CSRF token

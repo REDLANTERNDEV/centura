@@ -84,13 +84,18 @@ CREATE TRIGGER update_users_updated_at
 
 -- ============================================
 -- TABLE: refresh_tokens
+-- Industry Standard Multi-Session Support
 -- ============================================
 CREATE TABLE IF NOT EXISTS refresh_tokens (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL,
+  token_family UUID NOT NULL DEFAULT gen_random_uuid(),
+  device_info TEXT DEFAULT NULL,
+  session_name TEXT DEFAULT NULL,
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  last_used_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   is_revoked BOOLEAN DEFAULT FALSE
 );
 
@@ -99,6 +104,7 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_created_at ON refresh_tokens(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_family ON refresh_tokens(token_family);
 
 -- Optimized composite indexes for performance (login/logout optimization)
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_active 
@@ -107,6 +113,16 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_active
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_lookup 
   ON refresh_tokens(expires_at DESC, is_revoked, created_at DESC) 
+  WHERE is_revoked = FALSE;
+
+-- Index for user session management
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_sessions 
+  ON refresh_tokens(user_id, is_revoked, expires_at) 
+  WHERE is_revoked = FALSE;
+
+-- Index for token family operations
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_family_active 
+  ON refresh_tokens(token_family, is_revoked) 
   WHERE is_revoked = FALSE;
 
 -- ============================================
