@@ -80,13 +80,76 @@ _Detaylı raporlar, analiz grafikleri ve dışa aktarma seçenekleri_
 
 ### Gereksinimler
 
-- Node.js 18+
-- PostgreSQL 14+
-- Docker & Docker Compose (Önerilir)
+- **Docker & Docker Compose** (Önerilen - tüm bağımlılıkları otomatik yönetir)
+- Node.js 20+ (Manuel kurulum için)
+- PostgreSQL 16+ (Manuel kurulum için)
 
-### Kurulum
+### Installation & Setup
 
-#### Docker ile (Önerilen)
+#### 🐳 Docker ile (Önerilen & Tavsiye Edilen)
+
+**1. Ortam Dosyasını Hazırlayın**
+
+```bash
+# Repository'yi klonlayın
+git clone https://github.com/REDLANTERNDEV/centura.git
+cd centura
+
+# Ortam değişkenlerini .env.docker.example'den kopyalayın
+cp .env.docker.example .env
+```
+
+Ardından `.env` dosyasında şunları kontrol edin:
+
+- `DB_PASSWORD` - Veritabanı şifresi (güvenli bir şifre kullanın)
+- `JWT_SECRET` - En az 32 karakter (güvenli bir key oluşturun)
+- `SESSION_SECRET` - En az 32 karakter
+- `NODE_ENV` - "development" veya "production"
+
+**2. Geliştirme Ortamında Çalıştırın**
+
+```bash
+# İlk Kurulum (bağımlılıkları yükler ve konteynerleri oluşturur)
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+# Sonraki Çalıştırmalar (varolan görüntüleri kullanır)
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+
+**3. Uygulamaya Erişin**
+
+| Hizmet         | URL                                 | Port |
+| -------------- | ----------------------------------- | ---- |
+| Frontend (Dev) | http://localhost:4321               | 4321 |
+| Backend API    | http://localhost:8765/api/v1        | 8765 |
+| Health Check   | http://localhost:8765/api/v1/health | 8765 |
+| PostgreSQL     | localhost:5432                      | 5432 |
+
+**4. Opsiyonel - Veritabanını İşletme**
+
+```bash
+# Prisma Studio (Veritabanını GUI ile görüntüleyin)
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml exec backend npx prisma studio
+
+# Veritabanını Sıfırla (tüm veri silinir)
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+```
+
+---
+
+#### 🚀 Üretim Ortamında Deployment
+
+```bash
+# Üretim görüntülerini oluşturun ve başlatın
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# Durumu kontrol edin
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+```
+
+---
+
+#### 💻 Manuel Kurulum (Docker Olmadan)
 
 ```bash
 # Repository'yi klonlayın
@@ -96,36 +159,40 @@ cd centura
 # Ortam değişkenlerini ayarlayın
 cp .env.example .env
 
-# Development ortamında çalıştırın
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
-
-# Uygulamaya erişin
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8765/api/v1
-# Health Check: http://localhost:8765/api/v1/health
-```
-
-#### Manuel Kurulum
-
-```bash
-# Repository'yi klonlayın
-git clone https://github.com/REDLANTERNDEV/centura.git
-cd centura
-
-# Bağımlılıkları yükleyin
+# Tüm bağımlılıkları yükleyin (root workspace)
 npm install
 
-# Backend başlatın
+# Backend başlatın (Terminal 1)
 cd apps/backend
 npm run dev
+# Backend çalışıyor: http://localhost:8765
 
-# Yeni bir terminal'de Frontend başlatın
+# Frontend başlatın (Terminal 2)
 cd apps/frontend
 npm run dev
+# Frontend çalışıyor: http://localhost:3000
+```
 
-# Uygulamaya erişin
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8765
+### 🔧 Genel Docker Komutları
+
+```bash
+# Tüm container'ları başlat
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# Tüm container'ları durdur
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
+
+# Logları görüntüle
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
+
+# Belirli servisi restart et
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml restart backend
+
+# Container'a bash erişimi
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml exec backend sh
+
+# Veritabanını temizle (uyarı: tüm veri silinir)
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 ```
 
 ---
@@ -175,26 +242,36 @@ centura/
 
 ### Frontend
 
-- **Next.js 16** - React SSR framework
-- **React 19** - UI kütüphanesi
-- **TypeScript** - Tip güvenliği
-- **Tailwind CSS** - Styling
-- **Recharts** - Grafikler ve istatistikler
-- **Radix UI** - Erişilebilir bileşenler
+- **Next.js 16** - React SSR & Static Generation Framework
+- **React 19** - UI Library
+- **TypeScript** - Type-safe development
+- **Tailwind CSS 4** - Utility-first CSS framework
+- **Recharts** - Charts & visualizations
+- **Radix UI** - Accessible component library
+- **Axios** - HTTP client for API calls
+- **Zod** - Runtime type validation
 
 ### Backend
 
-- **Express.js** - API sunucusu
-- **Node.js** - Runtime
-- **PostgreSQL** - İlişkisel veritabanı
-- **JWT** - Kimlik doğrulama
-- **Argon2** - Parola şifreleme
+- **Express.js 5** - Minimal web framework
+- **Node.js 20** - JavaScript runtime
+- **PostgreSQL 16** - Relational database
+- **JWT** - Stateless authentication
+- **Argon2** - Password hashing
+- **node-cron** - Scheduled tasks (token cleanup)
 
-### DevOps
+### DevOps & Infrastructure
 
-- **Docker** - Konteynerizasyon
-- **Docker Compose** - Multi-container orkestrasyon
-- **Nginx** - Reverse proxy
+- **Docker** - Container runtime
+- **Docker Compose** - Multi-container orchestration
+- **Nginx** - Reverse proxy (optional, production)
+- **Prisma** - ORM (planned for future use)
+
+### Development Tools
+
+- **ESLint** - Code linting
+- **Nodemon** - Auto-reload for backend
+- **Turbopack** - Next.js dev compiler (fast builds)
 
 ---
 

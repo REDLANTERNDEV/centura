@@ -6,8 +6,8 @@
 -- Run this ONLY on a fresh database
 -- ============================================
 
--- Set timezone to UTC
-ALTER DATABASE saasdb SET timezone TO 'UTC';
+-- Set timezone to UTC (database will be created automatically)
+-- ALTER DATABASE centura_crm SET timezone TO 'UTC';
 
 -- ============================================
 -- EXTENSION: UUID support
@@ -109,7 +109,7 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_family ON refresh_tokens(tok
 -- Optimized composite indexes for performance (login/logout optimization)
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_active 
   ON refresh_tokens(expires_at, is_revoked) 
-  WHERE is_revoked = FALSE AND expires_at > NOW();
+  WHERE is_revoked = FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_lookup 
   ON refresh_tokens(expires_at DESC, is_revoked, created_at DESC) 

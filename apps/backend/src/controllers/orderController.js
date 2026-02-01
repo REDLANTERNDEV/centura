@@ -409,13 +409,21 @@ export const updateOrder = async (req, res) => {
         const itemTotal = itemSubtotal + itemTax;
         total += itemTotal;
 
-        await orderModel.addOrderItem({
-          order_id: id,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          unit_price: product.base_price,
-          tax_rate: product.tax_rate,
-        });
+        // Pass product snapshot to preserve product info at order time
+        await orderModel.addOrderItem(
+          {
+            order_id: id,
+            product_id: item.product_id,
+            quantity: item.quantity,
+            unit_price: product.base_price,
+            tax_rate: product.tax_rate,
+          },
+          {
+            product_name: product.name,
+            product_sku: product.sku,
+            product_category: product.category_id,
+          }
+        );
       }
 
       // Update order total

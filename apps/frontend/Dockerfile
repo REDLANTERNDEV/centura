@@ -63,7 +63,37 @@ WORKDIR /app/apps/frontend
 RUN npm run build
 
 # ============================================
-# Stage 4: Production image
+# Stage 4: Development image (for development with hot reload)
+# ============================================
+FROM base AS dev
+
+WORKDIR /app
+
+# Copy node_modules from dependencies stage (includes devDependencies)
+COPY --from=dependencies /app/node_modules ./node_modules
+
+# Copy all package files
+COPY package*.json ./
+COPY apps/frontend/package.json ./apps/frontend/
+
+# Copy frontend application code
+COPY apps/frontend ./apps/frontend
+
+# Create .next directory and ensure proper permissions
+RUN mkdir -p /app/apps/frontend/.next && \
+    chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
+# Expose application port
+EXPOSE 4321
+
+# Development command will be overridden in docker-compose
+CMD ["npm", "run", "dev"]
+
+# ============================================
+# Stage 5: Production image
 # ============================================
 FROM base AS production
 

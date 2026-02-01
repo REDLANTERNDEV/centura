@@ -22,8 +22,8 @@ services:
       PGTZ: UTC
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Optional: Custom init scripts
-      # - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      # Initialize database schema on first run
+      - ./apps/backend/scripts/init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql:ro
     ports:
       - '${DB_PORT:-5432}:5432'
     networks:
@@ -98,7 +98,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4321}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4321}
     ports:
       - '${BACKEND_PORT:-8765}:${BACKEND_PORT:-8765}'
     networks:
@@ -139,8 +139,10 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}
+      # For browser requests: use http://localhost or production domain
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
-      INTERNAL_API_URL: http://backend:${BACKEND_PORT:-8765}/api/v1
+      # For server-side requests in Next.js: use internal Docker hostname
+      INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:${BACKEND_PORT:-8765}/api/v1}
     ports:
       - '${FRONTEND_PORT:-4321}:4321'
     networks:

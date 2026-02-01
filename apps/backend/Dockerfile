@@ -38,8 +38,6 @@ RUN npm ci --ignore-scripts && \
 # ============================================
 # Stage 3: Build stage
 # ============================================
-# Stage 3: Build stage
-# ============================================
 FROM base AS build
 
 WORKDIR /app
@@ -54,7 +52,36 @@ COPY apps/backend ./apps/backend
 # RUN npm run build --workspace mini-saas-erp-be
 
 # ============================================
-# Stage 4: Production image
+# Stage 4: Development image (for development with hot reload)
+# ============================================
+FROM base AS dev
+
+WORKDIR /app
+
+# Copy node_modules from dependencies stage (includes devDependencies)
+COPY --from=dependencies /app/node_modules ./node_modules
+
+# Copy all package files
+COPY package*.json ./
+COPY apps/backend/package.json ./apps/backend/
+
+# Copy backend application code
+COPY apps/backend ./apps/backend
+
+# Ensure proper permissions for the nodejs user
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose application port
+EXPOSE 8765
+
+# Development command will be overridden in docker-compose
+CMD ["npm", "run", "dev"]
+
+# ============================================
+# Stage 5: Production image
 # ============================================
 FROM base AS production
 

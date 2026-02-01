@@ -6,11 +6,16 @@
 import axios, { AxiosError } from 'axios';
 
 // Get base URL from environment variable
+// In browser: use NEXT_PUBLIC_API_URL (localhost)
+// In Node.js/Server: use INTERNAL_API_URL (Docker hostname) or fallback to NEXT_PUBLIC_API_URL
 const API_BASE_URL =
-  process.env.INTERNAL_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'http://localhost:8765/api/v1';
+  typeof window !== 'undefined'
+    ? // Browser environment - use public URL
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8765/api/v1'
+    : // Server environment (Next.js SSR, API routes)
+      process.env.INTERNAL_API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:8765/api/v1';
 
 // Create axios instance with default config
 export const apiClient = axios.create({
