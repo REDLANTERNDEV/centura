@@ -10,7 +10,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: mini-saas-postgres
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_DB: ${DB_NAME:-mini_saas_erp}
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -85,7 +85,7 @@ services:
       dockerfile: apps/backend/Dockerfile
       target: production
     container_name: mini-saas-backend
-    restart: unless-stopped
+    restart: always
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${BACKEND_PORT:-8765}
@@ -140,7 +140,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
     container_name: mini-saas-frontend
-    restart: unless-stopped
+    restart: always
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       # For browser requests: use http://localhost or production domain
@@ -181,7 +181,7 @@ services:
   nginx:
     image: nginx:alpine
     container_name: mini-saas-nginx
-    restart: unless-stopped
+    restart: always
     profiles:
       - production
     ports:
