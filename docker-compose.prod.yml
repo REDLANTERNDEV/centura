@@ -14,14 +14,12 @@ services:
         reservations:
           cpus: '1'
           memory: 1G
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
     # Backup configuration
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
 
   backend:
     restart: always
@@ -38,15 +36,13 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
     logging:
       driver: 'json-file'
       options:
         max-size: '10m'
         max-file: '3'
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
 
   frontend:
     restart: always
@@ -67,15 +63,13 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
     logging:
       driver: 'json-file'
       options:
         max-size: '10m'
         max-file: '3'
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
 
   nginx:
     profiles: [] # Enable nginx in production
@@ -88,3 +82,5 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+        restart_policy:
+          condition: any

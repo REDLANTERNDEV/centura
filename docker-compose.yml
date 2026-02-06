@@ -73,6 +73,8 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
 
   # ============================================
   # Backend API Service
@@ -124,6 +126,8 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
 
   # ============================================
   # Frontend Service
@@ -168,6 +172,8 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
 
   # ============================================
   # Nginx Reverse Proxy (Optional for production)
