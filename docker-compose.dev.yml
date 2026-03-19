@@ -50,11 +50,14 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4321
+      WATCHPACK_POLLING: 'true'
+      CHOKIDAR_USEPOLLING: 'true'
+      NEXT_WEBPACK_USEPOLLING: '1'
       # Browser requests go to localhost (dev only)
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
       # Server-side requests use Docker internal hostname
       INTERNAL_API_URL: http://backend:${BACKEND_PORT:-8765}/api/v1
     working_dir: /app/apps/frontend
-    command: npm run dev
+    command: npm run dev:docker
     ports:
       - '4321:4321'
