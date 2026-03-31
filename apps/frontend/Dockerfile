@@ -26,7 +26,7 @@ FROM base AS dependencies
 WORKDIR /app
 
 # Copy workspace root package files
-COPY package*.json ./
+COPY package*.json .npmrc ./
 
 # Copy frontend workspace package.json
 COPY apps/frontend/package.json ./apps/frontend/

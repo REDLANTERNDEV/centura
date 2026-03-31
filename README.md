@@ -160,7 +160,8 @@ cd centura
 cp .env.example .env
 
 # Tüm bağımlılıkları yükleyin (root workspace)
-npm install
+# 'npm ci' kullanımı önerilir; lockfile'daki sürümleri birebir yükler ve daha güvenlidir.
+npm ci
 
 # Backend başlatın (Terminal 1)
 cd apps/backend
@@ -292,7 +293,15 @@ centura/
 
 - Argon2 ile parola şifreleme
 - HTTPS/TLS desteği
-- CORS güvenliği
+  ✅ **Güvenli Paket Yönetimi**
+
+- `min-release-age=3`: 3 günden yeni yayınlanmış paketlerin kurulumu reddedilir (Supply Chain Protection).
+- `ignore-scripts=true`: Kurulum sırasında otomatik çalışan betikler (postinstall vb.) devre dışı bırakılmıştır.
+- `save-exact=true`: Yeni paketler `package.json` dosyasına tam sürüm numarasıyla kaydedilir.
+- `npm ci` kullanımı: Üretim ve CI ortamlarında temiz ve güvenli kurulum sağlar.
+
+✅ **CORS güvenliği**
+
 - Rate limiting
 
 ✅ **Denetim**
