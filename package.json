@@ -26,6 +26,10 @@
     "prettier": "^3.8.1",
     "typescript-eslint": "^8.53.1"
   },
+  "overrides": {
+    "ip-address": "^10.2.0",
+    "postcss": "^8.5.10"
+  },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,md}": [
       "prettier --write",
