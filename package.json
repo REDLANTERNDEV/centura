@@ -28,7 +28,11 @@
   },
   "overrides": {
     "ip-address": "^10.2.0",
-    "postcss": "^8.5.10"
+    "lodash": "^4.18.0",
+    "postcss": "^8.5.10",
+    "next": {
+      "postcss": "^8.5.10"
+    }
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,md}": [
