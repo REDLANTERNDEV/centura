@@ -70,15 +70,3 @@ services:
         max-file: '3'
     stop_grace_period: 30s
     stop_signal: SIGTERM
-
-  nginx:
-    profiles: [] # Enable nginx in production
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M

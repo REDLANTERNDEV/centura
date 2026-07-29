@@ -9,7 +9,6 @@ services:
   # ============================================
   postgres:
     image: postgres:16-alpine
-    container_name: mini-saas-postgres
     restart: always
     environment:
       POSTGRES_DB: ${DB_NAME:-mini_saas_erp}
@@ -84,7 +83,6 @@ services:
       context: . # Root context for workspace
       dockerfile: apps/backend/Dockerfile
       target: production
-    container_name: mini-saas-backend
     restart: always
     environment:
       NODE_ENV: ${NODE_ENV:-production}
@@ -139,7 +137,6 @@ services:
       target: production
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
-    container_name: mini-saas-frontend
     restart: always
     environment:
       NODE_ENV: ${NODE_ENV:-production}
@@ -180,7 +177,6 @@ services:
   # ============================================
   nginx:
     image: nginx:alpine
-    container_name: mini-saas-nginx
     restart: always
     profiles:
       - production
@@ -217,9 +213,6 @@ services:
 networks:
   mini-saas-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
 
 # ============================================
 # Volumes
