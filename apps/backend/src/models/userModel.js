@@ -1,5 +1,29 @@
 import pool from '../config/db.js';
 import argon2 from 'argon2';
+import jwt from 'jsonwebtoken';
+
+/**
+ * Extract the user id from a refresh token so lookups can be scoped to that user.
+ *
+ * Refresh tokens are signed JWTs, so the owner is recoverable without touching the
+ * database. Without this, token lookup has to scan tokens belonging to every user
+ * and run one Argon2 verification per row.
+ *
+ * The signature is verified here, which also rejects tampered or expired tokens
+ * before any database work happens.
+ *
+ * @param {string} token - Raw refresh token
+ * @returns {number|null} User id, or null if the token is not a valid refresh token
+ */
+const getUserIdFromRefreshToken = token => {
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    return payload?.type === 'refresh' ? payload.userId : null;
+  } catch {
+    // Malformed, tampered, or expired token - treat as not found.
+    return null;
+  }
+};
 
 /**
  * Create a new user - Modern approach
@@ -97,18 +121,23 @@ const storeRefreshToken = async (
  * @returns {Promise<object|null>} Token data with user info and token_family, or null if invalid
  */
 const validateRefreshToken = async token => {
-  // OPTIMIZED: Query active tokens for validation
-  // We need to check against hashed tokens, but we limit the search scope
+  // Scope the lookup to the token's own user. Argon2 hashes are salted, so the row
+  // cannot be found by hash equality - each candidate needs a verify() call. Without
+  // scoping, that meant verifying against other users' tokens, and a LIMIT could
+  // push a valid token out of range entirely, logging the user out.
+  const userId = getUserIdFromRefreshToken(token);
+  if (!userId) return null;
+
   const result = await pool.query(
     `SELECT rt.id, rt.token_hash, rt.token_family, rt.user_id, rt.device_info,
             u.email, u.org_id, u.name as user_name
-     FROM refresh_tokens rt 
-     JOIN users u ON rt.user_id = u.id 
-     WHERE rt.expires_at > NOW() 
+     FROM refresh_tokens rt
+     JOIN users u ON rt.user_id = u.id
+     WHERE rt.user_id = $1
+       AND rt.expires_at > NOW()
        AND rt.is_revoked = FALSE
-     ORDER BY rt.last_used_at DESC NULLS LAST, rt.created_at DESC
-     LIMIT 100`,
-    []
+     ORDER BY rt.last_used_at DESC NULLS LAST, rt.created_at DESC`,
+    [userId]
   );
 
   // Check each token hash against the provided token
@@ -140,15 +169,18 @@ const validateRefreshToken = async token => {
  * @returns {Promise<boolean>} True if token was revoked
  */
 const revokeRefreshToken = async token => {
-  // Query active tokens to find the matching one
+  // Scoped to the token's own user - see validateRefreshToken for the reasoning.
+  const userId = getUserIdFromRefreshToken(token);
+  if (!userId) return false;
+
   const result = await pool.query(
-    `SELECT id, token_hash 
-     FROM refresh_tokens 
-     WHERE expires_at > NOW() 
+    `SELECT id, token_hash
+     FROM refresh_tokens
+     WHERE user_id = $1
+       AND expires_at > NOW()
        AND is_revoked = FALSE
-     ORDER BY last_used_at DESC NULLS LAST, created_at DESC
-     LIMIT 100`,
-    []
+     ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
+    [userId]
   );
 
   for (const row of result.rows) {

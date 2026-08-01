@@ -1,1405 +1,360 @@
-# Database Schema
+# Veritabanı Şeması
 
-## Overview
+Centura, PostgreSQL 16 üzerinde çalışır ve veritabanına ORM olmadan, doğrudan `pg`
+sürücüsüyle erişir.
 
-This document describes the database schema for the Mini SaaS ERP/CRM application.
+> **Tek doğru kaynak:** [`apps/backend/scripts/init-schema.sql`](../../scripts/init-schema.sql).
+> Bu doküman şemayı açıklar, onun yerine geçmez. Bir uyuşmazlık görürseniz SQL
+> dosyası geçerlidir. Şema, PostgreSQL konteyneri ilk kez ayağa kalktığında
+> `/docker-entrypoint-initdb.d` üzerinden otomatik olarak uygulanır.
 
-**Latest Update (November 2024):**
+Toplamda 11 tablo, 8 trigger, 3 fonksiyon, 1 view ve 59 indeks bulunur.
+`uuid-ossp` eklentisi kullanılır.
 
-- ✅ Added UUID support to `organizations` table
-- ✅ Industry-standard security implementation (prevents enumeration attacks)
-- ✅ Dual identifier system: `org_id` (internal) + `org_uuid` (public API)
-- ✅ Backward compatible with existing code
+## Veritabanı adı
 
-## Database: saasdb (PostgreSQL in Docker)
+Veritabanı adı `DB_NAME` ile belirlenir. Depoda iki farklı varsayılan bulunduğunu
+bilin — bağlanırken kendi `.env` dosyanızdaki değeri esas alın:
 
-**Extensions:**
+| Kaynak                            | Değer           |
+| --------------------------------- | --------------- |
+| `docker-compose.yml` (varsayılan) | `mini_saas_erp` |
+| `.env.docker.example`             | `centura_crm`   |
 
-- `uuid-ossp` - UUID generation support (Nov 2024)
+## Tablo grupları
 
-## Tables
+| Grup             | Tablolar                                                                                                            |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Kimlik ve erişim | `organizations`, `users`, `user_organization_roles`, `platform_admins`, `support_access_requests`, `refresh_tokens` |
+| İş verisi        | `customers`, `products`, `orders`, `order_items`                                                                    |
+| Denetim          | `audit_logs`                                                                                                        |
+
+---
+
+## Kimlik ve erişim
 
 ### organizations
 
-Organization/Company master table for multi-tenancy with UUID support.
+Kiracı (tenant) kaydı. Sistemdeki neredeyse her tablo `org_id` ile buraya bağlanır.
 
-```sql
-CREATE TABLE organizations (
-  org_id SERIAL PRIMARY KEY,
-  org_uuid UUID DEFAULT uuid_generate_v4() UNIQUE NOT NULL,
-  org_name VARCHAR(255) NOT NULL,
-  industry VARCHAR(100),
-  phone VARCHAR(20),
-  email VARCHAR(255),
-  address TEXT,
-  city VARCHAR(100),
-  country VARCHAR(100) DEFAULT 'Turkey',
-  tax_number VARCHAR(50),
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-**Columns:**
-
-- `org_id`: Auto-incrementing primary key (internal use, foreign keys)
-- `org_uuid`: UUID identifier for public-facing API (industry standard, Nov 2024)
-- `org_name`: Organization/Company name
-- `industry`: Business industry/sector
-- `phone`: Organization phone number
-- `email`: Organization contact email
-- `address`: Full address
-- `city`: City location
-- `country`: Country (default: Turkey)
-- `tax_number`: Tax identification number
-- `is_active`: Organization active status
-- `created_at`: Record creation timestamp
-- `updated_at`: Last update timestamp (auto-updated via trigger)
-
-**UUID Implementation (November 2024):**
-
-Industry-standard practice for security and scalability:
-
-- **Public API**: Uses `org_uuid` (prevents enumeration attacks)
-- **Internal Relations**: Uses `org_id` (faster joins, backward compatible)
-- **Security**: UUIDs prevent information leakage (can't guess total organizations)
-- **Examples**: Slack (`T0123ABC`), Stripe (`cus_xxx`), GitHub (internal UUIDs)
-
-**Why Both org_id and org_uuid?**
-
-```text
-org_id (SERIAL):
-├─ Internal database relations (foreign keys)
-├─ Faster joins and indexes
-└─ Backward compatibility
-
-org_uuid (UUID):
-├─ Public-facing API endpoints
-├─ URL parameters and headers (X-Organization-ID)
-├─ No information leakage
-└─ Industry standard security
-```
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_organizations_uuid ON organizations(org_uuid);
-CREATE INDEX idx_organizations_is_active ON organizations(is_active);
-CREATE INDEX idx_organizations_org_name ON organizations(org_name);
-```
-
-**Comments:**
-
-```sql
-COMMENT ON COLUMN organizations.org_uuid IS 'Public-facing UUID identifier (industry standard)';
-COMMENT ON COLUMN organizations.org_id IS 'Internal numeric ID for database relations';
-```
-
----
+| Sütun                                                                    | Tip          | Açıklama                                                               |
+| ------------------------------------------------------------------------ | ------------ | ---------------------------------------------------------------------- |
+| `org_id`                                                                 | SERIAL PK    | Dahili birincil anahtar                                                |
+| `org_uuid`                                                               | UUID         | Dışa açık tanımlayıcı — bkz. [org_uuid kullanımı](#org_uuid-kullanımı) |
+| `org_name`                                                               | VARCHAR(255) | Zorunlu                                                                |
+| `industry`, `phone`, `email`, `address`, `city`, `country`, `tax_number` | —            | Profil alanları                                                        |
+| `is_active`                                                              | BOOLEAN      | Varsayılan `TRUE`                                                      |
+| `created_at`, `updated_at`                                               | TIMESTAMPTZ  | `updated_at` trigger ile güncellenir                                   |
 
 ### users
 
-User authentication and management table.
+Kullanıcı hesapları. Parolalar `password_hash` içinde Argon2 ile saklanır; düz metin
+parola hiçbir yerde tutulmaz.
 
-```sql
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  org_id INTEGER REFERENCES organizations(org_id) ON DELETE SET NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  system_role VARCHAR(50) CHECK (system_role = 'platform_admin' OR system_role IS NULL),
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-```
+| Sütun           | Tip                 | Açıklama                                         |
+| --------------- | ------------------- | ------------------------------------------------ |
+| `id`            | SERIAL PK           |                                                  |
+| `org_id`        | INTEGER FK          | Kullanıcının birincil organizasyonu              |
+| `email`         | VARCHAR(255) UNIQUE | Sistem genelinde benzersiz                       |
+| `password_hash` | TEXT                | Argon2                                           |
+| `name`          | VARCHAR(255)        |                                                  |
+| `system_role`   | VARCHAR(50)         | Yalnızca `'platform_admin'` veya `NULL` olabilir |
+| `is_active`     | BOOLEAN             |                                                  |
 
-**Columns:**
-
-- `id`: Auto-incrementing primary key
-- `org_id`: Foreign key to organizations table (**nullable** - see Registration Flow below)
-- `email`: User's email address (unique, stored in lowercase via backend normalization)
-- `password_hash`: Argon2 hashed password
-- `name`: User's full name (single field for flexibility, e.g., "John Smith")
-- `system_role`: Platform-level role (ONLY 'platform_admin' or NULL) - **for infrastructure management ONLY**
-- `is_active`: User active status
-- `created_at`: Account creation timestamp
-- `updated_at`: Last update timestamp (auto-updated via trigger)
-
-**Registration Flow (Modern SaaS Pattern):**
-
-```text
-1. User Registration
-   ├─ Email (required)
-   ├─ Password (required, min 8 characters)
-   └─ Name (required)
-   └─> org_id = NULL (no organization yet)
-
-2. After Login (Optional - User Choice)
-   ├─ User can choose to create an organization
-   │  └─> Becomes org_owner automatically
-   │  └─> Gets full access to organization features
-   │
-   └─ Or use basic features without organization
-      └─> Can join organization later via invite
-
-3. Organization Features (If Created)
-   ├─ Products & Inventory Management
-   ├─ Customer Management (CRM)
-   ├─ Order Processing
-   ├─ Analytics & Insights
-   └─ Team Collaboration (invite users)
-```
-
-**Important Notes:**
-
-- **Email Normalization**: Automatically converted to lowercase by backend before any database operation
-- **Single Name Field**: Modern approach for flexibility (matches GitHub, Slack, Linear)
-  - Users can enter their name however they prefer ("John Smith", "山田太郎", "María José")
-  - No cultural assumptions about first/last name structure
-  - `first_name` and `last_name` columns were removed (October 2024)
-- **No Organization Required**: Users can register and explore the app without creating an organization
-  - Organization creation is optional and done after login
-  - Users choose when they're ready to use full ERP/CRM features
-  - This reduces friction during signup
-- **Platform Admin Security**:
-  - `system_role = 'super_admin'` has been **REMOVED** for security (October 2024)
-  - Only 'platform_admin' or NULL allowed
-  - Platform admins manage infrastructure (backups, monitoring, deployments)
-  - Platform admins **CANNOT** access organization data
-  - All user data access permissions are managed via `user_organization_roles` table
-
-**Foreign Keys:**
-
-- `org_id` → `organizations(org_id)` ON DELETE SET NULL
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_users_org_id ON users(org_id);
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_system_role ON users(system_role);
-CREATE INDEX idx_users_is_active ON users(is_active);
-```
-
-**Triggers:**
-
-```sql
-CREATE TRIGGER update_users_updated_at
-  BEFORE UPDATE ON users
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-```
-
----
-
-### refresh_tokens
-
-Stores hashed JWT refresh tokens for session management.
-
-```sql
-CREATE TABLE refresh_tokens (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  token_hash TEXT NOT NULL,
-  expires_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  is_revoked BOOLEAN DEFAULT FALSE
-);
-```
-
-**Columns:**
-
-- `id`: Auto-incrementing primary key
-- `user_id`: Foreign key to users table
-- `token_hash`: Argon2 hashed refresh token (never store plain tokens)
-- `expires_at`: Token expiration timestamp
-- `created_at`: Token creation timestamp
-- `is_revoked`: Token revocation status
-
-**Foreign Keys:**
-
-- `user_id` → `users(id)` ON DELETE CASCADE
-
-**Indexes:**
-
-```sql
--- Basic indexes for lookups
-CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
-CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
-CREATE INDEX idx_refresh_tokens_created_at ON refresh_tokens(created_at DESC);
-
--- Optimized composite indexes for performance
-CREATE INDEX idx_refresh_tokens_active ON refresh_tokens(expires_at, is_revoked)
-  WHERE is_revoked = FALSE AND expires_at > NOW();
-
-CREATE INDEX idx_refresh_tokens_lookup ON refresh_tokens(expires_at DESC, is_revoked, created_at DESC)
-  WHERE is_revoked = FALSE;
-```
-
-**Performance Notes:**
-
-- `idx_refresh_tokens_active`: Partial index for active token validation (login/logout optimization)
-- `idx_refresh_tokens_lookup`: Composite index for the most common query pattern
-- `idx_refresh_tokens_created_at`: Speeds up sorting by creation date
-- Partial indexes reduce index size by only indexing active tokens
-
----
+Bir kullanıcının organizasyon içindeki yetkisi bu tabloda değil,
+`user_organization_roles` içinde tutulur.
 
 ### user_organization_roles
 
-Organization-based role assignments for multi-tenant security.
+Kullanıcı ile organizasyon arasındaki üyelik ve rol bağı. Bir kullanıcı birden fazla
+organizasyona farklı rollerle üye olabilir.
 
-```sql
-CREATE TABLE user_organization_roles (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  org_id INTEGER NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-  role VARCHAR(50) NOT NULL CHECK (role IN ('org_owner', 'org_admin', 'manager', 'user', 'viewer')),
-  permissions JSONB DEFAULT '{}',
-  is_active BOOLEAN DEFAULT TRUE,
-  assigned_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  assigned_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT unique_user_org_role UNIQUE (user_id, org_id)
-);
-```
+| Sütun                        | Tip         | Açıklama                                              |
+| ---------------------------- | ----------- | ----------------------------------------------------- |
+| `user_id`, `org_id`          | INTEGER FK  | Üyelik çifti                                          |
+| `role`                       | VARCHAR(50) | `org_owner`, `org_admin`, `manager`, `user`, `viewer` |
+| `permissions`                | JSONB       | Rol üzerine ek/ince ayar izinler                      |
+| `is_active`                  | BOOLEAN     | Üyeliği silmeden askıya almak için                    |
+| `assigned_by`, `assigned_at` | —           | Yetkiyi kimin ne zaman verdiği                        |
 
-**Columns:**
+Roller en geniş yetkiden en dara doğru:
 
-- `id`: Auto-incrementing primary key
-- `user_id`: Foreign key to users table
-- `org_id`: Foreign key to organizations table
-- `role`: Organization role (org_owner=80, org_admin=60, manager=40, user=20, viewer=10)
-- `permissions`: Additional JSON permissions
-- `is_active`: Role active status
-- `assigned_by`: User who assigned this role
-- `assigned_at`: Role assignment timestamp
-- `created_at`: Record creation timestamp
-- `updated_at`: Last update timestamp (auto-updated via trigger)
-
-**Role Hierarchy:**
-
-- `org_owner` (80): Organization owner - full control
-- `org_admin` (60): Organization administrator
-- `manager` (40): Team lead/manager
-- `user` (20): Regular user
-- `viewer` (10): Read-only access
-
-**Foreign Keys:**
-
-- `user_id` → `users(id)` ON DELETE CASCADE
-- `org_id` → `organizations(org_id)` ON DELETE CASCADE
-- `assigned_by` → `users(id)` ON DELETE SET NULL
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_user_org_roles_user_id ON user_organization_roles(user_id);
-CREATE INDEX idx_user_org_roles_org_id ON user_organization_roles(org_id);
-CREATE INDEX idx_user_org_roles_role ON user_organization_roles(role);
-CREATE INDEX idx_user_org_roles_is_active ON user_organization_roles(is_active);
-CREATE UNIQUE INDEX unique_user_org_role ON user_organization_roles(user_id, org_id);
-```
-
----
+| Rol         | Kapsam                                                |
+| ----------- | ----------------------------------------------------- |
+| `org_owner` | Organizasyon üzerinde tam yetki; sahiplik devri dâhil |
+| `org_admin` | Kullanıcı ve ayar yönetimi                            |
+| `manager`   | Müşteri, sipariş ve ürünlerin günlük yönetimi         |
+| `user`      | Standart operasyonel erişim                           |
+| `viewer`    | Yalnızca okuma                                        |
 
 ### platform_admins
 
-Platform administrators for infrastructure management ONLY.
+Kurulumu işleten taraf (kiracılar değil) için ayrı yetki tablosu.
 
-```sql
-CREATE TABLE platform_admins (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  admin_level VARCHAR(50) NOT NULL CHECK (admin_level IN ('senior', 'junior', 'readonly')),
-  permissions JSONB DEFAULT '{"infrastructure_only": true}',
-  can_access_user_data BOOLEAN DEFAULT FALSE CHECK (can_access_user_data = FALSE),
-  assigned_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  assigned_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  revoked_at TIMESTAMPTZ,
-  is_active BOOLEAN DEFAULT TRUE,
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT unique_platform_admin UNIQUE (user_id)
-);
-```
+| Sütun                                                            | Tip         | Açıklama                                   |
+| ---------------------------------------------------------------- | ----------- | ------------------------------------------ |
+| `user_id`                                                        | INTEGER FK  |                                            |
+| `admin_level`                                                    | VARCHAR(50) | `senior`, `junior`, `readonly`             |
+| `permissions`                                                    | JSONB       |                                            |
+| `can_access_user_data`                                           | BOOLEAN     | **`CHECK (can_access_user_data = FALSE)`** |
+| `assigned_by`, `assigned_at`, `revoked_at`, `is_active`, `notes` | —           | Yetki yaşam döngüsü                        |
 
-**Columns:**
-
-- `id`: Auto-incrementing primary key
-- `user_id`: Foreign key to users table
-- `admin_level`: Platform admin level (senior, junior, readonly)
-- `permissions`: JSON permissions (infrastructure only)
-- `can_access_user_data`: **ALWAYS FALSE** - Platform admins CANNOT access user data
-- `assigned_by`: User who assigned this role
-- `assigned_at`: Assignment timestamp
-- `revoked_at`: Revocation timestamp (if revoked)
-- `is_active`: Admin status
-- `notes`: Administrative notes
-- `created_at`: Record creation timestamp
-- `updated_at`: Last update timestamp (auto-updated via trigger)
-
-**Security Notes:**
-
-- Platform admins manage infrastructure (databases, servers, deployments)
-- Platform admins **CANNOT** access any organization or customer data
-- This follows enterprise standards (Stripe, Salesforce, AWS model)
-- All platform admin actions should be logged in audit_logs
-
-**Foreign Keys:**
-
-- `user_id` → `users(id)` ON DELETE CASCADE
-- `assigned_by` → `users(id)` ON DELETE SET NULL
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_platform_admins_user_id ON platform_admins(user_id);
-CREATE INDEX idx_platform_admins_admin_level ON platform_admins(admin_level);
-CREATE INDEX idx_platform_admins_is_active ON platform_admins(is_active);
-CREATE UNIQUE INDEX unique_platform_admin ON platform_admins(user_id);
-```
-
----
+`can_access_user_data` üzerindeki CHECK kısıtı kasıtlıdır: veritabanı seviyesinde,
+bir platform yöneticisinin kiracı verisine doğrudan erişim bayrağı **hiçbir zaman**
+`TRUE` yapılamaz. Erişim yalnızca `support_access_requests` akışından geçebilir.
 
 ### support_access_requests
 
-Time-limited support access with customer approval.
+Platform yöneticisinin bir kiracının verisine geçici erişim talebi. Onay akışı ve
+süre sınırı içerir.
 
-```sql
-CREATE TABLE support_access_requests (
-  id SERIAL PRIMARY KEY,
-  support_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  target_org_id INTEGER NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-  ticket_number VARCHAR(50),
-  reason TEXT NOT NULL,
-  requested_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  approved_by INTEGER REFERENCES users(id),
-  approved_at TIMESTAMPTZ,
-  approval_status VARCHAR(20) DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'rejected', 'expired')),
-  access_granted_at TIMESTAMPTZ,
-  access_expires_at TIMESTAMPTZTZ,
-  access_duration_minutes INTEGER DEFAULT 60,
-  can_view_data BOOLEAN DEFAULT TRUE,
-  can_modify_data BOOLEAN DEFAULT FALSE,
-  can_export_data BOOLEAN DEFAULT FALSE,
-  actions_log JSONB DEFAULT '[]',
-  revoked_at TIMESTAMPTZ,
-  revoked_by INTEGER REFERENCES users(id),
-  revoke_reason TEXT,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-```
+| Sütun                                                 | Tip         | Açıklama                                     |
+| ----------------------------------------------------- | ----------- | -------------------------------------------- |
+| `support_user_id`, `target_org_id`                    | INTEGER FK  | Kim, hangi organizasyon için                 |
+| `ticket_number`, `reason`                             | —           | Gerekçe; `reason` zorunlu                    |
+| `approval_status`                                     | VARCHAR(20) | `pending`, `approved`, `rejected`, `expired` |
+| `approved_by`, `approved_at`                          | —           | Onay bilgisi                                 |
+| `access_granted_at`, `access_expires_at`              | TIMESTAMPTZ | Erişim penceresi                             |
+| `access_duration_minutes`                             | INTEGER     | Varsayılan 60                                |
+| `can_view_data`, `can_modify_data`, `can_export_data` | BOOLEAN     | Sırasıyla `TRUE`, `FALSE`, `FALSE`           |
+| `actions_log`                                         | JSONB       | Erişim süresince yapılan işlemler            |
+| `revoked_at`, `revoked_by`, `revoke_reason`           | —           | Erken iptal                                  |
 
-**Columns:**
+Varsayılanlar en dar yetkiyi verir: onaylanan bir talep okuma izniyle başlar,
+değiştirme ve dışa aktarma ayrıca açılmalıdır.
 
-- `id`: Auto-incrementing primary key
-- `support_user_id`: Support team member requesting access
-- `target_org_id`: Target organization for support access
-- `ticket_number`: Support ticket reference number
-- `reason`: Detailed reason for access request
-- `requested_at`: When the request was created
-- `approved_by`: Customer user who approved the request
-- `approved_at`: Approval timestamp
-- `approval_status`: Request status (pending, approved, rejected, expired)
-- `access_granted_at`: When access was actually used/started
-- `access_expires_at`: Access expiration timestamp
-- `access_duration_minutes`: Duration of access in minutes (default: 60)
-- `can_view_data`: Permission to view data
-- `can_modify_data`: Permission to modify data
-- `can_export_data`: Permission to export data
-- `actions_log`: JSON array of all actions performed during access
-- `revoked_at`: When access was revoked (if applicable)
-- `revoked_by`: User who revoked the access
-- `revoke_reason`: Reason for revoking access
-- `created_at`: Request creation timestamp
-- `updated_at`: Last update timestamp (auto-updated via trigger)
+### refresh_tokens
 
-**Security Workflow:**
+Yenileme token'ları. Token'ın kendisi değil, `token_hash` saklanır.
 
-1. Support creates request with ticket number and reason
-2. Customer org_owner/org_admin must approve
-3. Access is time-limited (default 60 minutes, configurable)
-4. Granular permissions: view, modify, export data
-5. All actions during access are logged in actions_log JSONB
-6. Access auto-expires or can be revoked anytime
-7. Complete audit trail in audit_logs table
+| Sütun                                      | Tip         | Açıklama                                            |
+| ------------------------------------------ | ----------- | --------------------------------------------------- |
+| `user_id`                                  | INTEGER FK  |                                                     |
+| `token_hash`                               | TEXT        | Düz token asla saklanmaz                            |
+| `token_family`                             | UUID        | Oturum kimliği — aşağıya bakın                      |
+| `device_info`                              | TEXT        | Girişte kaydedilir, rotasyon boyunca taşınır        |
+| `session_name`                             | TEXT        | Okunabilir oturum adı (`Session from <user-agent>`) |
+| `expires_at`, `created_at`, `last_used_at` | TIMESTAMPTZ | `last_used_at` her doğrulamada güncellenir          |
+| `is_revoked`                               | BOOLEAN     |                                                     |
 
-**Foreign Keys:**
+**Token ailesi (token family) modeli:** her giriş yeni bir `token_family` UUID'si
+başlatır; yani ikinci bir cihazdan giriş yapmak ilk oturumu etkilemez. Yenileme
+sırasında mevcut ailenin token'ları iptal edilir ve **aynı aile** ile yeni bir token
+yazılır. Böylece tek bir oturum, kullanıcıyı diğer cihazlardan çıkarmadan geçersiz
+kılınabilir.
 
-- `support_user_id` → `users(id)` ON DELETE CASCADE
-- `target_org_id` → `organizations(org_id)` ON DELETE CASCADE
-- `approved_by` → `users(id)`
-- `revoked_by` → `users(id)`
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_support_access_org ON support_access_requests(target_org_id);
-CREATE INDEX idx_support_access_status ON support_access_requests(approval_status);
-CREATE INDEX idx_support_access_expires ON support_access_requests(access_expires_at);
-```
-
-**Triggers:**
-
-```sql
-CREATE TRIGGER update_support_access_requests_updated_at
-  BEFORE UPDATE ON support_access_requests
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-```
+Süresi dolan kayıtlar `node-cron` tabanlı `tokenCleanupService` tarafından
+temizlenir — bkz. [token-cleanup.md](./token-cleanup.md).
 
 ---
 
-### audit_logs
-
-Comprehensive audit trail for GDPR/SOC2/ISO27001 compliance.
-
-```sql
-CREATE TABLE audit_logs (
-  id BIGSERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  user_email VARCHAR(255),
-  user_role VARCHAR(50),
-  impersonating_user_id INTEGER REFERENCES users(id),
-  action VARCHAR(100) NOT NULL,
-  resource_type VARCHAR(50) NOT NULL,
-  resource_id VARCHAR(100),
-  org_id INTEGER REFERENCES organizations(org_id) ON DELETE SET NULL,
-  old_value JSONB,
-  new_value JSONB,
-  metadata JSONB,
-  ip_address VARCHAR(50),
-  user_agent TEXT,
-  request_path VARCHAR(500),
-  request_method VARCHAR(10),
-  success BOOLEAN DEFAULT TRUE,
-  error_message TEXT,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT audit_logs_unique_check UNIQUE (user_id, action, resource_type, resource_id, created_at)
-);
-```
-
-**Columns:**
-
-- `id`: Auto-incrementing primary key (BIGINT for high volume)
-- `user_id`: User who performed the action (nullable for system actions)
-- `user_email`: Email of the user (denormalized for audit trail)
-- `user_role`: Role of the user at the time of action
-- `impersonating_user_id`: If action was performed via impersonation/support access
-- `action`: Action type (CREATE, UPDATE, DELETE, VIEW, EXPORT, LOGIN, etc.)
-- `resource_type`: Resource affected (user, customer, organization, product, order, etc.)
-- `resource_id`: ID of affected resource (as string for flexibility)
-- `org_id`: Organization context (nullable for platform actions)
-- `old_value`: JSON of values before change
-- `new_value`: JSON of values after change
-- `metadata`: Additional JSON metadata (request details, context, etc.)
-- `ip_address`: Client IP address
-- `user_agent`: Client user agent string
-- `request_path`: HTTP request path
-- `request_method`: HTTP method (GET, POST, PUT, DELETE)
-- `success`: Whether the action succeeded
-- `error_message`: Error message if action failed
-- `created_at`: Action timestamp
-
-**Use Cases:**
-
-- GDPR compliance (data access/export tracking)
-- SOC2 audit requirements
-- ISO27001 security controls
-- Security incident investigation
-- Customer data access transparency
-- Impersonation/support access tracking
-
-**Foreign Keys:**
-
-- `user_id` → `users(id)` ON DELETE SET NULL
-- `impersonating_user_id` → `users(id)`
-- `org_id` → `organizations(org_id)` ON DELETE SET NULL
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_impersonating ON audit_logs(impersonating_user_id);
-CREATE INDEX idx_audit_logs_action ON audit_logs(action);
-CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
-CREATE INDEX idx_audit_logs_org_id ON audit_logs(org_id);
-CREATE INDEX idx_audit_logs_org ON audit_logs(org_id);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
-CREATE INDEX idx_audit_logs_created ON audit_logs(created_at DESC);
-CREATE UNIQUE INDEX audit_logs_unique_check ON audit_logs(user_id, action, resource_type, resource_id, created_at);
-```
-
----
+## İş verisi
 
 ### customers
 
-Customer/Client management table for ERP/CRM system.
-
-```sql
-CREATE TABLE customers (
-  customer_id SERIAL PRIMARY KEY,
-  org_id INTEGER NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-  customer_code VARCHAR(50) NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255),
-  phone VARCHAR(20),
-  mobile VARCHAR(20),
-  city VARCHAR(100),
-  country VARCHAR(100) DEFAULT 'Turkey',
-  address TEXT,
-  postal_code VARCHAR(20),
-  tax_number VARCHAR(50),
-  tax_office VARCHAR(100),
-
-  -- CRM fields
-  segment VARCHAR(50) CHECK (segment IN ('VIP', 'Premium', 'Standard', 'Basic', 'Potential')),
-  customer_type VARCHAR(50) CHECK (customer_type IN ('Corporate', 'Individual', 'Government', 'Other')),
-  payment_terms INTEGER DEFAULT 30,
-  credit_limit DECIMAL(15, 2) DEFAULT 0,
-
-  -- Status & metadata
-  is_active BOOLEAN DEFAULT TRUE,
-  notes TEXT,
-  assigned_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-
-  -- Constraints
-  CONSTRAINT unique_customer_code_per_org UNIQUE (org_id, customer_code)
-);
-```
-
-**Columns:**
-
-- `customer_id`: Auto-incrementing primary key
-- `org_id`: Foreign key to organizations table (multi-tenancy)
-- `customer_code`: Unique customer code within organization (e.g., 'CUST-001')
-- `name`: Customer/Company name
-- `email`: Customer email address
-- `phone`: Primary phone number
-- `mobile`: Mobile phone number
-- `city`: Customer city
-- `country`: Customer country (default: Turkey)
-- `address`: Full postal address
-- `postal_code`: Postal/ZIP code
-- `tax_number`: Tax identification number
-- `tax_office`: Tax office name
-- `segment`: Customer segment (VIP, Premium, Standard, Basic, Potential)
-- `customer_type`: Customer type (Corporate, Individual, Government, Other)
-- `payment_terms`: Payment terms in days (default: 30)
-- `credit_limit`: Maximum credit limit (default: 0)
-- `is_active`: Customer active status (for soft delete)
-- `notes`: Additional notes/comments
-- `assigned_user_id`: User responsible for this customer
-- `created_by`: User who created this customer
-- `created_at`: Record creation timestamp
-- `updated_at`: Last update timestamp (auto-updated via trigger)
-
-**Foreign Keys:**
-
-- `org_id` → `organizations(org_id)` ON DELETE CASCADE
-- `assigned_user_id` → `users(id)` ON DELETE SET NULL
-- `created_by` → `users(id)` ON DELETE SET NULL
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_customers_org_id ON customers(org_id);
-CREATE INDEX idx_customers_email ON customers(email);
-CREATE INDEX idx_customers_city ON customers(city);
-CREATE INDEX idx_customers_segment ON customers(segment);
-CREATE INDEX idx_customers_is_active ON customers(is_active);
-CREATE INDEX idx_customers_created_at ON customers(created_at);
-```
-
-**Constraints:**
-
-- `unique_customer_code_per_org`: Customer code must be unique within each organization
-- `segment`: CHECK constraint for valid segments
-- `customer_type`: CHECK constraint for valid customer types
-
----
-
-## Triggers
-
-### Auto-update timestamps
-
-```sql
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Apply to all tables with updated_at column
-CREATE TRIGGER update_customers_updated_at
-  BEFORE UPDATE ON customers
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_organizations_updated_at
-  BEFORE UPDATE ON organizations
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_users_updated_at
-  BEFORE UPDATE ON users
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_user_organization_roles_updated_at
-  BEFORE UPDATE ON user_organization_roles
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_platform_admins_updated_at
-  BEFORE UPDATE ON platform_admins
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_support_access_requests_updated_at
-  BEFORE UPDATE ON support_access_requests
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_products_updated_at
-  BEFORE UPDATE ON products
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_orders_updated_at
-  BEFORE UPDATE ON orders
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-```
-
----
-
-## Database Functions
-
-### Role & Permission Helpers
-
-```sql
--- Get user's role in a specific organization
-CREATE OR REPLACE FUNCTION get_user_role_in_org(p_user_id INTEGER, p_org_id INTEGER)
-RETURNS VARCHAR AS $$
-DECLARE
-    v_role VARCHAR(50);
-BEGIN
-    SELECT role INTO v_role
-    FROM user_organization_roles
-    WHERE user_id = p_user_id
-      AND org_id = p_org_id
-      AND is_active = TRUE;
-
-    RETURN v_role;
-END;
-$$ LANGUAGE plpgsql;
-
--- Check if user has required permission level in organization
-CREATE OR REPLACE FUNCTION user_has_permission(
-    p_user_id INTEGER,
-    p_org_id INTEGER,
-    p_required_role VARCHAR
-) RETURNS BOOLEAN AS $$
-DECLARE
-    v_user_role VARCHAR(50);
-    v_role_levels JSONB := '{
-        "org_owner": 80,
-        "org_admin": 60,
-        "manager": 40,
-        "user": 20,
-        "viewer": 10
-    }'::jsonb;
-BEGIN
-    v_user_role := get_user_role_in_org(p_user_id, p_org_id);
-
-    IF v_user_role IS NULL THEN
-        RETURN FALSE;
-    END IF;
-
-    RETURN (v_role_levels->>v_user_role)::INTEGER >= (v_role_levels->>p_required_role)::INTEGER;
-END;
-$$ LANGUAGE plpgsql;
-```
-
-### Views
-
-```sql
--- User organization access view
-CREATE OR REPLACE VIEW v_user_organization_access AS
-SELECT
-    u.id AS user_id,
-    u.email,
-    u.name,
-    u.is_active AS user_active,
-    uor.org_id,
-    o.org_name,
-    uor.role,
-    uor.is_active AS role_active,
-    uor.assigned_at,
-    uor.assigned_by,
-    o.is_active AS org_active
-FROM users u
-INNER JOIN user_organization_roles uor ON u.id = uor.user_id
-INNER JOIN organizations o ON uor.org_id = o.org_id
-WHERE u.is_active = TRUE
-  AND uor.is_active = TRUE
-  AND o.is_active = TRUE;
-```
-
----
-
-## Entity Relationship Diagram
-
-```text
-organizations (1) ──< (N) users
-     │                    │
-     │ (1)                │ (1)
-     │                    │
-     ├──< (N) customers   ├──< (N) refresh_tokens
-     │    │               │
-     │    └──< (N) orders ├──< (N) user_organization_roles
-     │         │          │
-     │         └──< (N) order_items ├──< (1) platform_admins
-     │                    │          │
-     ├──< (N) products    │          └──< (N) support_access_requests
-     │    │               │
-     │    └──< (N) order_items
-     │
-     ├──< (N) user_organization_roles
-     │
-     ├──< (N) support_access_requests
-     │
-     └──< (N) audit_logs
-
-users (1) ──< (N) audit_logs
-
-customers (1) ──< (N) orders
-          │
-          └──< assigned_user_id (users)
-          └──< created_by (users)
-
-products (1) ──< (N) order_items
-         │
-         └──< created_by (users)
-
-orders (1) ──< (N) order_items
-       │
-       └──< created_by (users)
-```
-
-**Key Relationships:**
-
-- Each **organization** can have multiple products, orders, and customers
-- Each **customer** can have multiple orders
-- Each **order** contains multiple order_items
-- Each **product** can appear in multiple order_items
-- All entities are isolated by **org_id** for multi-tenancy
-- Historical accuracy: order_items store prices (don't reference current product prices)
-
----
-
-## Multi-Tenancy Model
-
-### Organization Isolation (Full Tenant Isolation)
-
-All data is isolated by `org_id` with **ZERO cross-organization access**:
-
-- Users can belong to organizations via `user_organization_roles`
-- Customers belong to one organization only
-- Queries automatically filter by `WHERE org_id = user.org_id`
-- **No cross-organization data access** - enforced at middleware level
-- Each organization is completely isolated (Stripe/Salesforce model)
-
-### Security Model (Enterprise-Grade)
-
-#### 1. Organization Roles (Primary Authorization)
-
-- ✅ All permissions managed through `user_organization_roles` table
-- ✅ Role hierarchy: org_owner (80) > org_admin (60) > manager (40) > user (20) > viewer (10)
-- ✅ One user can have different roles in different organizations
-- ✅ Automatic org_owner assignment on organization creation
-
-#### 2. Platform Administration (Infrastructure Only)
-
-- ✅ `platform_admins` table for infrastructure management
-- ✅ Platform admins **CANNOT** access organization or customer data
-- ✅ Enforced by `can_access_user_data = FALSE` check constraint
-- ✅ Separate from user permissions (infrastructure vs. user data)
-
-#### 3. Support Access (Time-Limited & Approved)
-
-- ✅ `support_access_requests` table for customer support
-- ✅ Requires customer approval (org_owner or org_admin)
-- ✅ Time-limited access (max 24 hours)
-- ✅ All actions logged in audit_logs
-- ✅ Ticket-based workflow (no direct access)
-
-#### 4. Audit Trail (Compliance)
-
-- ✅ `audit_logs` table for comprehensive logging
-- ✅ GDPR compliance (data access transparency)
-- ✅ SOC2/ISO27001 audit requirements
-- ✅ Tracks all CRUD operations
-- ✅ Links to support tickets when applicable
-
-#### 5. JWT Token Security
-
-- ✅ HTTP-only cookies (XSS protection)
-- ✅ Tokens include: userId, email, orgId
-- ✅ **Removed**: systemRole field (security improvement - Oct 2024)
-- ✅ Refresh token rotation
-- ✅ Token cleanup service (automated)
-
-### Security Features
-
-- ✅ Full tenant isolation (no cross-org access)
-- ✅ Role-based access control (RBAC)
-- ✅ Platform admin separation (infrastructure only)
-- ✅ Support access workflow (approval required)
-- ✅ Comprehensive audit logging
-- ✅ Foreign key constraints ensure data integrity
-- ✅ CASCADE deletes maintain referential integrity
-- ✅ CHECK constraints for data validation
-
-### Enterprise Standards Compliance
-
-This security model follows industry best practices from:
-
-- **Stripe**: Full tenant isolation, no super admin
-- **Salesforce**: Organization-based permissions
-- **AWS**: Separate infrastructure and user data access
-- **Notion**: Time-limited support access with approval
-
-**Migration Note (October 2024):**
-
-- ❌ Removed: `system_role = 'super_admin'` (security risk)
-- ✅ Added: Enterprise security tables (platform_admins, support_access_requests, audit_logs)
-- ✅ Migration: All super_admins converted to org_owner roles
-- ✅ Result: Zero single-point-of-failure accounts
-
----
-
-## Sample Data
-
-```sql
--- Default Organization
-INSERT INTO organizations (org_name, industry, is_active)
-VALUES ('Default Organization', 'General', TRUE);
-
--- Sample Customers
-INSERT INTO customers (
-  org_id, customer_code, name, email, phone, city, segment, customer_type, is_active
-) VALUES
-  (1, 'CUST-001', 'Acme Corporation', 'contact@acme.com', '+90 212 555 0001', 'Istanbul', 'VIP', 'Corporate', TRUE),
-  (1, 'CUST-002', 'Tech Solutions Ltd.', 'info@techsolutions.com', '+90 312 555 0002', 'Ankara', 'Premium', 'Corporate', TRUE),
-  (1, 'CUST-003', 'Global Trade Inc.', 'sales@globaltrade.com', '+90 232 555 0003', 'Izmir', 'Standard', 'Corporate', TRUE),
-  (1, 'CUST-004', 'Ahmet Yılmaz', 'ahmet@example.com', '+90 555 111 2233', 'Istanbul', 'Basic', 'Individual', TRUE),
-  (1, 'CUST-005', 'Mehmet Demir', 'mehmet@example.com', '+90 555 444 5566', 'Ankara', 'Standard', 'Individual', TRUE);
-```
-
----
+| Sütun                                       | Tip           | Açıklama                                           |
+| ------------------------------------------- | ------------- | -------------------------------------------------- |
+| `customer_id`                               | SERIAL PK     |                                                    |
+| `org_id`                                    | INTEGER FK    | Kiracı kapsamı — zorunlu                           |
+| `customer_code`                             | VARCHAR(50)   | Organizasyon içinde benzersiz                      |
+| `name`                                      | VARCHAR(255)  | Zorunlu                                            |
+| `email`, `phone`, `mobile`                  | —             | İletişim                                           |
+| `city`, `country`, `address`, `postal_code` | —             | Adres                                              |
+| `tax_number`, `tax_office`                  | —             | Vergi bilgisi                                      |
+| `segment`                                   | VARCHAR(50)   | `VIP`, `Premium`, `Standard`, `Basic`, `Potential` |
+| `customer_type`                             | VARCHAR(50)   | `Corporate`, `Individual`, `Government`, `Other`   |
+| `payment_terms`                             | INTEGER       | Gün cinsinden vade, varsayılan 30                  |
+| `credit_limit`                              | DECIMAL(15,2) |                                                    |
+| `assigned_user_id`                          | INTEGER FK    | Müşteriden sorumlu kullanıcı                       |
+| `notes`, `is_active`, `created_by`          | —             |                                                    |
+
+Analitik için türetilen alanlar:
+
+| Sütun                                       | Açıklama                                                     |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| `first_purchase_date`, `last_purchase_date` | İlk ve son sipariş tarihi                                    |
+| `total_orders`, `total_lifetime_value`      | Toplam sipariş sayısı ve cirosu                              |
+| `rfm_score`, `rfm_segment`                  | RFM analizi çıktısı — bkz. [insights.md](../api/insights.md) |
+
+`rfm_segment` üzerinde yalnızca `NOT NULL` satırları kapsayan kısmi indeks vardır.
 
 ### products
 
-Product catalog with inventory management for ERP system.
+| Sütun                               | Tip           | Açıklama                        |
+| ----------------------------------- | ------------- | ------------------------------- |
+| `id`                                | SERIAL PK     |                                 |
+| `org_id`                            | INTEGER FK    | Kiracı kapsamı — zorunlu        |
+| `name`, `description`               | —             |                                 |
+| `sku`                               | VARCHAR(100)  | Zorunlu                         |
+| `barcode`, `category`, `unit`       | —             | `category` ve `unit` zorunlu    |
+| `base_price`, `price`, `cost_price` | DECIMAL(10,2) | Liste, satış ve maliyet fiyatı  |
+| `tax_rate`                          | DECIMAL(5,2)  |                                 |
+| `stock_quantity`                    | INTEGER       | Zorunlu, varsayılan 0           |
+| `low_stock_threshold`               | INTEGER       | Varsayılan 10                   |
+| `reorder_point`                     | INTEGER       | Varsayılan 10                   |
+| `lead_time_days`                    | INTEGER       | Tedarik süresi, varsayılan 7    |
+| `last_restock_date`                 | TIMESTAMPTZ   | Son stok girişi                 |
+| `times_out_of_stock`                | INTEGER       | Stok tükenme sayacı             |
+| `deleted_at`                        | TIMESTAMPTZ   | **Soft delete:** `NULL` = aktif |
+| `is_active`, `created_by`           | —             |                                 |
 
-**Soft Delete Support (December 2024):** Products use soft delete (`deleted_at` timestamp) to preserve order history integrity.
+Ürünler kalıcı olarak silinmez; `deleted_at` doldurulur. Böylece geçmiş siparişlerin
+ürün referansı korunur. Aktif ürünler için `WHERE deleted_at IS NULL` koşullu kısmi
+indeks tanımlıdır.
 
-```sql
-CREATE TABLE products (
-  id SERIAL PRIMARY KEY,
-  org_id INTEGER NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  sku VARCHAR(100) NOT NULL,
-  barcode VARCHAR(100),
-  category VARCHAR(100) NOT NULL,
-  base_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00, -- KDV hariç satış fiyatı (Base price excluding VAT)
-  price DECIMAL(10, 2) NOT NULL DEFAULT 0.00, -- KDV dahil satış fiyatı - müşterinin ödeyeceği (Price including VAT - calculated as base_price * (1 + tax_rate/100))
-  cost_price DECIMAL(10, 2), -- Tedarikçiden alış maliyeti - kar hesabı için (Supplier cost for profit calculation)
-  tax_rate DECIMAL(5, 2) DEFAULT 0.00, -- KDV oranı % (VAT rate percentage)
-  stock_quantity INTEGER NOT NULL DEFAULT 0,
-  low_stock_threshold INTEGER DEFAULT 10,
-  unit VARCHAR(50) NOT NULL,
-  is_active BOOLEAN DEFAULT TRUE,
-  deleted_at TIMESTAMPTZ DEFAULT NULL, -- Soft delete: NULL = active, timestamp = deleted
-  created_by INTEGER REFERENCES users(id),
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-
-  CONSTRAINT unique_sku_per_org UNIQUE(org_id, sku),
-  CONSTRAINT check_price_positive CHECK (price >= 0),
-  CONSTRAINT check_cost_price_positive CHECK (cost_price >= 0 OR cost_price IS NULL),
-  CONSTRAINT check_stock_non_negative CHECK (stock_quantity >= 0),
-  CONSTRAINT check_tax_rate_valid CHECK (tax_rate >= 0 AND tax_rate <= 100)
-);
-```
-
-**Columns:**
-
-- `id`: Auto-incrementing primary key
-- `org_id`: Foreign key to organizations table (multi-tenancy)
-- `name`: Product name
-- `description`: Detailed product description
-- `sku`: Stock Keeping Unit - unique identifier per organization
-- `barcode`: Product barcode (optional)
-- `category`: Product category (Electronics, Furniture, etc.)
-- `base_price`: Base selling price excluding VAT (KDV hariç satış fiyatı)
-- `price`: Final selling price including VAT (KDV dahil - müşterinin ödeyeceği tutar). Automatically calculated as `base_price × (1 + tax_rate/100)`
-- `cost_price`: Purchase/cost price from supplier (tedarikçiden alış maliyeti - for profit calculations). **Profit = base_price - cost_price** (VAT excluded from profit)
-- `tax_rate`: Tax percentage (e.g., 20.00 for 20% VAT)
-- `stock_quantity`: Current stock quantity
-- `low_stock_threshold`: Alert threshold for low stock
-- `unit`: Unit of measurement (pcs, kg, liter, box, etc.)
-- `is_active`: Product active status (legacy, use deleted_at for soft delete)
-- `deleted_at`: Soft delete timestamp (NULL = active, timestamp = deleted) - **Added December 2024**
-- `created_by`: User who created this product
-- `created_at`: Record creation timestamp
-- `updated_at`: Last update timestamp (auto-updated via trigger)
-
-**Foreign Keys:**
-
-- `org_id` → `organizations(org_id)` ON DELETE CASCADE
-- `created_by` → `users(id)` ON DELETE SET NULL
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_products_org_id ON products(org_id);
-CREATE INDEX idx_products_sku ON products(sku);
-CREATE INDEX idx_products_category ON products(category);
-CREATE INDEX idx_products_is_active ON products(is_active);
-CREATE INDEX idx_products_deleted_at ON products(deleted_at);
-CREATE INDEX idx_products_active_not_deleted ON products(org_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_products_low_stock ON products(stock_quantity, low_stock_threshold);
-CREATE INDEX idx_products_created_at ON products(created_at DESC);
-```
-
-**Constraints:**
-
-- `unique_sku_per_org`: SKU must be unique within each organization
-- `check_base_price_positive`: Base price cannot be negative
-- `check_price_positive`: Price cannot be negative
-- `check_cost_price_positive`: Cost price cannot be negative (if provided)
-- `check_stock_non_negative`: Stock quantity cannot be negative
-- `check_tax_rate_valid`: Tax rate must be between 0 and 100
-
-**Pricing Logic (Turkish VAT System):**
-
-```text
-Example Product:
-├─ base_price: 100.00 TL (KDV Hariç - what we earn)
-├─ tax_rate: 20% (KDV Oranı)
-├─ price: 120.00 TL (KDV Dahil - customer pays this)
-└─ cost_price: 60.00 TL (Supplier cost - what we paid)
-
-Profit Calculation (KDV excluded):
-└─ profit = base_price - cost_price = 100 - 60 = 40 TL
-
-Customer Invoice:
-├─ Subtotal (KDV Hariç): 100.00 TL
-├─ KDV (20%): 20.00 TL
-└─ Total (KDV Dahil): 120.00 TL ← Customer pays this
-
-Government Gets:
-└─ 20.00 TL (VAT) - Not our revenue!
-
-Our Net Revenue:
-└─ 100.00 TL (base_price) - This is our actual revenue
-```
-
-**Important Notes:**
-
-1. **`price` is auto-calculated**: Backend automatically computes `price = base_price × (1 + tax_rate/100)`
-2. **VAT is not profit**: VAT goes to government, not included in profit calculations
-3. **Historical pricing**: Orders store `unit_price` (base_price) to maintain accurate records even if product prices change
-4. **Turkish accounting standards**: This follows standard Turkish accounting and invoicing practices
-
----
+> `reorder_point` ve `lead_time_days` şu an yalnızca veri olarak tutulur; bunlara
+> dayalı otomatik sipariş tetikleme uygulanmamıştır.
 
 ### orders
 
-Customer orders with complete workflow and payment tracking.
+| Sütun                                                                       | Tip                | Açıklama                                                                |
+| --------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------- |
+| `id`                                                                        | SERIAL PK          |                                                                         |
+| `org_id`, `customer_id`                                                     | INTEGER FK         | İkisi de zorunlu                                                        |
+| `order_number`                                                              | VARCHAR(50) UNIQUE | Otomatik üretilir (`ORD2025000001`)                                     |
+| `order_date`, `expected_delivery_date`                                      | TIMESTAMPTZ        |                                                                         |
+| `status`                                                                    | VARCHAR(20)        | `draft`, `confirmed`, `processing`, `shipped`, `delivered`, `cancelled` |
+| `payment_status`                                                            | VARCHAR(20)        | `pending`, `partial`, `paid`, `refunded`                                |
+| `payment_method`, `paid_amount`                                             | —                  |                                                                         |
+| `shipping_address`, `shipping_city`                                         | —                  | Teslimat adresi                                                         |
+| `billing_address`, `billing_city`                                           | —                  | Fatura adresi                                                           |
+| `subtotal`, `discount_percentage`, `discount_amount`, `tax_amount`, `total` | DECIMAL            | Tutarlar sunucu tarafında hesaplanır                                    |
+| `paid_at`, `fulfilled_at`, `shipped_at`, `delivered_at`                     | TIMESTAMPTZ        | Yaşam döngüsü zaman damgaları                                           |
+| `notes`, `created_by`                                                       | —                  |                                                                         |
 
-```sql
-CREATE TABLE orders (
-  id SERIAL PRIMARY KEY,
-  org_id INTEGER NOT NULL REFERENCES organizations(org_id) ON DELETE CASCADE,
-  customer_id INTEGER NOT NULL REFERENCES customers(customer_id) ON DELETE RESTRICT,
-  order_number VARCHAR(50) NOT NULL UNIQUE,
-  order_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  expected_delivery_date TIMESTAMP,
+Durum akışı:
 
-  status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (
-    status IN ('draft', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled')
-  ),
-
-  payment_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (
-    payment_status IN ('pending', 'partial', 'paid', 'refunded')
-  ),
-  payment_method VARCHAR(50),
-  paid_amount DECIMAL(10, 2) DEFAULT 0.00,
-
-  shipping_address TEXT,
-  shipping_city VARCHAR(100),
-  billing_address TEXT,
-  billing_city VARCHAR(100),
-
-  subtotal DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  discount_percentage DECIMAL(5, 2) DEFAULT 0.00,
-  discount_amount DECIMAL(10, 2) DEFAULT 0.00,
-  tax_amount DECIMAL(10, 2) DEFAULT 0.00,
-  total DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-
-  notes TEXT,
-
-  created_by INTEGER REFERENCES users(id),
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-
-  CONSTRAINT check_subtotal_positive CHECK (subtotal >= 0),
-  CONSTRAINT check_discount_percentage_valid CHECK (discount_percentage >= 0 AND discount_percentage <= 100),
-  CONSTRAINT check_discount_amount_positive CHECK (discount_amount >= 0),
-  CONSTRAINT check_tax_amount_positive CHECK (tax_amount >= 0),
-  CONSTRAINT check_total_positive CHECK (total >= 0),
-  CONSTRAINT check_paid_amount_positive CHECK (paid_amount >= 0)
-);
+```
+draft → confirmed → processing → shipped → delivered
+          ↓
+      cancelled   (delivered dışındaki her durumdan)
 ```
 
-**Columns:**
-
-- `id`: Auto-incrementing primary key
-- `org_id`: Foreign key to organizations table (multi-tenancy)
-- `customer_id`: Foreign key to customers table
-- `order_number`: Unique order number (auto-generated, format: ORD2025000001)
-- `order_date`: Order creation date
-- `expected_delivery_date`: Expected delivery date
-- `status`: Order workflow status (draft → confirmed → processing → shipped → delivered / cancelled)
-- `payment_status`: Payment status (pending → partial → paid / refunded)
-- `payment_method`: Payment method (cash, credit_card, bank_transfer, etc.)
-- `paid_amount`: Amount already paid
-- `shipping_address`: Shipping address
-- `shipping_city`: Shipping city
-- `billing_address`: Billing address
-- `billing_city`: Billing city
-- `subtotal`: Sum of all order items before discounts and tax
-- `discount_percentage`: Order-level discount percentage
-- `discount_amount`: Order-level discount amount
-- `tax_amount`: Total tax amount
-- `total`: Final order total (subtotal - discount + tax)
-- `notes`: Additional order notes
-- `created_by`: User who created this order
-- `created_at`: Record creation timestamp
-- `updated_at`: Last update timestamp (auto-updated via trigger)
-
-**Order Status Workflow:**
-
-- `draft` → `confirmed` → `processing` → `shipped` → `delivered`
-- `cancelled` (can be set at any stage except after delivered)
-
-**Payment Status Workflow:**
-
-- `pending` → `partial` → `paid` → `refunded`
-
-**Foreign Keys:**
-
-- `org_id` → `organizations(org_id)` ON DELETE CASCADE
-- `customer_id` → `customers(customer_id)` ON DELETE RESTRICT
-- `created_by` → `users(id)` ON DELETE SET NULL
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_orders_org_id ON orders(org_id);
-CREATE INDEX idx_orders_customer_id ON orders(customer_id);
-CREATE INDEX idx_orders_order_number ON orders(order_number);
-CREATE INDEX idx_orders_order_date ON orders(order_date DESC);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_payment_status ON orders(payment_status);
-CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
-CREATE INDEX idx_orders_date_range ON orders(org_id, order_date DESC);
-```
-
----
+Ödeme durumu sipariş durumundan bağımsız ilerler:
+`pending → partial → paid`, ayrıca `refunded`.
 
 ### order_items
 
-Individual line items within orders.
+Sipariş kalemleri. Ürün bilgisi sipariş anında **kopyalanarak** saklanır.
 
-**Product Snapshot (December 2024):** Order items now store product information at the time of order creation. This ensures order history remains accurate even if products are modified or deleted.
+| Sütun                                                   | Tip        | Açıklama                       |
+| ------------------------------------------------------- | ---------- | ------------------------------ |
+| `order_id`                                              | INTEGER FK |                                |
+| `product_id`                                            | INTEGER FK | Ürün silinirse `SET NULL`      |
+| `product_name`, `product_sku`, `product_category`       | —          | Sipariş anındaki anlık görüntü |
+| `quantity`, `unit_price`, `tax_rate`, `discount_amount` | —          |                                |
+| `subtotal`, `tax_amount`, `total`                       | DECIMAL    |                                |
 
-```sql
-CREATE TABLE order_items (
-  id SERIAL PRIMARY KEY,
-  order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL, -- NULL if product deleted
-
-  -- Product Snapshot (values at time of order - preserved even if product is deleted/changed)
-  product_name VARCHAR(255) NOT NULL,      -- Product name snapshot
-  product_sku VARCHAR(100),                -- SKU snapshot
-  product_category VARCHAR(100),           -- Category snapshot
-
-  quantity INTEGER NOT NULL,
-  unit_price DECIMAL(10, 2) NOT NULL,
-  tax_rate DECIMAL(5, 2) DEFAULT 0.00,
-  discount_amount DECIMAL(10, 2) DEFAULT 0.00,
-
-  subtotal DECIMAL(10, 2) NOT NULL,
-  tax_amount DECIMAL(10, 2) NOT NULL,
-  total DECIMAL(10, 2) NOT NULL,
-
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-
-  CONSTRAINT check_quantity_positive CHECK (quantity > 0),
-  CONSTRAINT check_unit_price_positive CHECK (unit_price >= 0),
-  CONSTRAINT check_item_tax_rate_valid CHECK (tax_rate >= 0 AND tax_rate <= 100),
-  CONSTRAINT check_item_discount_positive CHECK (discount_amount >= 0),
-  CONSTRAINT check_item_subtotal_positive CHECK (subtotal >= 0),
-  CONSTRAINT check_item_tax_amount_positive CHECK (tax_amount >= 0),
-  CONSTRAINT check_item_total_positive CHECK (total >= 0)
-);
-```
-
-**Columns:**
-
-- `id`: Auto-incrementing primary key
-- `order_id`: Foreign key to orders table
-- `product_id`: Foreign key to products table (nullable - becomes NULL if product is deleted)
-- `product_name`: **Snapshot** - Product name at time of order (preserved forever)
-- `product_sku`: **Snapshot** - SKU at time of order
-- `product_category`: **Snapshot** - Category at time of order
-- `quantity`: Quantity ordered
-- `unit_price`: Price per unit (stored for historical accuracy - doesn't change if product price changes)
-- `tax_rate`: Tax percentage for this item
-- `discount_amount`: Item-level discount amount
-- `subtotal`: quantity × unit_price
-- `tax_amount`: (subtotal - discount) × (tax_rate / 100)
-- `total`: subtotal - discount_amount + tax_amount
-- `created_at`: Record creation timestamp
-
-**Calculations:**
-
-- `subtotal = quantity × unit_price`
-- `tax_amount = (subtotal - discount_amount) × (tax_rate / 100)`
-- `total = subtotal - discount_amount + tax_amount`
-
-**Foreign Keys:**
-
-- `order_id` → `orders(id)` ON DELETE CASCADE
-- `product_id` → `products(id)` ON DELETE SET NULL (product deletion sets to NULL, snapshot data preserved)
-
-**Indexes:**
-
-```sql
-CREATE INDEX idx_order_items_order_id ON order_items(order_id);
-CREATE INDEX idx_order_items_product_id ON order_items(product_id);
-```
-
-**Important Notes:**
-
-- **Product Snapshot (December 2024)**: `product_name`, `product_sku`, `product_category` store values at order time
-- Prices and tax rates are **stored** (not referenced) to maintain historical accuracy
-- If a product is deleted, `product_id` becomes NULL but snapshot data remains
-- If a product's price changes after an order is placed, the order retains the original price
-- This is essential for financial accuracy and invoice generation
-
-**Why Snapshot + SET NULL?**
-
-```text
-Industry Standard Pattern (used by Shopify, Amazon, Stripe):
-
-1. Customer orders "iPhone 15" at $999
-2. Order stores: product_id=123, product_name="iPhone 15", unit_price=999
-
-3. Later, product is renamed to "iPhone 15 (Discontinued)"
-   → Order still shows "iPhone 15" (snapshot preserved)
-
-4. Later, product is deleted
-   → product_id becomes NULL
-   → Order still shows "iPhone 15", $999 (snapshot preserved)
-   → Financial records remain accurate
-   → Reports work correctly
-```
+`product_name` / `product_sku` / `product_category` alanları bilinçli bir
+denormalizasyondur: ürün sonradan silinse veya yeniden fiyatlandırılsa bile geçmiş
+siparişler o günkü haliyle okunabilir kalır.
 
 ---
 
-## Migration Files
+## Denetim
 
-- **Product Soft Delete & Order Snapshot (December 2024)**
-  - Added `deleted_at` column to products table (soft delete support)
-  - Added snapshot columns to order_items (`product_name`, `product_sku`, `product_category`)
-  - Changed `product_id` foreign key from RESTRICT to SET NULL
-  - Industry-standard pattern for order history preservation
-  - Migration script: `apps/backend/scripts/migrate-product-soft-delete.sql`
+### audit_logs
 
-- **UUID Extension (November 2024)**
-  - Added `uuid-ossp` PostgreSQL extension
-  - Added `org_uuid` column to organizations table
-  - Industry-standard security implementation
-  - Dual ID support (numeric for internal, UUID for public API)
-  - Migration script: `apps/backend/scripts/migrations/add-uuid-to-organizations.sql`
+| Sütun                                                        | Tip          | Açıklama                             |
+| ------------------------------------------------------------ | ------------ | ------------------------------------ |
+| `id`                                                         | BIGSERIAL PK |                                      |
+| `user_id`, `user_email`, `user_role`                         | —            | İşlemi yapan                         |
+| `impersonating_user_id`                                      | INTEGER FK   | Destek erişimiyle yapılan işlemlerde |
+| `action`, `resource_type`, `resource_id`                     | —            | Ne yapıldı, neyin üzerinde           |
+| `org_id`                                                     | INTEGER FK   | Hangi kiracı bağlamında              |
+| `old_value`, `new_value`, `metadata`                         | JSONB        | Değişiklik öncesi/sonrası            |
+| `ip_address`, `user_agent`, `request_path`, `request_method` | —            | İstek bağlamı                        |
+| `success`, `error_message`                                   | —            | Başarısız denemeler de kaydedilir    |
 
-- **Analytics Enhancement (Nov 2024)**
-  - Adds enhanced audit logging fields
-  - Improves analytics data structure
-
-**Migration Note (October 2024):**
-
-- ❌ Removed: `system_role = 'super_admin'` (security risk)
-- ✅ Added: Enterprise security tables (platform_admins, support_access_requests, audit_logs)
-- ✅ Added: Products & Orders system (inventory + order management)
-- ✅ Migration: All super_admins converted to org_owner roles
-- ✅ Result: Zero single-point-of-failure accounts
-
-**Current Schema Status (November 2024):**
-
-Tables in production:
-
-1. ✅ organizations - Multi-tenant organization management **with UUID support**
-2. ✅ users - User authentication with single name field
-3. ✅ refresh_tokens - JWT token management
-4. ✅ user_organization_roles - Multi-tenant RBAC
-5. ✅ platform_admins - Infrastructure-only admin access
-6. ✅ support_access_requests - Time-limited customer support access
-7. ✅ audit_logs - Enhanced compliance logging (BIGSERIAL, impersonation support)
-8. ✅ customers - CRM customer management
-9. ✅ products - Inventory management with stock tracking
-10. ✅ orders - Order workflow with payment tracking
-11. ✅ order_items - Order line items with historical pricing
-12. ✅ product_inventory_status (VIEW) - Inventory reporting
-13. ✅ order_summary (VIEW) - Order analytics
-14. ✅ v_user_organization_access (VIEW) - User-organization relationships
-
-**UUID Implementation Details:**
-
-See documentation for comprehensive guide:
-
-- Technical: `docs/architecture/organization-context-and-uuid.md`
-- VPS Migration: `docs/deployment/UUID-MIGRATION-VPS-GUIDE.md`
-- Quick Start: `docs/deployment/UUID-MIGRATION-QUICKSTART.md`
+`user_email` ve `user_role` alanları, kullanıcı sonradan silinse bile kaydın
+okunabilir kalması için kopyalanarak saklanır.
 
 ---
 
-## UUID Usage Guide
+## Fonksiyonlar ve view'lar
 
-### When to Use org_uuid vs org_id
+| Nesne                                   | Amaç                                                    |
+| --------------------------------------- | ------------------------------------------------------- |
+| `get_user_role_in_org(user_id, org_id)` | Kullanıcının ilgili organizasyondaki rolünü döndürür    |
+| `user_has_permission(...)`              | Rol ve `permissions` JSONB'sine göre izin kontrolü      |
+| `update_updated_at_column()`            | `updated_at` sütununu güncelleyen trigger fonksiyonu    |
+| `v_user_organization_access`            | Kullanıcı–organizasyon erişimini tek sorguda veren view |
 
-**Use `org_uuid` (UUID) for:**
+> **Bilinen eksik:** `insightsModel.js`, `calculate_rfm_scores($1)` fonksiyonunu
+> çağırır ancak bu fonksiyon şemada tanımlı değildir. Bu haliyle
+> `GET /api/v1/insights/customers/rfm` uç noktası hata döndürür.
 
-- ✅ Public API endpoints (`GET /api/v1/organizations/:uuid`)
-- ✅ URL parameters in frontend
-- ✅ HTTP headers (`X-Organization-ID: uuid`)
-- ✅ External integrations
-- ✅ Customer-facing features
+## Trigger'lar
 
-**Use `org_id` (Integer) for:**
+`update_updated_at_column()` fonksiyonu, `updated_at` sütunu olan sekiz tabloya
+`BEFORE UPDATE` trigger'ı olarak bağlıdır: `organizations`, `users`,
+`user_organization_roles`, `platform_admins`, `support_access_requests`,
+`customers`, `products`, `orders`.
 
-- ✅ Database foreign keys (`customers.org_id → organizations.org_id`)
-- ✅ Internal database queries
-- ✅ JOIN operations
-- ✅ Performance-critical queries
+---
 
-### API Examples
+## Çok kiracılı model
 
-```javascript
-// ✅ GOOD: Public API with UUID
-GET /api/v1/organizations/550e8400-e29b-41d4-a716-446655440000
-Headers: { 'X-Organization-ID': '550e8400-e29b-41d4-a716-446655440000' }
+İzolasyon, uygulama katmanında `org_id` ile sağlanır. PostgreSQL Row Level Security
+kullanılmaz.
 
-// ✅ ACCEPTABLE: Backward compatibility (numeric ID still works)
-GET /api/v1/organizations/1
-Headers: { 'X-Organization-ID': '1' }
-
-// 🔍 Response includes both
-{
-  "org_id": 1,                                      // Internal
-  "org_uuid": "550e8400-e29b-41d4-a716-446655440000", // Public
-  "org_name": "Acme Corporation"
-}
-```
-
-### Database Query Examples
+Bunun tek pratik sonucu şudur: **kiracı verisine dokunan her sorgu `org_id` ile
+kapsanmak zorundadır.** Eksik bir kapsam, veriyi kiracılar arasında sızdırır.
 
 ```sql
--- ✅ External lookup (API endpoint)
-SELECT * FROM organizations
-WHERE org_uuid = '550e8400-e29b-41d4-a716-446655440000';
+-- Doğru
+SELECT * FROM customers WHERE org_id = $1 AND customer_id = $2;
 
--- ✅ Internal join (foreign key)
-SELECT c.*, o.org_name
-FROM customers c
-JOIN organizations o ON c.org_id = o.org_id
-WHERE c.org_id = 1;
-
--- ✅ Both supported in model
-SELECT * FROM organizations
-WHERE org_uuid = $1 OR org_id = $1;
+-- Yanlış — başka bir kiracının kaydını döndürebilir
+SELECT * FROM customers WHERE customer_id = $1;
 ```
 
-### Security Benefits
+İstek başına organizasyon bağlamı `middleware/orgContext.js` tarafından çözülür.
 
-**Sequential IDs (OLD):**
+## org_uuid kullanımı
 
-```
-❌ GET /orgs/1    → exists
-❌ GET /orgs/2    → exists
-❌ GET /orgs/3    → exists
-💀 "They have ~1000 organizations, growing ~100/month"
-```
+`organizations` tablosunda iki tanımlayıcı vardır:
 
-**UUIDs (NEW):**
+| Alan              | Kullanım                             |
+| ----------------- | ------------------------------------ |
+| `org_id` (SERIAL) | Dahili — foreign key'ler ve sorgular |
+| `org_uuid` (UUID) | Dışa açık — URL ve API yanıtları     |
 
-```
-✅ GET /orgs/550e8400-... → exists
-✅ GET /orgs/7c9e6679-... → exists
-✅ "Can't determine total count or growth rate"
-🔒 No information leakage!
-```
+Ardışık tamsayı ID'ler dışarıya verildiğinde kiracı sayısı tahmin edilebilir ve
+komşu kayıtlar denenebilir hale gelir. UUID bunu engeller. Dahili birleştirmelerde
+ise tamsayı anahtar hem daha küçük hem daha hızlıdır.
 
-### Migration Path
+---
 
-Organizations created after November 2024 automatically get UUIDs.
+## Performans
 
-For existing organizations without UUIDs, run:
+Şemada 59 indeks tanımlıdır. Öne çıkan desenler:
+
+- Kiracı bazlı erişim için `org_id` üzerinde indeksler
+- Aktif ürünler için `WHERE deleted_at IS NULL` kısmi indeksi
+- RFM segmenti için `WHERE rfm_segment IS NOT NULL` kısmi indeksi
+- Yenileme token'ı aramaları için `refresh_tokens` üzerinde indeksler; ek ayarlar
+  [`optimize-refresh-tokens.sql`](../../scripts/optimize-refresh-tokens.sql)
+  içindedir
+
+## Şema değişiklikleri
+
+Ayrı bir migration altyapısı yoktur. Şema tek dosyadan, `init-schema.sql` üzerinden
+uygulanır ve yalnızca veritabanı **ilk kez** oluşturulurken çalışır.
+
+Mevcut bir kurulumda şema değiştirmek için ALTER ifadelerini elle çalıştırmanız
+gerekir. Geliştirme ortamında sıfırdan başlamak için:
 
 ```bash
-# See: docs/deployment/UUID-MIGRATION-QUICKSTART.md
-docker-compose exec postgres psql -U saasadmin -d saasdb -f /docker-entrypoint-initdb.d/migrations/add-uuid-to-organizations.sql
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
----
+> `down -v` komutu veritabanı volume'ünü siler; tüm veri kaybolur.
 
-## Performance Optimizations
+## İlgili dokümanlar
 
-1. **Indexes on frequently queried columns:**
-   - `org_id` (for multi-tenancy filtering)
-   - `org_uuid` (for UUID lookups - added Nov 2024)
-   - `city` (for geographic analysis)
-   - `segment` (for customer segmentation)
-   - `is_active` (for filtering active records)
-
-2. **Triggers for automatic timestamp updates:**
-   - `updated_at` automatically updated on row changes
-
-3. **Foreign key constraints:**
-   - Ensure referential integrity
-   - CASCADE deletes for cleanup
-
-4. **CHECK constraints:**
-   - Data validation at database level
-   - Valid enum values enforced
+- [Çok kiracılı roller ve izinler](./multi-tenant-roles.md)
+- [Güvenlik](./security.md)
+- [HTTP-only çerezler](./http-only-cookies.md)
+- [Token temizliği](./token-cleanup.md)

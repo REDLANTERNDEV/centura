@@ -9,7 +9,7 @@ set -e
 
 # Configuration
 BACKUP_DIR="./backups"
-DB_CONTAINER="mini-saas-postgres"
+DB_CONTAINER="postgres"   # compose SERVICE name, not a container name
 DB_NAME="${DB_NAME:-mini_saas_erp}"
 DB_USER="${DB_USER:-postgres}"
 MAX_BACKUPS=7  # Keep last 7 backups

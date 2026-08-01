@@ -486,6 +486,82 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================
+-- RFM ANALYSIS
+-- ============================================
+
+-- RFM (Recency, Frequency, Monetary) skorlarini hesaplar.
+-- insightsModel.getRFMAnalysis() tarafindan cagrilir.
+-- Skorlar 1-5 arasi quintile (NTILE) ile uretilir; recency'de dusuk gun sayisi
+-- daha iyi oldugu icin siralama terslenir.
+CREATE OR REPLACE FUNCTION calculate_rfm_scores(p_org_id INTEGER)
+RETURNS TABLE (
+    customer_id INTEGER,
+    recency INTEGER,
+    frequency INTEGER,
+    monetary NUMERIC,
+    r_score INTEGER,
+    f_score INTEGER,
+    m_score INTEGER,
+    rfm_score TEXT,
+    rfm_segment TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH base AS (
+        SELECT
+            c.customer_id AS cid,
+            COALESCE(
+                EXTRACT(DAY FROM (NOW() - MAX(o.order_date)))::INTEGER,
+                9999
+            ) AS rec,
+            COUNT(o.id)::INTEGER AS freq,
+            COALESCE(SUM(o.total), 0)::NUMERIC AS mon
+        FROM customers c
+        LEFT JOIN orders o
+               ON o.customer_id = c.customer_id
+              AND o.org_id = c.org_id
+              AND o.status <> 'cancelled'
+        WHERE c.org_id = p_org_id
+          AND c.is_active = TRUE
+        GROUP BY c.customer_id
+    ),
+    scored AS (
+        SELECT
+            b.cid,
+            b.rec,
+            b.freq,
+            b.mon,
+            -- Dusuk recency daha iyi: quintile tersine cevrilir
+            (6 - NTILE(5) OVER (ORDER BY b.rec ASC))::INTEGER AS r,
+            NTILE(5) OVER (ORDER BY b.freq ASC)::INTEGER AS f,
+            NTILE(5) OVER (ORDER BY b.mon ASC)::INTEGER AS m
+        FROM base b
+    )
+    SELECT
+        s.cid,
+        s.rec,
+        s.freq,
+        s.mon,
+        s.r,
+        s.f,
+        s.m,
+        (s.r::TEXT || s.f::TEXT || s.m::TEXT),
+        CASE
+            WHEN s.r >= 4 AND s.f >= 4 AND s.m >= 4 THEN 'Champions'
+            WHEN s.r >= 3 AND s.f >= 4               THEN 'Loyal Customers'
+            WHEN s.r >= 4 AND s.f >= 2               THEN 'Potential Loyalist'
+            WHEN s.r = 5  AND s.f = 1                THEN 'New Customers'
+            WHEN s.r >= 4                            THEN 'Promising'
+            WHEN s.r <= 2 AND s.m >= 4               THEN 'Cannot Lose Them'
+            WHEN s.r <= 2 AND s.f >= 3               THEN 'At Risk'
+            WHEN s.r <= 2                            THEN 'Hibernating'
+            ELSE 'Needs Attention'
+        END
+    FROM scored s;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- ============================================
 -- VIEWS
 -- ============================================
 

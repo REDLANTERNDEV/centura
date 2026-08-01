@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $BACKUP_DIR = ".\backups"
-$DB_CONTAINER = "mini-saas-postgres"
+$DB_CONTAINER = "postgres"   # compose SERVICE name, not a container name
 $DB_NAME = if ($env:DB_NAME) { $env:DB_NAME } else { "mini_saas_erp" }
 $DB_USER = if ($env:DB_USER) { $env:DB_USER } else { "postgres" }
 

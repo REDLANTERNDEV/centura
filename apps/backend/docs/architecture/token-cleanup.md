@@ -1,131 +1,103 @@
-# Automatic Token Cleanup - Professional Implementation
+# Token Temizliği
 
-## Overview
+Süresi dolmuş ve iptal edilmiş yenileme token'ları, arka planda çalışan zamanlanmış
+bir görevle veritabanından silinir. Elle çalıştırılacak bir betik veya sistem
+seviyesinde cron kaydı gerekmez.
 
-This system automatically cleans up expired and revoked refresh tokens **without any manual intervention**. This is the same approach used by Netflix, Spotify, and other professional companies.
+## Nasıl çalışır
 
-## How It Works
+Servis: [`src/services/tokenCleanupService.js`](../../src/services/tokenCleanupService.js)
+Başlatıldığı yer: [`server.js`](../../server.js)
 
-### ✅ **Completely Automatic**
-
-- Runs every hour in the background
-- Starts automatically when your server starts
-- No manual scripts needed
-- No cron jobs to set up
-- Zero maintenance required
-
-### 🧹 **What Gets Cleaned**
-
-- Expired refresh tokens (`expires_at < NOW()`)
-- Revoked refresh tokens (`is_revoked = TRUE`)
-- Keeps your database clean and fast
-
-## Setup Instructions
-
-### 1. **Already Done ✅**
-
-The automatic cleanup is already set up and will start when you run your server:
-
-```bash
-npm run dev
-# or
-npm start
+```js
+tokenCleanupService.startAutoCleanup();
 ```
 
-You'll see this message when it starts:
+Sunucu ayağa kalktığında:
 
-```
-🤖 Starting automatic token cleanup service...
-```
+1. Bir kez hemen temizlik yapılır.
+2. Ardından `node-cron` ile her saat başı (`0 * * * *`) tekrarlanır.
 
-### 2. **Database Update (One Time Only)**
+Servis tekil (singleton) bir örnektir ve `isRunning` bayrağıyla çakışan
+çalıştırmaları engeller: önceki temizlik bitmeden yenisi başlamaz.
 
-Run these SQL commands in your database:
+## Ne siliniyor
+
+`userModel.deleteExpiredTokens()` tek bir sorgu çalıştırır:
 
 ```sql
--- Add new column and remove old one
-ALTER TABLE refresh_tokens ADD COLUMN token_hash TEXT;
-ALTER TABLE refresh_tokens DROP COLUMN token;
-ALTER TABLE refresh_tokens ALTER COLUMN token_hash SET NOT NULL;
-
--- Update index
-DROP INDEX IF EXISTS idx_refresh_tokens_token;
-CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
+DELETE FROM refresh_tokens
+WHERE expires_at < NOW() OR is_revoked = TRUE
 ```
 
-**⚠️ Important:** All users will need to log in again after this.
+Yani süresi dolmuş **veya** iptal edilmiş kayıtlar kalıcı olarak silinir. Çıkış
+yapıldığında ve token rotasyonunda kayıtlar `is_revoked = TRUE` işaretlendiği için,
+bu satırlar bir sonraki temizlikte tablodan düşer.
 
-## That's It!
+## Günlük kaydı
 
-No other setup required. The system will:
-
-- ✅ Clean tokens automatically every hour
-- ✅ Log cleanup activity (`🧹 Auto-cleaned X expired tokens`)
-- ✅ Handle all maintenance in the background
-- ✅ Never interrupt your users
-
-## Files Added
-
-### Core Service
-
-- `src/services/tokenCleanupService.js` - The automatic cleanup service
-- Added to `server.js` - Starts automatically with your server
-
-### Documentation
-
-- `docs/DATABASE_UPDATE.md` - Simple SQL commands to run once
-
-## Monitoring
-
-The system logs cleanup activity:
+Silinecek kayıt varsa tek satırlık bir log yazılır:
 
 ```
 🧹 Auto-cleaned 15 expired tokens
 ```
 
-If you see this regularly, it means:
-✅ System is working properly
-✅ Database stays clean
-✅ Performance remains optimal
+Silinecek kayıt yoksa hiçbir şey yazılmaz — logların sessiz kalması normaldir.
+Hata durumunda temizlik sessizce yutulmaz, `console.error` ile raporlanır ve servis
+bir sonraki saatte yeniden dener.
 
-## Professional Benefits
+## Token'lar nasıl saklanıyor
 
-This approach is used by major companies because:
+Yenileme token'ının kendisi veritabanında tutulmaz. `refresh_tokens.token_hash`
+sütununda **argon2id** ile hashlenmiş hâli saklanır
+([`userModel.js`](../../src/models/userModel.js)).
 
-1. **Zero Maintenance** - Set it and forget it
-2. **Scalable** - Works with millions of users
-3. **Reliable** - No manual processes to fail
-4. **Efficient** - Minimal performance impact
-5. **Secure** - Expired tokens removed promptly
+Doğrulama sırasında aday satırlar çekilir ve her biri için `argon2.verify()`
+çalıştırılır.
 
-## FAQ
+## Bilinen sorun: token doğrulama sorgusu ölçeklenmiyor
 
-### Q: Do I need to run any cleanup scripts?
+`validateRefreshToken` ve eşdeğeri sorgu, doğrulanacak token'ı **kullanıcıya göre
+daraltmadan** çeker:
 
-**A:** No! It's completely automatic.
+```sql
+SELECT ... FROM refresh_tokens rt
+JOIN users u ON rt.user_id = u.id
+WHERE rt.expires_at > NOW() AND rt.is_revoked = FALSE
+ORDER BY rt.last_used_at DESC NULLS LAST, rt.created_at DESC
+LIMIT 100
+```
 
-### Q: What if I restart my server?
+Sonra dönen satırların her biri için sırayla `argon2.verify()` çağrılır. Bunun iki
+sonucu var:
 
-**A:** The cleanup service starts automatically.
+1. **Sistem genelinde 100'den fazla aktif token olduğunda oturumlar kopar.**
+   Sorgu `last_used_at` sırasına göre yalnızca ilk 100 kaydı alır. Uzun süredir
+   kullanılmayan geçerli bir token bu listeye giremezse doğrulama başarısız olur ve
+   kullanıcı — token'ı hâlâ geçerli olmasına rağmen — oturumdan düşer.
 
-### Q: How often does it clean?
+2. **Her yenileme isteği en fazla 100 argon2id doğrulaması yapar.** argon2id
+   kasıtlı olarak yavaştır; bu, istek başına ciddi CPU maliyeti ve bir hizmet
+   engelleme (DoS) yüzeyi anlamına gelir.
 
-**A:** Every hour, plus once when server starts.
+Yenileme token'ları `jwt.sign()` ile üretildiği ve `userId` alanını taşıdığı için,
+sorgu token'ın içindeki kullanıcıya göre daraltılabilir
+(`WHERE rt.user_id = $1`); bu, doğrulama sayısını o kullanıcının birkaç aktif
+oturumuna indirir.
 
-### Q: Does it affect my users?
+Daha kalıcı çözüm, yenileme token'larını argon2 yerine SHA-256 ile hashlemektir:
+token zaten yüksek entropili ve imzalı olduğu için yavaş bir KDF'e ihtiyaç yoktur ve
+deterministik hash sayesinde kayıt indeks üzerinden doğrudan bulunabilir. argon2,
+düşük entropili sırlar (parolalar) için tasarlanmıştır.
 
-**A:** No impact - runs in background.
+## Devre dışı bırakma
 
-### Q: Can I disable it?
+Önerilmez; devre dışı bırakılırsa `refresh_tokens` tablosu sınırsız büyür ve
+yukarıdaki `LIMIT 100` sorunu daha hızlı ortaya çıkar. Yine de gerekiyorsa
+`server.js` içindeki `startAutoCleanup()` çağrısını kaldırmak yeterlidir.
 
-**A:** Not recommended, but you can remove the service from `server.js`.
+## İlgili dokümanlar
 
-## Security Benefits
-
-✅ **Hashed Token Storage** - Tokens stored as Argon2 hashes  
-✅ **Automatic Cleanup** - No expired tokens lying around  
-✅ **Token Rotation** - New tokens on refresh  
-✅ **Proper Logout** - Tokens revoked immediately  
-✅ **Database Protection** - Even if breached, tokens can't be used
-
-This implementation meets professional security standards and compliance requirements (SOC 2, ISO 27001, etc.).
+- [Veritabanı şeması](./database.md) — `refresh_tokens` tablosu ve token ailesi modeli
+- [HTTP-only çerezler](./http-only-cookies.md)
+- [Güvenlik](./security.md)

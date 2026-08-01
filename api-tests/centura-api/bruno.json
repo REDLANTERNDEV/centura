@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "Mini SaaS API",
+  "name": "Centura API",
   "type": "collection",
   "ignore": ["node_modules", ".git"]
 }

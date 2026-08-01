@@ -1,438 +1,415 @@
-# Centura CRM
+# Centura
 
-> Müşteri İlişkileri Yönetim Platformu - ERP Ekosisteminin Kalbi
+Self-hostable, multi-tenant CRM for small and mid-sized businesses. Manage customers, orders, product stock and sales analytics from a single application.
 
-Centura, kurumsal ERP sistemlerinin müşteri ilişkileri yönetimi (CRM) modülüdür. Müşteri yaşam döngüsünün tüm aşamalarını yönetirken, satış, iletişim, analitik ve envanter entegrasyonuyla güçlü bir iş çözümü sunar. Çok kiracılı SaaS mimarisine dayalı Centura, ölçeklenebilir ve güvenli bir müşteri yönetim deneyimi sağlar.
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
 
----
-
-## 🎯 CRM Özellikleri
-
-### 👥 Müşteri Yönetimi (Core CRM)
-
-- **Müşteri Profilleri** - Tüm müşteri bilgilerini merkezi bir yerde tutun
-- **İletişim Geçmişi** - Email, telefon ve notlar otomatik olarak takip edin
-- **Satış Fırsat Yönetimi** - Pipeline'ınızı görselleştirin ve fırsat takibi yapın
-- **Müşteri Segmentasyonu** - Müşteri davranışına göre otomatik kategorilendirme
-- **Müşteri İstatistikleri** - Sipariş geçmişi, toplam harcama, son etkileşim
-
-### 📊 Analitik & İçgörüler (CRM Analytics)
-
-- **Gerçek zamanlı satış istatistikleri** - Günlük, aylık ve yıllık trend analizi
-- **Müşteri davranış analizi** - En değerli müşterileri belirleyin
-- **Satış performans raporları** - Konuya göre satış metrikleri
-- **Envanter sağlığı takibi** - Stok seviyeleri ve yeniden sipariş uyarıları
-- **Aylık büyüme metrikleri** - MoM (Aylık) değişim oranları
-
-### 🛒 Satış Yönetimi (ERP Entegrasyonu)
-
-- **Sipariş Yönetimi** - CRM'den doğrudan sipariş oluşturun ve takip edin
-- **Dinamik Ürün Kataloğu** - Müşteri segmentine göre ürün önerileri
-- **Satış Döngüsü Otomasyonu** - Lead'den müşteriye dönüşüm pipeline'ı
-- **Ödeme ve Kargo Takibi** - Sipariş fulfillment otomasyonu
-
-### 📦 Envanter Entegrasyonu (ERP Modülü)
-
-- **Stok Düzeylerinin İzlenmesi** - Müşteri siparişleriyle senkronize stok
-- **Düşük Stok Uyarıları** - Otomatik yeniden sipariş tetikleyicileri
-- **Ürün Kategorilendirmesi** - Müşteri segmentasyonuyla ilişkili kategoriler
-- **Tedarikçi Yönetimi** - Satın alma ve tedarikçi entegrasyonu
-
-### 🔐 Güvenlik & Uyum
-
-- Rol tabanlı erişim kontrolü (RBAC)
-- Şifreli veri depolama
-- Oturum yönetimi
-- Denetim günlükleri
+**Türkçe:** [README.tr.md](./README.tr.md)
 
 ---
 
-## 📸 Ekran Görüntüleri
+## Screenshots
 
-### Dashboard
+| Dashboard                                         | Sales analytics                                               |
+| ------------------------------------------------- | ------------------------------------------------------------- |
+| ![Dashboard](./docs/screenshots/01-dashboard.png) | ![Sales analytics](./docs/screenshots/02-sales-analytics.png) |
 
-![Dashboard](./docs/screenshots/01-dashboard.png)
-_Ana kontrol paneli - toplam satışlar, müşteri sayısı ve önemli metrikleri bir bakışta görün_
-
-### Satış Analitikleri
-
-![Sales Analytics](./docs/screenshots/02-sales-analytics.png)
-_Detaylı satış grafikleri, trend çizgileri ve tarih bazlı filtreleme_
-
-### Müşteri Yönetimi
-
-![Customer Management](./docs/screenshots/03-customers.png)
-_Müşteri listesi, arama ve detaylı müşteri profilleri_
-
-### Envanter & Ürün Yönetimi
-
-![Inventory Management](./docs/screenshots/04-inventory.png)
-_Ürün kataloğu, stok durumu ve kategori yönetimi_
-
-### Raporlar & İçgörüler
-
-![Reports & Insights](./docs/screenshots/05-reports.png)
-_Detaylı raporlar, analiz grafikleri ve dışa aktarma seçenekleri_
+| Customers                                         | Products & stock                                 |
+| ------------------------------------------------- | ------------------------------------------------ |
+| ![Customers](./docs/screenshots/03-customers.png) | ![Products](./docs/screenshots/04-inventory.png) |
 
 ---
 
-## 🚀 Hızlı Başlangıç
+## Features
 
-### Gereksinimler
+### Customers
 
-- **Docker & Docker Compose** (Önerilen - tüm bağımlılıkları otomatik yönetir)
-- Node.js 20+ (Manuel kurulum için)
-- PostgreSQL 16+ (Manuel kurulum için)
+Customer records with contact details, billing and shipping addresses, tax number
+and tax office, segment and customer type, credit limit, payment terms, an assigned
+account owner, and free-form notes.
 
-### Installation & Setup
+### Orders
 
-#### 🐳 Docker ile (Önerilen & Tavsiye Edilen)
+Full order lifecycle — `draft` → `confirmed` → `processing` → `shipped` →
+`delivered`, with `cancelled` available at any point. Each order carries line items,
+per-order and per-line discounts, tax, subtotal and total, separate shipping and
+billing addresses, and an expected delivery date. Payment is tracked independently
+as `pending`, `partial`, `paid` or `refunded`.
 
-**1. Ortam Dosyasını Hazırlayın**
+### Products and stock
+
+Product catalogue with SKU, barcode, category, unit, and three price fields (base,
+sale, cost) plus a tax rate. Stock is tracked per product with a low-stock threshold
+and a reorder point.
+
+### Analytics
+
+A dedicated insights API with 17 endpoints, surfaced through the dashboard and the
+analytics page:
+
+- **Customers** — top customers, segments, retention, churn, and RFM
+  segmentation (recency / frequency / monetary)
+- **Revenue** — revenue metrics, gross margin, month-over-month growth
+- **Payments** — payment analysis and days sales outstanding (DSO)
+- **Orders and products** — order metrics, top-selling products, category
+  performance, monthly sales
+- **Inventory** — stock health and turnover
+
+### Multi-tenancy
+
+Every record is scoped to an organisation. Users are linked to organisations through
+`user_organization_roles`, which supports five roles:
+
+| Role        | Intended use                                                               |
+| ----------- | -------------------------------------------------------------------------- |
+| `org_owner` | Full control of the organisation, including billing and ownership transfer |
+| `org_admin` | Administrative access; manages users and settings                          |
+| `manager`   | Day-to-day management of customers, orders and products                    |
+| `user`      | Standard operational access                                                |
+| `viewer`    | Read-only                                                                  |
+
+A separate `platform_admin` system role exists for operators of the deployment
+itself. Platform admins cannot silently read tenant data — access goes through
+`support_access_requests`, an approval workflow with `pending` / `approved` /
+`rejected` / `expired` states.
+
+### Auditing
+
+Actions are written to `audit_logs` for later review.
+
+---
+
+## Tech stack
+
+**Frontend** — Next.js 16 (App Router, Turbopack), React 19, TypeScript,
+Tailwind CSS 4, Radix UI, Recharts, Axios, Zod.
+
+**Backend** — Node.js 20, Express 5, PostgreSQL 16 accessed directly via `pg`
+(no ORM), JWT authentication, Argon2 password hashing, Helmet,
+`express-rate-limit`, `node-cron` for scheduled refresh-token cleanup.
+
+**Infrastructure** — Docker and Docker Compose, npm workspaces, optional nginx
+reverse proxy, ESLint and Prettier with Husky and lint-staged.
+
+---
+
+## Quick start
+
+Requirements: Docker and Docker Compose. (For a non-Docker setup you need Node.js 20+
+and PostgreSQL 16+.)
 
 ```bash
-# Repository'yi klonlayın
 git clone https://github.com/REDLANTERNDEV/centura.git
 cd centura
-
-# Ortam değişkenlerini .env.docker.example'den kopyalayın
 cp .env.docker.example .env
 ```
 
-Ardından `.env` dosyasında şunları kontrol edin:
+Set at least these values in `.env` before starting:
 
-- `DB_PASSWORD` - Veritabanı şifresi (güvenli bir şifre kullanın)
-- `JWT_SECRET` - En az 32 karakter (güvenli bir key oluşturun)
-- `SESSION_SECRET` - En az 32 karakter
-- `NODE_ENV` - "development" veya "production"
+| Variable         | Notes                                          |
+| ---------------- | ---------------------------------------------- |
+| `DB_PASSWORD`    | Database password. Change it from the default. |
+| `JWT_SECRET`     | 32+ random characters                          |
+| `SESSION_SECRET` | 32+ random characters                          |
 
-**2. Geliştirme Ortamında Çalıştırın**
+Generate a secret with:
 
 ```bash
-# İlk Kurulum (bağımlılıkları yükler ve konteynerleri oluşturur)
+openssl rand -base64 48
+```
+
+Then start the development stack:
+
+```bash
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-
-# Sonraki Çalıştırmalar (varolan görüntüleri kullanır)
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 ```
 
-**3. Uygulamaya Erişin**
+| Service      | URL                                 |
+| ------------ | ----------------------------------- |
+| Frontend     | http://localhost:4321               |
+| Backend API  | http://localhost:8765/api/v1        |
+| Health check | http://localhost:8765/api/v1/health |
+| PostgreSQL   | localhost:5432                      |
 
-| Hizmet         | URL                                 | Port |
-| -------------- | ----------------------------------- | ---- |
-| Frontend (Dev) | http://localhost:4321               | 4321 |
-| Backend API    | http://localhost:8765/api/v1        | 8765 |
-| Health Check   | http://localhost:8765/api/v1/health | 8765 |
-| PostgreSQL     | localhost:5432                      | 5432 |
+The database schema is applied automatically on first start from
+`apps/backend/scripts/init-schema.sql`.
 
-**4. Opsiyonel - Veritabanını İşletme**
-
-```bash
-# Prisma Studio (Veritabanını GUI ile görüntüleyin)
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml exec backend npx prisma studio
-
-# Veritabanını Sıfırla (tüm veri silinir)
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v
-```
-
----
-
-#### 🚀 Üretim Ortamında Deployment
+### Common commands
 
 ```bash
-# Üretim görüntülerini oluşturun ve başlatın
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-# Durumu kontrol edin
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
-```
-
----
-
-#### 💻 Manuel Kurulum (Docker Olmadan)
-
-```bash
-# Repository'yi klonlayın
-git clone https://github.com/REDLANTERNDEV/centura.git
-cd centura
-
-# Ortam değişkenlerini ayarlayın
-cp .env.example .env
-
-# Tüm bağımlılıkları yükleyin (root workspace)
-# 'npm ci' kullanımı önerilir; lockfile'daki sürümleri birebir yükler ve daha güvenlidir.
-npm ci
-
-# Backend başlatın (Terminal 1)
-cd apps/backend
-npm run dev
-# Backend çalışıyor: http://localhost:8765
-
-# Frontend başlatın (Terminal 2)
-cd apps/frontend
-npm run dev
-# Frontend çalışıyor: http://localhost:3000
-```
-
-### 🔧 Genel Docker Komutları
-
-```bash
-# Tüm container'ları başlat
+# Start in the background
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
-# Tüm container'ları durdur
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
-
-# Logları görüntüle
+# Follow logs
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
 
-# Belirli servisi restart et
+# Restart one service
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml restart backend
 
-# Container'a bash erişimi
+# Shell into a container
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml exec backend sh
 
-# Veritabanını temizle (uyarı: tüm veri silinir)
+# Stop and delete all data, including the database volume
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+```
+
+### Without Docker
+
+```bash
+cp .env.example .env
+npm ci
+
+# Terminal 1 — backend on http://localhost:8765
+npm run dev:backend
+
+# Terminal 2 — frontend on http://localhost:3000
+npm run dev:frontend
+```
+
+You will need a PostgreSQL 16 instance reachable at the `DB_*` values in `.env`,
+with `apps/backend/scripts/init-schema.sql` applied.
+
+---
+
+## Deployment
+
+### Required configuration
+
+```bash
+NEXT_PUBLIC_API_URL=https://yourdomain.com/api/v1   # URL the browser calls
+CORS_ORIGIN=https://yourdomain.com
+JWT_SECRET=<random 32+ characters>
+SESSION_SECRET=<random 32+ characters>
+```
+
+> **`NEXT_PUBLIC_API_URL` is compiled into the JavaScript bundle at build time.**
+> Changing it requires a rebuild with `--build`; restarting the container is not
+> enough. When using `docker-compose.prod.yml`, the build fails deliberately if this
+> variable is unset, rather than shipping a bundle that points at `localhost`.
+
+### Behind your own reverse proxy
+
+If you already terminate TLS with Traefik, Caddy, Cloudflare, nginx, or a platform
+such as Dokploy or Coolify, you do not need the bundled nginx. Point your proxy at
+the frontend and backend containers:
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+### With the bundled nginx
+
+The nginx service belongs to the `production` profile and **will not start** unless
+that profile is enabled:
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d --build
+```
+
+It serves everything from a single origin on port 80 — `/` to the frontend and
+`/api/...` to the backend — so set `NEXT_PUBLIC_API_URL=http://your-host/api/v1`.
+
+HTTPS is opt-in. To terminate TLS in this nginx instead of an upstream proxy, follow
+the instructions in [`nginx/conf.d/tls.conf.example`](./nginx/conf.d/tls.conf.example).
+
+### Ports
+
+`BACKEND_PORT` and `FRONTEND_PORT` select the **host** port only. Inside the network,
+the backend always listens on 8765 and the frontend on 4321, so the nginx upstreams
+stay valid no matter how you map them.
+
+PostgreSQL is deliberately **not** published to the host in production — the backend
+reaches it over the internal Docker network. The development overlay publishes 5432
+for local tooling. To reach a production database, use an SSH tunnel:
+
+```bash
+ssh -L 5432:localhost:5432 user@your-server
 ```
 
 ---
 
-## 📋 Proje Yapısı
+## Project structure
 
 ```
 centura/
-├── 📱 apps/
+├── apps/
 │   ├── backend/
 │   │   ├── src/
-│   │   │   ├── config/        # Yapılandırma dosyaları
-│   │   │   ├── controllers/   # İstek işleyicileri
-│   │   │   ├── middleware/    # Kimlik doğrulama, güvenlik
-│   │   │   ├── models/        # Veritabanı şemaları
-│   │   │   ├── routes/        # API uç noktaları
-│   │   │   ├── services/      # İş mantığı
-│   │   │   └── validators/    # Girdi doğrulaması
-│   │   ├── Dockerfile
-│   │   └── package.json
-│   │
+│   │   │   ├── config/        # Database, cookies, messages
+│   │   │   ├── controllers/   # Request handlers
+│   │   │   ├── middleware/    # Auth, security, org context, errors
+│   │   │   ├── models/        # SQL queries per domain
+│   │   │   ├── routes/        # API endpoints
+│   │   │   ├── services/      # Scheduled jobs
+│   │   │   ├── utils/         # Audit logging and helpers
+│   │   │   └── validators/    # Input validation
+│   │   ├── scripts/           # init-schema.sql and maintenance SQL
+│   │   └── Dockerfile
 │   └── frontend/
-│       ├── app/               # Next.js uygulama
-│       ├── components/        # React bileşenleri
-│       ├── hooks/            # Özel React hook'ları
-│       ├── lib/              # Yardımcı fonksiyonlar
-│       ├── public/           # Statik dosyalar
-│       ├── Dockerfile
-│       └── package.json
-│
-├── 🐘 docs/
-│   ├── docker/              # Docker yapılandırması
-|   ├── guides/              # Projedeki bazı modüllerin yapısı
-│
-├── 🔧 scripts/
-│   ├── docker-setup.sh      # Docker otomasyonu
-│   └── backup-db.sh         # Veritabanı yedeklemesi
-│
-├── docker-compose.yml       # Üretim yapılandırması
-├── docker-compose.dev.yml   # Geliştirme yapılandırması
-└── package.json            # Workspace tanımı
+│       ├── app/               # Next.js App Router pages
+│       ├── components/        # React components
+│       ├── hooks/             # Custom hooks
+│       ├── lib/               # API client and helpers
+│       └── Dockerfile
+├── api-tests/                 # Bruno API collection
+├── docs/                      # Docker guides and screenshots
+├── nginx/                     # Reverse proxy configuration
+├── scripts/                   # Setup and backup helpers
+├── docker-compose.yml         # Base stack
+├── docker-compose.dev.yml     # Development overlay
+└── docker-compose.prod.yml    # Production overlay
 ```
 
 ---
 
-## 🛠️ Teknoloji Stack'i
+## Database schema
 
-### Frontend
+Defined in [`apps/backend/scripts/init-schema.sql`](./apps/backend/scripts/init-schema.sql).
 
-- **Next.js 16** - React SSR & Static Generation Framework
-- **React 19** - UI Library
-- **TypeScript** - Type-safe development
-- **Tailwind CSS 4** - Utility-first CSS framework
-- **Recharts** - Charts & visualizations
-- **Radix UI** - Accessible component library
-- **Axios** - HTTP client for API calls
-- **Zod** - Runtime type validation
-
-### Backend
-
-- **Express.js 5** - Minimal web framework
-- **Node.js 20** - JavaScript runtime
-- **PostgreSQL 16** - Relational database
-- **JWT** - Stateless authentication
-- **Argon2** - Password hashing
-- **node-cron** - Scheduled tasks (token cleanup)
-
-### DevOps & Infrastructure
-
-- **Docker** - Container runtime
-- **Docker Compose** - Multi-container orchestration
-- **Nginx** - Reverse proxy (optional, production)
-- **Prisma** - ORM (planned for future use)
-
-### Development Tools
-
-- **ESLint** - Code linting
-- **Nodemon** - Auto-reload for backend
-- **Turbopack** - Next.js dev compiler (fast builds)
+| Table                     | Purpose                                            |
+| ------------------------- | -------------------------------------------------- |
+| `organizations`           | Tenants                                            |
+| `users`                   | User accounts                                      |
+| `user_organization_roles` | Membership and role per organisation               |
+| `platform_admins`         | Operators of the deployment                        |
+| `support_access_requests` | Approval workflow for platform-admin tenant access |
+| `refresh_tokens`          | Issued refresh tokens, cleaned up on a schedule    |
+| `customers`               | Customer records                                   |
+| `products`                | Catalogue, pricing and stock levels                |
+| `orders`                  | Order headers, status, payment and addresses       |
+| `order_items`             | Order line items                                   |
+| `audit_logs`              | Recorded actions                                   |
 
 ---
 
-## 🔐 Güvenlik Özellikleri
+## Security
 
-✅ **Kimlik Doğrulama**
+**Authentication** — JWT access and refresh tokens delivered as cookies, with
+`secure` enabled when `NODE_ENV=production`, `sameSite` set per cookie, and
+`httpOnly` on session cookies. Passwords are hashed with Argon2.
 
-- JWT tabanlı token yönetimi
-- Güvenli oturum yönetimi
-- Çıkış fonksiyonu ve token geçersiz kılması
+**Refresh token rotation** — refresh tokens are stored hashed, never in plain text,
+and grouped into _token families_. Each login starts a new family, so signing in on a
+second device does not disturb the first. Refreshing rotates the token within its own
+family and revokes the previous one, which means a single session can be invalidated
+without logging the user out everywhere. Each token records the device it was issued
+to and its last use, and expired rows are cleared on a `node-cron` schedule.
 
-✅ **Yetkilendirme**
+**CSRF** — state-changing requests are protected with a double-submit cookie: a
+random token is issued alongside the session and deliberately left readable by
+JavaScript so the client can echo it back in a header.
 
-- Rol tabanlı erişim kontrolü (Admin, Yönetici, Kullanıcı)
-- Kaynak seviyesi izinleri
+**Authorisation** — Five organisation roles plus a separate platform-admin role.
+Tenant data is scoped by `org_id` and enforced by org-context middleware.
 
-✅ **Veri Koruma**
+**Transport and headers** — Helmet security headers, a CORS allowlist driven by
+`CORS_ORIGIN`, and rate limiting applied separately to authentication, verification,
+sensitive operations, health checks and general traffic.
 
-- Argon2 ile parola şifreleme
-- HTTPS/TLS desteği
-  ✅ **Güvenli Paket Yönetimi**
+**Supply chain** — `.npmrc` enforces:
 
-- `min-release-age=3`: 3 günden yeni yayınlanmış paketlerin kurulumu reddedilir (Supply Chain Protection).
-- `ignore-scripts=true`: Kurulum sırasında otomatik çalışan betikler (postinstall vb.) devre dışı bırakılmıştır.
-- `save-exact=true`: Yeni paketler `package.json` dosyasına tam sürüm numarasıyla kaydedilir.
-- `npm ci` kullanımı: Üretim ve CI ortamlarında temiz ve güvenli kurulum sağlar.
+- `min-release-age=7` — packages published in the last 7 days are refused, limiting
+  exposure to compromised releases
+- `ignore-scripts=true` — install scripts such as `postinstall` do not run
+- `save-exact=true` — dependencies are pinned to exact versions
 
-✅ **CORS güvenliği**
+Builds use `npm ci` so the lockfile is authoritative.
 
-- Rate limiting
-
-✅ **Denetim**
-
-- İşlem günlükleri
-- Kullanıcı aktivite izleme
-- Değişiklik geçmişi
-
----
-
-## 📊 Veritabanı Şeması (CRM + ERP)
-
-### CRM Core Tables
-
-- **users** - Kullanıcı hesapları ve profiller
-- **organizations** - İşletme verileri ve tenant bilgisi
-- **customers** - Müşteri profilleri ve iletişim bilgileri
-- **customer_interactions** - Email, telefon, not ve etkinlik geçmişi
-- **sales_opportunities** - Satış fırsatları ve pipeline durumu
-
-### ERP Integration Tables
-
-- **orders** - Satış siparişleri (müşterilerden)
-- **order_items** - Sipariş detayları ve ürün bilgileri
-- **products** - Ürün kataloğu ve özellikleri
-- **categories** - Ürün kategorilendirmesi
-- **inventory** - Stok düzeyleri ve yönetimi
-- **suppliers** - Tedarikçi bilgileri
-
-### Analytics Tables
-
-- **sales_analytics** - Agregat satış verileri
-- **customer_analytics** - Müşteri davranış ve segment analizi
-- **audit_logs** - İşlem ve erişim denetim günlükleri
+**Reporting a vulnerability** — please open a
+[security advisory](https://github.com/REDLANTERNDEV/centura/security/advisories/new)
+rather than a public issue.
 
 ---
 
-## 🏗️ Mimari - CRM + ERP Entegrasyonu
+## Not yet implemented
 
-Centura, kurumsal ERP sistemleriyle sorunsuz entegrasyon için tasarlanmıştır:
+These are not in the current schema or API. They are listed so the scope is clear:
 
-```
-┌─────────────────────────────────────────┐
-│         Centura CRM (Frontend)          │
-│   Müşteri Yönetimi & Satış Pipeline     │
-└────────────────┬────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-   ┌────▼──────┐    ┌─────▼─────┐
-   │  API Gateway   │ Auth Service│
-   └────┬──────┘    └─────┬─────┘
-        │                 │
-   ┌────▼──────────────────▼──────┐
-   │   Express Backend Services    │
-   ├──────────────────────────────┤
-   │  CRM Svc  │ Sales Svc │ Auth │
-   └────┬──────────────────┬──────┘
-        │                  │
-   ┌────▼──────────────────▼──────┐
-   │    PostgreSQL Database        │
-   ├──────────────────────────────┤
-   │ Customers │ Orders │ Products│
-   │ Analytics │ Users  │ Logs    │
-   └──────────────────────────────┘
-```
-
-**ERP Modülleri:**
-
-- ✅ CRM (Müşteri Yönetimi) - Ana Modül
-- ✅ Sales (Satış Yönetimi) - Order Management
-- ✅ Inventory (Envanter) - Stock Management
+- Sales pipeline and opportunity tracking
+- Customer interaction history (calls, emails, meeting logs)
+- Supplier and purchasing management
+- Automated reorder triggers from the low-stock threshold
+- **User-facing session management.** The data layer is complete — active sessions
+  are recorded per device and `getUserActiveSessions` / `revokeUserSession` are
+  implemented in `userModel.js` — but no route exposes them yet, so users cannot
+  currently list or revoke their own sessions. Wiring this up is a small,
+  self-contained contribution.
 
 ---
 
-## 🚀 Deployment
+## Known issues
 
-### Development
+Found while writing this documentation and verified against the code, not
+yet fixed:
+
+- **Analytics dashboard silently shows fake data on any API failure.** In
+  `analytics/page.tsx`, a failed request falls back to mock data and clears
+  the error state, with no environment gate despite a comment saying
+  "for development." A user can see a fully-populated dashboard built from
+  fabricated numbers with no indication it isn't real. See
+  [analytics.md](./docs/guides/analytics.md#kozmetik-olmayan-iki-gerçek-hata).
+- **The analytics time period selector has no effect.** The frontend sends a
+  `period` query parameter the backend never reads. Same doc as above.
+- **Order creation produces `NaN` totals if `unit_price` is omitted**, rather
+  than falling back to the product's stored price as earlier docs claimed.
+  See [orders.md](./apps/backend/docs/api/orders.md#bilinen-sorun-unit_price-boş-bırakılırsa-fiyat-otomatik-doldurulmaz).
+- **CSRF tokens are generated but never verified.** `validateCSRFToken`
+  exists but isn't wired into any route, and the frontend doesn't send the
+  header. The only real CSRF protection is `sameSite: 'lax'`. See
+  [http-only-cookies.md](./apps/backend/docs/architecture/http-only-cookies.md#bilinen-sorun-csrf-tokenı-üretiliyor-ama-hiçbir-yerde-doğrulanmıyor).
+- **Request-scoped debug logging runs unconditionally in every environment**,
+  including production — user emails, roles, and org IDs go to container
+  logs on most authenticated requests. See
+  [security.md](./apps/backend/docs/architecture/security.md#bilinen-sorun-hata-ayıklama-logları).
+- **`make install` is broken on macOS/Linux** — Windows batch syntax in a
+  POSIX Makefile target. Use `cp .env.docker.example .env` directly. See
+  [docs/docker/README.md](./docs/docker/README.md).
+- **`DB_NAME` defaults disagree across files** (`mini_saas_erp` vs.
+  `centura_crm`), which also breaks the Makefile's `db-backup`/`db-restore`
+  targets if you're on the other default. See
+  [database.md](./apps/backend/docs/architecture/database.md#veritabanı-adı).
+
+Two more were found and already fixed in the code during this pass: the
+`calculate_rfm_scores` database function was missing entirely (RFM endpoint
+would 500), and refresh-token validation scanned every user's tokens instead
+of the requesting user's, both breaking and slowing down under load. Existing
+production databases still need the RFM function applied manually — see
+[insights.md](./apps/backend/docs/api/insights.md#bilinen-sorun-çözüldü--sunucunuzda-henüz-uygulanmamış-olabilir).
+
+---
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](./.github/CONTRIBUTING.md) for the
+full guide.
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+git checkout -b feature/your-feature
+npm run lint
+npm run format
+git commit -m "feat: describe your change"
 ```
 
-### Production
+Open a pull request against `main`. Commit messages follow
+[Conventional Commits](https://www.conventionalcommits.org/).
 
-```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-
----
-
-## 📝 Lisans
-
-Bu proje **GNU Affero General Public License v3 (AGPL-3.0)** altında lisanslanmıştır. Detaylar için [LICENSE](./LICENSE) dosyasını görün.
-
-**AGPL-3.0 Özet:**
-
-- ✅ Özgür kullanım, değiştirme ve dağıtma
-- ✅ Ticari kullanım mümkün
-- ⚠️ Değişiklikler açık kaynak olmalı
-- ⚠️ Ağ üzerinden sunulan değiştirilmiş sürümler açıklanmalı
+- **Bugs:** [open an issue](https://github.com/REDLANTERNDEV/centura/issues/new)
+- **Features:** open an issue labelled `feature request`
 
 ---
 
-## 👥 Hakkında
+## Documentation
 
-**Centura CRM**, modern işletmeler için açık kaynak kodlu bir CRM çözümüdür ve kurumsal ERP ekosisteminin temel bileşenidir. Esneklik, güvenlik ve müşteri odaklılığı göz önünde tutularak tasarlanmıştır.
-
----
-
-### 📚 Daha Fazla Bilgi
-
-- [API Referansı](./api-tests/README.md)
+- [API reference](./api-tests/README.md)
+- [Docker guide](./docs/docker/README.md)
+- [Production checklist](./docs/docker/PRODUCTION_CHECKLIST.md)
 
 ---
 
-## 🤝 Katkıda Bulunma
+## License
 
-Centura CRM'e katkıda bulunmak ister misiniz? Harika!
+Licensed under the [GNU Affero General Public License v3.0](./LICENSE).
 
-1. Repo'yu fork edin
-2. Feature branch oluşturun (`git checkout -b feature/harika-ozellik`)
-3. Değişiklikleri commit edin (`git commit -m 'feat: harika özellik eklendi'`)
-4. Branch'i push edin (`git push origin feature/harika-ozellik`)
-5. Pull Request açın
-
-Detaylı bilgi için [Katkıda Bulunma Rehberi](.github/CONTRIBUTING.md)'ni okuyun.
-
-### Hata Bildirimi & Özellik İsteği
-
-- 🐛 **Hata bildirmek için:** [Issue açın](https://github.com/REDLANTERNDEV/centura/issues/new)
-- 💡 **Özellik önermek için:** "feature request" etiketi ile [Issue açın](https://github.com/REDLANTERNDEV/centura/issues/new)
-
----
+You may use, modify and distribute this software, including commercially. If you
+modify it and make it available over a network, you must publish your modified
+source under the same license.

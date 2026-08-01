@@ -51,9 +51,12 @@ services:
       dockerfile: apps/frontend/Dockerfile
       target: production
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL} # Required in production .env
+        # This value is COMPILED INTO the JavaScript bundle at build time, so a wrong
+        # or empty value produces an image that builds fine and then fails in the
+        # browser. Fail the build instead of shipping a broken bundle.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in .env to your public API URL, e.g. https://api.example.com/api/v1}
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL} # Required in production .env
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in .env to your public API URL, e.g. https://api.example.com/api/v1}
     deploy:
       # replicas: 2  # Disabled for local testing (conflicts with container_name)
       resources:

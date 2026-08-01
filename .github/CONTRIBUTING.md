@@ -1,107 +1,109 @@
-# Centura CRM'e Katkıda Bulunma
+# Contributing to Centura
 
-Katkılarınızı bekliyoruz! Centura CRM'e katkıda bulunmayı mümkün olduğunca kolay ve şeffaf hale getirmek istiyoruz:
+Thanks for your interest in contributing. Bug reports, fixes, features and
+documentation improvements are all welcome.
 
-- Hata bildirimi
-- Mevcut kodun tartışılması
-- Düzeltme gönderme
-- Yeni özellik önerme
-- Bakımcı olma
+## Getting set up
 
-## Geliştirme Süreci
-
-Kodu barındırmak, sorunları ve özellik taleplerini izlemek ve pull request'leri kabul etmek için GitHub kullanıyoruz.
-
-1. Repo'yu fork edin ve `main` dalından kendi dalınızı oluşturun.
-2. Test edilmesi gereken kod eklediyseniz, testler ekleyin.
-3. API'leri değiştirdiyseniz, dokümantasyonu güncelleyin.
-4. Test paketinin geçtiğinden emin olun.
-5. Kodunuzun lint kontrolünden geçtiğinden emin olun.
-6. Pull request gönderin!
-
-## Pull Request Süreci
-
-1. Arayüz değişikliklerinin ayrıntılarıyla README.md'yi güncelleyin (yeni ortam değişkenleri, açık portlar, dosya konumları ve container parametreleri dahil).
-2. Değişikliklerinizle ilgili notlarla CHANGELOG.md'yi güncelleyin.
-3. Bakımcıların onayını aldıktan sonra PR birleştirilecektir.
-
-## Kodlama Kuralları
-
-Kodumuzu okumaya başlayın ve alışacaksınız. Okunabilirlik için optimize ediyoruz:
-
-- Tip güvenliği için **TypeScript** kullanıyoruz
-- Kod formatlama için **ESLint** ve **Prettier** kullanıyoruz
-- Dosya adları için **kebab-case** kullanıyoruz
-- Değişkenler ve fonksiyonlar için **camelCase** kullanıyoruz
-- Sınıflar ve bileşenler için **PascalCase** kullanıyoruz
-- **2 boşluk** ile girinti yapıyoruz (soft tabs)
-- Commit mesajları için [Conventional Commits](https://www.conventionalcommits.org/) takip ediyoruz
-
-### Commit Mesajı Formatı
-
-```
-<tip>(<kapsam>): <konu>
-
-<gövde>
-
-<altbilgi>
+```bash
+git clone https://github.com/<your-fork>/centura.git
+cd centura
+cp .env.docker.example .env     # set DB_PASSWORD, JWT_SECRET, SESSION_SECRET
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
-**Tipler:**
+See the [README](../README.md) for a non-Docker setup and the full configuration
+reference.
 
-- `feat`: Yeni bir özellik
-- `fix`: Hata düzeltmesi
-- `docs`: Sadece dokümantasyon değişiklikleri
-- `style`: Kodun anlamını etkilemeyen değişiklikler
-- `refactor`: Hata düzeltmeyen veya özellik eklemeyen kod değişikliği
-- `perf`: Performansı artıran kod değişikliği
-- `test`: Eksik testlerin eklenmesi veya mevcut testlerin düzeltilmesi
-- `chore`: Build süreci veya yardımcı araçlardaki değişiklikler
+## Workflow
 
-**Örnek:**
+1. Fork the repository and branch from `main`.
+2. Make your change.
+3. Run `npm run lint` and `npm run format`.
+4. Commit using [Conventional Commits](https://www.conventionalcommits.org/).
+5. Open a pull request against `main`, describing what changed and why.
+
+A Husky pre-commit hook runs Prettier and ESLint on staged files, so formatting is
+applied automatically. If the hook fails, the underlying lint error needs fixing —
+don't bypass it with `--no-verify`.
+
+## Coding conventions
+
+These reflect what the codebase actually does today:
+
+| Area                    | Convention                                                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend                | TypeScript, strict. Components in `components/` use PascalCase filenames.                                                               |
+| Backend                 | Plain JavaScript with ES modules. Files use camelCase, suffixed by role — `authController.js`, `orderModel.js`, `customerValidator.js`. |
+| Variables and functions | camelCase                                                                                                                               |
+| Database columns        | snake_case                                                                                                                              |
+| Indentation             | 2 spaces                                                                                                                                |
+| Formatting              | Prettier, enforced by the pre-commit hook — don't hand-format                                                                           |
+
+The backend is organised by responsibility: `routes/` define endpoints,
+`controllers/` handle requests, `models/` hold SQL, `validators/` check input, and
+`middleware/` covers auth, org context, security and error handling. New endpoints
+should follow that split rather than putting queries in controllers.
+
+Every query that touches tenant data must be scoped by `org_id`. This is the single
+most important rule in the codebase — a missing scope leaks data across tenants.
+
+## Commit messages
 
 ```
-feat(analytics): müşteri segmentasyon analizi eklendi
+<type>(<scope>): <subject>
 
-Müşteri segmentasyonu için RFM (Recency, Frequency, Monetary) analizi uygulandı.
-Yeni API endpoint'leri ve frontend görselleştirmeleri içerir.
+<body>
+
+<footer>
+```
+
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`.
+
+Example:
+
+```
+feat(orders): add partial payment tracking
+
+Adds payment_status transitions between pending, partial and paid, plus the
+paid_amount column and its validation.
 
 Closes #123
 ```
 
-## Hata Raporları
+## Tests
 
-Hataları izlemek için GitHub issues kullanıyoruz. [Yeni bir issue açarak](https://github.com/REDLANTERNDEV/centura/issues/new) hata bildirin.
+There is currently no test runner configured — `apps/backend/tests/` holds a single
+manual script. Setting up a proper test suite is an open task, and a PR that adds one
+would be very welcome. Until then, describe how you verified your change in the pull
+request.
 
-**İyi Hata Raporları** genellikle şunları içerir:
+## Reporting bugs
 
-- Kısa bir özet ve/veya arka plan
-- Yeniden oluşturma adımları
-  - Spesifik olun!
-  - Mümkünse örnek kod verin
-- Ne olmasını beklediğiniz
-- Gerçekte ne olduğu
-- Notlar (bunun neden olabileceğini düşündüğünüz veya deneyip işe yaramayan şeyler dahil)
+[Open an issue](https://github.com/REDLANTERNDEV/centura/issues/new) with:
 
-## Özellik İstekleri
+- What you expected to happen, and what actually happened
+- Steps to reproduce, ideally with a request body or sample data
+- Version or commit, and how you're running it (Docker or local)
+- Relevant logs — with secrets removed
 
-Özellik taleplerini izlemek için GitHub issues kullanıyoruz. "feature request" etiketi ile [yeni bir issue açarak](https://github.com/REDLANTERNDEV/centura/issues/new) özellik önerin.
+## Requesting features
 
-**İyi Özellik İstekleri** genellikle şunları içerir:
+Open an issue labelled `feature request` describing the problem you're trying to
+solve, not only the solution you have in mind. Alternatives you considered are
+useful context.
 
-- Çözmeye çalıştığınız sorunun net ve öz bir açıklaması
-- İstediğiniz çözümün açıklaması
-- Değerlendirdiğiniz alternatif çözümler
-- Ek bağlam veya ekran görüntüleri
+Note the "Not yet implemented" section of the [README](../README.md) — sales
+pipeline, interaction history, supplier management and automated reordering are all
+known gaps and good places to start.
 
-## Lisans
+## Security
 
-Katkıda bulunarak, katkılarınızın GNU Affero General Public License v3 (AGPL-3.0) altında lisanslanacağını kabul etmiş olursunuz.
+Do not report vulnerabilities in a public issue. Open a
+[security advisory](https://github.com/REDLANTERNDEV/centura/security/advisories/new)
+instead.
 
-## Sorularınız mı var?
+## License
 
-"question" etiketi ile bir issue açarak soru sormaktan çekinmeyin.
-
----
-
-Centura CRM'e katkıda bulunduğunuz için teşekkürler! 🎉
+By contributing, you agree that your contributions will be licensed under the
+GNU Affero General Public License v3.0.

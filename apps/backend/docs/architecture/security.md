@@ -1,379 +1,153 @@
-# 🔐 Multi-Tenant Security Architecture
+# Organizasyon Bağlamı Güvenliği
 
-## **Current Implementation: Industry Standard ✅**
+Bu doküman, isteklerin doğru organizasyona (kiracıya) nasıl bağlandığını ve bunun
+nasıl doğrulandığını anlatır. Genel güvenlik önlemleri için
+[README güvenlik bölümüne](../../../../README.tr.md#güvenlik) bakın; burada
+yalnızca organizasyon bağlamı ele alınır.
 
-Your application now follows **industry-standard multi-tenant security patterns** used by:
+## Akış
 
-- Slack
-- Salesforce
-- Linear
-- Notion
-- GitHub (organization context)
-
----
-
-## **Security Flow**
-
-### **1. Authentication (User Identity)**
-
-```
-User Login
-  ↓
-Backend verifies credentials
-  ↓
-JWT token issued (HTTP-only cookie)
-  ↓
-Token contains: user_id, email
-```
-
-### **2. Organization Selection (Tenant Context)**
-
-```
-User authenticated
-  ↓
-Frontend fetches user's organizations
-  ↓
-User selects organization
-  ↓
-Frontend stores: org_id in localStorage (NOT full object)
-  ↓
-Frontend sends X-Organization-ID header with EVERY request
-```
-
-### **3. Authorization (Access Control)**
-
-```
-Backend receives request
-  ↓
-Validates JWT (authentication)
-  ↓
-Validates X-Organization-ID header
-  ↓
-Checks: Does user have access to this org?
-  ↓
-Checks: What role? (org_owner, org_admin, org_user)
-  ↓
-Scopes query to organization
-  ↓
-Returns data
-```
-
----
-
-## **Security Measures Implemented**
-
-### ✅ **1. Client-Side Security**
-
-#### **What we DON'T store in localStorage:**
-
-- ❌ Full organization object
-- ❌ Sensitive data
-- ❌ User credentials
-- ❌ JWT tokens (those are HTTP-only cookies)
-
-#### **What we DO store:**
-
-- ✅ Only `org_id` (e.g., "2")
-- ✅ Plain text, no encryption needed
-- ✅ Just for UX (remembering selection)
+1. **Kimlik doğrulama** — JWT, HTTP-only çerezde taşınır; `userId` ve `email`
+   içerir.
+2. **Organizasyon seçimi** — Kullanıcı organizasyon seçtiğinde, frontend yalnızca
+   `org_id`'yi `localStorage`'a yazar (tam organizasyon nesnesini değil) ve
+   `X-Organization-ID` başlığını her isteğe ekler.
+3. **Yetkilendirme** — Backend, JWT'yi doğrular, `X-Organization-ID` başlığını
+   okur, kullanıcının o organizasyona erişimi olup olmadığını
+   `user_organization_roles` üzerinden kontrol eder ve sorguları o organizasyonla
+   sınırlar.
 
 ```typescript
-// BEFORE (❌ Insecure)
-localStorage.setItem('org', JSON.stringify(fullOrgObject));
-
-// AFTER (✅ Secure)
-localStorage.setItem('selected_org_id', '2');
+// Frontend: yalnızca id saklanır, tam nesne değil
+localStorage.setItem('centura_selected_org_id', String(org.org_id));
+apiClient.defaults.headers.common['X-Organization-ID'] = String(org.org_id);
 ```
 
----
+## Üç middleware, tek amaç
 
-### ✅ **2. Server-Side Validation**
+Tanım: [`middleware/orgContext.js`](../../src/middleware/orgContext.js).
+Üçü de aynı doğrulamayı yapar; farkları başlık yoksa ne olacağındadır.
 
-#### **Every organization-scoped request validates:**
+| Middleware           | Başlık yoksa               | Nerede kullanılıyor                                       |
+| -------------------- | -------------------------- | --------------------------------------------------------- |
+| `validateOrgContext` | 400 döner                  | `insightsRoutes.js`                                       |
+| `optionalOrgContext` | Bağlam olmadan devam eder  | Kullanılmıyor                                             |
+| `flexibleOrgContext` | JWT'deki `org_id`'ye düşer | `customerRoutes.js`, `orderRoutes.js`, `productRoutes.js` |
 
-1. **User is authenticated** (JWT token valid)
-2. **User has access to this org** (user_organization_roles table)
-3. **User's role is active** (role_active = true)
-4. **Organization is active** (org_active = true)
-5. **User has required permissions** (role check)
+**Önemli:** Uygulamadaki asıl yaygın davranış `flexibleOrgContext`'tir —
+müşteri, sipariş ve ürün route'larının tamamı bunu kullanır. `validateOrgContext`
+yalnızca `insights` route'larında kullanılıyor.
+
+### flexibleOrgContext'in JWT geri düşüşü
+
+Başlık yoksa `flexibleOrgContext`, erişim token'ının içindeki `org_id`'yi kullanır:
 
 ```javascript
-// Backend validates EVERY request
-GET /api/v1/products
-Headers: {
-  Cookie: "access_token=jwt...",
-  X-Organization-ID: "2"
+if (req.user.org_id) {
+  req.organization = { id: req.user.org_id, role: null, name: null };
+  return next();
 }
-
-↓ Validates:
-1. JWT valid? ✓
-2. User ID 123 has access to Org 2? ✓
-3. User role: org_admin ✓
-4. Returns: Products ONLY from Org 2
 ```
 
----
+Bu durumda `req.organization.role` **`null`** olur — rol, header ile gelen tam
+doğrulamada olduğu gibi tekrar sorgulanmaz. JWT'deki `org_id`, token üretildiği
+andaki değeri taşır; kullanıcının o organizasyondaki rolü sonradan değiştirilmiş
+veya erişimi kaldırılmış olsa bile, token süresi dolana kadar eski `org_id` ile
+istek geçebilir. Rolün kesin olarak bilinmesi gereken uç noktalar
+`validateOrgContext` kullanmalıdır.
 
-### ✅ **3. Tenant Isolation**
+### Header doğrulanırken
+
+`validateOrgContext` ve `flexibleOrgContext`'in header-var yolu aynı kontrolleri
+yapar:
+
+1. Kullanıcının bu organizasyona bir rolü var mı (`user_organization_roles`)?
+2. O rol aktif mi (`role_active`)?
+3. Organizasyonun kendisi aktif mi (`org_active`)?
+
+Üçünden biri başarısızsa `403` döner.
+
+## Header formatı
+
+`X-Organization-ID` hem sayısal `org_id`'yi hem de `org_uuid`'yi kabul eder;
+`validateOrgContext` içeriğe `-` karakteri olup olmadığına bakarak ayrım yapar ve
+UUID ise formatı regex ile doğrular. `flexibleOrgContext` yalnızca sayısal ID
+kabul eder.
+
+## Sorgu izolasyonu
+
+Organizasyon doğrulandıktan sonra kontrolcüler `req.organization.id`'yi kullanır;
+sorgular parametreli olarak `org_id` ile sınırlanır:
 
 ```javascript
-// Query is ALWAYS scoped to organization
-SELECT * FROM products
-WHERE organization_id = ${req.organization.id}
+export const getProducts = async (req, res) => {
+  const orgId = req.organization.id;
+  const products = await getProductsByOrg(orgId); // WHERE org_id = $1
+  return res.json({ success: true, data: products });
+};
 ```
 
-**Impossible scenarios:**
+Sütun adı `org_id`'dir (`organization_id` değil). Tüm sorgular parametreli
+çalışır (`$1`, `$2`, ...); string birleştirme kullanılmaz.
 
-- ❌ User from Org 1 seeing Org 2's data
-- ❌ Client manipulating org_id to access other orgs
-- ❌ Cross-organization data leaks
-
----
-
-## **Attack Prevention**
-
-### **Attack 1: Client-Side Manipulation**
-
-**Attacker tries:**
-
-```javascript
-// Malicious user modifies localStorage
-localStorage.setItem('selected_org_id', '999'); // Org they don't own
-```
-
-**Result:**
-
-```
-Backend receives: X-Organization-ID: 999
-  ↓
-Validates: Does user have access to Org 999?
-  ↓
-Response: 403 Forbidden - "Access denied. You do not have access to this organization."
-```
-
-✅ **Protected**
-
----
-
-### **Attack 2: Header Injection**
-
-**Attacker tries:**
-
-```javascript
-// Malicious request with fake org ID
-fetch('/api/v1/products', {
-  headers: {
-    'X-Organization-ID': '999',
-  },
-});
-```
-
-**Result:**
-
-```
-Backend checks user_organization_roles table:
-  user_id: 123
-  org_id: 999
-
-No record found → 403 Forbidden
-```
-
-✅ **Protected**
-
----
-
-### **Attack 3: SQL Injection**
-
-**Attacker tries:**
-
-```javascript
-localStorage.setItem('selected_org_id', '1; DROP TABLE products--');
-```
-
-**Result:**
-
-```
-Backend parses: Number.parseInt("1; DROP TABLE products--")
-  ↓
-Result: NaN
-  ↓
-Response: 400 Bad Request - "Invalid organization ID format"
-```
-
-✅ **Protected**
-
----
-
-## **Implementation Guide**
-
-### **Frontend: Sending Organization Context**
-
-```typescript
-// ✅ Automatically sent with every request
-apiClient.defaults.headers.common['X-Organization-ID'] = org.org_id.toString();
-
-// All subsequent requests include this header
-await apiClient.get('/products'); // Header included
-await apiClient.post('/orders', data); // Header included
-```
-
----
-
-### **Backend: Validating Organization Context**
-
-#### **Option 1: Required Organization (Most Endpoints)**
+## Yeni bir route eklerken
 
 ```javascript
 import { verifyToken } from '../middleware/auth.js';
-import { validateOrgContext } from '../middleware/orgContext.js';
+import { flexibleOrgContext } from '../middleware/orgContext.js';
 
-// Products route - requires org context
-router.get(
-  '/',
-  verifyToken, // 1. Authenticate user
-  validateOrgContext, // 2. Validate org access
-  getProducts // 3. Return org-scoped data
-);
-
-// In controller
-export const getProducts = async (req, res) => {
-  const orgId = req.organization.id; // ✅ Validated org ID
-  const products = await getProductsByOrg(orgId);
-  return res.json({ data: products });
-};
+router.get('/', verifyToken, flexibleOrgContext, getProducts);
 ```
 
-#### **Option 2: Optional Organization (Some Endpoints)**
+Rolün kesin olarak doğrulanması gereken bir uç noktaysa (`req.organization.role`
+`null` olmamalıysa), `flexibleOrgContext` yerine `validateOrgContext` tercih edin.
+
+## Bilinen sorun: hata ayıklama logları
+
+`orgContext.js`, her istekte kullanıcının e-postasını, organizasyon kimliğini ve
+rolünü `console.log` / `console.warn` ile yazdırır:
 
 ```javascript
-import { optionalOrgContext } from '../middleware/orgContext.js';
-
-// User profile - org context optional
-router.get(
-  '/me',
-  verifyToken,
-  optionalOrgContext, // Won't fail if no header
-  getUserProfile
-);
+console.log('🔍 Organization Context Debug:', {
+  url: req.url,
+  method: req.method,
+  headers: { 'x-organization-id': orgIdentifier },
+  user: req.user?.email,
+});
 ```
 
----
+Bu, `NODE_ENV`'den bağımsız olarak **her ortamda** çalışır. Prodüksiyonda konteyner
+loglarına kullanıcı e-postaları ve erişim desenleri yazılıyor demektir. Log
+seviyesine bağlı hâle getirilmesi veya kaldırılması önerilir.
 
-## **Comparison with Industry Standards**
-
-| Feature                  | Your App | Slack | Salesforce | Linear |
-| ------------------------ | -------- | ----- | ---------- | ------ |
-| **Store org_id only**    | ✅       | ✅    | ✅         | ✅     |
-| **Server validation**    | ✅       | ✅    | ✅         | ✅     |
-| **Header-based context** | ✅       | ✅    | ✅         | ✅     |
-| **Role-based access**    | ✅       | ✅    | ✅         | ✅     |
-| **Tenant isolation**     | ✅       | ✅    | ✅         | ✅     |
-| **HTTP-only cookies**    | ✅       | ✅    | ✅         | ✅     |
-
----
-
-## **How to Use the New Middleware**
-
-### **Step 1: Import Middleware**
-
-```javascript
-import { validateOrgContext } from '../middleware/orgContext.js';
-```
-
-### **Step 2: Add to Routes That Need Org Context**
-
-```javascript
-// Products - requires organization
-router.get('/', verifyToken, validateOrgContext, getProducts);
-
-// Orders - requires organization
-router.get('/', verifyToken, validateOrgContext, getOrders);
-
-// Customers - requires organization
-router.get('/', verifyToken, validateOrgContext, getCustomers);
-```
-
-### **Step 3: Use Validated Org in Controllers**
-
-```javascript
-export const getProducts = async (req, res) => {
-  // req.organization is populated by validateOrgContext middleware
-  const { id: orgId, role, name } = req.organization;
-
-  console.log(`User ${req.user.id} accessing products for ${name} as ${role}`);
-
-  const products = await getProductsByOrganization(orgId);
-
-  return res.json({
-    success: true,
-    data: products,
-  });
-};
-```
-
----
-
-## **Migration Checklist**
-
-### **Frontend:**
-
-- ✅ Store only `org_id` in localStorage (not full object)
-- ✅ Send `X-Organization-ID` header with requests
-- ✅ Remove header on logout
-
-### **Backend:**
-
-- ⚠️ Add `validateOrgContext` middleware to org-scoped routes
-- ⚠️ Update controllers to use `req.organization.id`
-- ⚠️ Test role-based access control
-
----
-
-## **Testing the Security**
-
-### **Test 1: Valid Access**
+## Test
 
 ```bash
-# User has access to org 2
+# Geçerli erişim
 curl -H "Cookie: access_token=..." \
      -H "X-Organization-ID: 2" \
-     http://localhost:4974/api/v1/products
+     http://localhost:8765/api/v1/products
+# Beklenen: 200
 
-# Expected: 200 OK + products from org 2
-```
-
-### **Test 2: Invalid Organization**
-
-```bash
-# User tries to access org they don't belong to
+# Erişimi olmayan organizasyon
 curl -H "Cookie: access_token=..." \
      -H "X-Organization-ID: 999" \
-     http://localhost:4974/api/v1/products
+     http://localhost:8765/api/v1/products
+# Beklenen: 403 ORG_ACCESS_DENIED
 
-# Expected: 403 Forbidden
-```
-
-### **Test 3: Missing Header**
-
-```bash
-# No organization context
+# Başlık yok, flexibleOrgContext kullanan bir route (örn. /products)
 curl -H "Cookie: access_token=..." \
-     http://localhost:4974/api/v1/products
+     http://localhost:8765/api/v1/products
+# Beklenen: 200, JWT'deki org_id ile (role: null)
 
-# Expected: 400 Bad Request - "Organization context required"
+# Başlık yok, validateOrgContext kullanan bir route (örn. /insights)
+curl -H "Cookie: access_token=..." \
+     http://localhost:8765/api/v1/insights
+# Beklenen: 400 ORG_CONTEXT_REQUIRED
 ```
 
----
+## İlgili dokümanlar
 
-## **Summary**
-
-✅ **Your architecture is now industry-standard secure**
-
-- Client stores minimal data (just org_id)
-- Server validates EVERY request
-- No cross-organization data leaks possible
-- Follows patterns from Slack, Salesforce, Linear
-- Role-based access control
-- Full tenant isolation
-
-🔐 **Security Level: Production-Ready**
+- [Çok kiracılı roller](./multi-tenant-roles.md)
+- [Veritabanı şeması](./database.md)
+- [HTTP-only çerezler](./http-only-cookies.md)

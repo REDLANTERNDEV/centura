@@ -1,127 +1,107 @@
-# Error Handling with Toast Notifications
+# Hata Yönetimi ve Sessiz Token Yenileme
 
-## Backend Error Format
+> **Not:** Bu doküman ağırlıklı olarak **frontend** davranışını anlatır; backend
+> dokümanları altında durması tarihsel bir kalıntıdır. İlgili kod
+> [`apps/frontend/lib/api-client.ts`](../../../frontend/lib/api-client.ts)
+> içindedir.
 
-Your backend responds with errors in this format:
+## Backend hata biçimi
+
+Backend, hataları tek bir alanla döndürür:
 
 ```json
-{
-  "error": "Invalid credentials"
-}
+{ "error": "Invalid credentials" }
 ```
 
-## How It Works
+## Axios yanıt interceptor'ı
 
-### 1. **API Client Interceptor** (`lib/api-client.ts`)
+`api-client.ts` içindeki yanıt interceptor'ı iki iş yapar: hata mesajını
+normalleştirir ve süresi dolmuş erişim token'larını kullanıcıya hissettirmeden
+yeniler.
 
-The axios interceptor now checks for both `error` and `message` fields:
+### 1. Hata mesajının çıkarılması
 
-```typescript
-apiClient.interceptors.response.use(
-  response => response,
-  (error: AxiosError<{ error?: string; message?: string }>) => {
-    // Extract error message from response
-    const message =
-      error.response?.data?.error || // ✅ Checks "error" field first
-      error.response?.data?.message || // Fallback to "message" field
-      error.message || // Fallback to axios error
-      'An error occurred'; // Final fallback
+Sırayla şu alanlara bakılır ve ilk dolu olan kullanılır:
 
-    return Promise.reject(new Error(message));
-  }
-);
+```ts
+const message =
+  error.response?.data?.error || // backend'in standart alanı
+  error.response?.data?.message || // alternatif alan
+  error.message || // axios'un kendi mesajı
+  'An error occurred'; // son çare
 ```
 
-### 2. **Toast Display** (Login/Signup Pages)
+Böylece çağıran taraf, hatanın nereden geldiğine bakmadan tek bir `Error` nesnesi
+alır ve bunu doğrudan toast bileşenine verebilir.
 
-The error is caught and displayed in a toast:
+### 2. 401 durumunda sessiz yenileme
 
-```typescript
+Bir istek `401` dönerse interceptor, kullanıcıyı çıkışa göndermek yerine önce
+erişim token'ını yenilemeyi dener.
+
+Yenileme yalnızca şu koşullarda denenir:
+
+- Yanıt kodu `401` ise,
+- Bu istek daha önce yeniden denenmemişse (`_retry` bayrağı),
+- İsteğin kendisi `refresh-token` veya `login` uç noktası değilse.
+
+Son iki koşul sonsuz döngüyü engeller: yenileme isteğinin kendisi 401 dönerse
+tekrar yenileme denenmez.
+
+### 3. Eşzamanlı isteklerin kuyruğa alınması
+
+Sayfa aynı anda birden fazla istek atıyorsa ve token süresi dolmuşsa, hepsinin ayrı
+ayrı yenileme çağrısı yapması istenmez. Interceptor bunu `isRefreshing` bayrağı ve
+`failedQueue` kuyruğuyla çözer:
+
+- İlk 401 alan istek yenilemeyi başlatır.
+- Bu sırada 401 alan diğer istekler kuyruğa eklenir ve bekler.
+- Yenileme başarılıysa kuyruk boşaltılır ve **tüm** bekleyen istekler tekrar
+  gönderilir.
+
+Yani kaç istek beklemede olursa olsun, tek bir yenileme çağrısı yapılır.
+
+### 4. Yenileme başarısız olursa
+
+Yenileme de başarısız olursa oturum gerçekten bitmiştir. Bu durumda:
+
+1. Kuyruktaki istekler `Session expired` hatasıyla reddedilir,
+2. `localStorage` içindeki `centura_selected_org_id` temizlenir,
+3. Tarayıcı ortamındaysa giriş sayfasına yönlendirilir.
+
+Organizasyon seçiminin temizlenmesi önemlidir: aksi hâlde farklı bir hesapla giriş
+yapan kullanıcı, önceki kullanıcının organizasyon seçimiyle açılırdı.
+
+## Kullanıcıya gösterim
+
+Sayfa tarafında interceptor'ın ürettiği mesaj yakalanıp toast olarak gösterilir:
+
+```ts
 try {
   await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
   toast.success('Giriş başarılı!');
 } catch (error) {
   const message =
     error instanceof Error ? error.message : 'Giriş başarısız oldu';
-  toast.error(message); // ✅ Shows "Invalid credentials" from backend
+  toast.error(message);
 }
 ```
 
-## Examples
+Bileşenlerin hata gövdesini ayrıştırması gerekmez; interceptor bunu zaten
+normalleştirmiştir.
 
-### Backend Response Examples
+## Beklenmedik çıkışlar
 
-**Invalid Credentials:**
+Kullanıcılar oturumdan düştüğünde suçlu genellikle frontend değildir. Backend'in
+yenileme token'ı doğrulama sorgusunda, aktif token sayısı 100'ü aştığında geçerli
+token'ların doğrulanamadığı bilinen bir sorun vardır. Bu durumda yenileme başarısız
+olur ve yukarıdaki 4. adım devreye girerek kullanıcıyı giriş sayfasına gönderir.
 
-```json
-{
-  "error": "Invalid credentials"
-}
-```
+Ayrıntı için [token-cleanup.md](./token-cleanup.md) içindeki "Bilinen sorun"
+bölümüne bakın.
 
-→ Toast shows: **"Invalid credentials"**
+## İlgili dokümanlar
 
-**Email Already Exists:**
-
-```json
-{
-  "error": "Email already exists"
-}
-```
-
-→ Toast shows: **"Email already exists"**
-
-**Validation Error:**
-
-```json
-{
-  "error": "Password must be at least 6 characters"
-}
-```
-
-→ Toast shows: **"Password must be at least 6 characters"**
-
-## Supported Error Formats
-
-The interceptor supports multiple backend error formats:
-
-1. `{ "error": "message" }` ✅ (Your format)
-2. `{ "message": "message" }` ✅ (Alternative format)
-3. Network errors ✅ (Shows axios error message)
-
-## Testing
-
-To test the error handling:
-
-1. **Try wrong credentials:**
-   - Email: `test@test.com`
-   - Password: `wrongpassword`
-   - Should show: "Invalid credentials" toast
-
-2. **Try existing email (signup):**
-   - Should show: "Email already exists" toast
-
-3. **Network error (backend offline):**
-   - Should show: "Network Error" or similar toast
-
-## Customizing Toast Position/Duration
-
-To customize toast appearance, edit the `<Toaster />` in `app/layout.tsx`:
-
-```typescript
-<Toaster
-  position="top-right"     // Position: top-left, top-center, top-right, etc.
-  duration={4000}          // Duration in ms
-  richColors               // Colorful toasts
-  closeButton              // Add close button
-/>
-```
-
-## All Done! ✅
-
-Your toast notifications now correctly display backend error messages:
-
-- ✅ Shows `error` field from backend
-- ✅ Fallback to `message` field if `error` doesn't exist
-- ✅ Clean error handling
-- ✅ User-friendly notifications
+- [Token temizliği ve yenileme token'ları](./token-cleanup.md)
+- [HTTP-only çerezler](./http-only-cookies.md)
+- [Veritabanı şeması](./database.md)

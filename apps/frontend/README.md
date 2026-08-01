@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# centura-fe
 
-## Getting Started
+Next.js frontend for [Centura](../../README.md). Not intended to run standalone —
+it expects the Centura backend to be reachable.
 
-First, run the development server:
+## Running
+
+From the repository root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev:frontend          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Or with the full stack in Docker, which is usually what you want:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# frontend on http://localhost:4321, backend on http://localhost:8765
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Configuration
 
-## Learn More
+| Variable              | Purpose                                                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL` | API base URL used by the browser. Compiled into the bundle at build time — changing it requires a rebuild, not a restart. |
+| `INTERNAL_API_URL`    | API base URL used for server-side requests inside Docker (`http://backend:8765/api/v1`).                                  |
 
-To learn more about Next.js, take a look at the following resources:
+## Layout
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/
+├── (dashboard)/dashboard/   # Authenticated app: analytics, customers, orders, products, settings
+├── (public)/                # Marketing and auth pages
+├── contact/
+└── organizations/           # Organisation creation and selection
+components/                  # Shared React components (PascalCase files)
+hooks/                       # Custom hooks
+lib/                         # API client, validation schemas, helpers
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Conventions
 
-## Deploy on Vercel
+- TypeScript throughout; `any` should not appear in new code.
+- Components in `components/` use PascalCase filenames; route folders follow the
+  Next.js App Router convention.
+- Tailwind CSS 4 for styling, Radix UI primitives for accessible components,
+  Zod for runtime validation of API responses and forms.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Script               | Description                                               |
+| -------------------- | --------------------------------------------------------- |
+| `npm run dev`        | Dev server with Turbopack on port 3000                    |
+| `npm run dev:docker` | Dev server bound to `0.0.0.0:4321` for the Docker overlay |
+| `npm run build`      | Production build (standalone output)                      |
+| `npm run start`      | Serve the production build                                |
+| `npm run lint`       | ESLint                                                    |

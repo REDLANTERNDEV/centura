@@ -23,8 +23,21 @@ services:
       - postgres_data:/var/lib/postgresql/data
       # Initialize database schema on first run
       - ./apps/backend/scripts/init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql:ro
-    ports:
-      - '${DB_PORT:-5432}:5432'
+      # No ./backups mount needed: scripts/backup-db.sh pipes pg_dump's output to
+      # the host through `docker compose exec`, so the dump never passes through
+      # the container filesystem.
+    # NOT published to the host on purpose. The backend reaches Postgres over the
+    # internal `mini-saas-network` at postgres:5432, so nothing needs a host port,
+    # and publishing 5432 on a public VPS exposes the database to the internet.
+    #
+    # For local database access use the dev overlay, which publishes it:
+    #   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+    #
+    # To reach the production database from your own machine, prefer an SSH tunnel:
+    #   ssh -L 5432:localhost:5432 user@your-server
+    # ...or bind to loopback only (safe from the internet, unlike a bare mapping):
+    #   ports:
+    #     - '127.0.0.1:${DB_PORT:-5432}:5432'
     networks:
       - mini-saas-network
     # PostgreSQL tuning for better performance
@@ -86,7 +99,10 @@ services:
     restart: always
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      PORT: ${BACKEND_PORT:-8765}
+      # Pinned to 8765 so the nginx upstream `backend:8765` stays valid; BACKEND_PORT
+      # only selects the *host* port in the mapping below. Must stay set explicitly:
+      # apps/backend/server.js falls back to 5000, not 8765, when PORT is absent.
+      PORT: 8765
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-mini_saas_erp}
@@ -100,7 +116,7 @@ services:
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:4321}
     ports:
-      - '${BACKEND_PORT:-8765}:${BACKEND_PORT:-8765}'
+      - '${BACKEND_PORT:-8765}:8765'
     networks:
       - mini-saas-network
     depends_on:
@@ -141,13 +157,19 @@ services:
       dockerfile: apps/frontend/Dockerfile
       target: production
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
+        # Compiled into the JS bundle at build time. Required, with no fallback:
+        # a missing value would silently produce a bundle pointing at localhost,
+        # which builds and deploys cleanly and then fails in every visitor's browser.
+        # The dev overlay supplies a localhost default for local work.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in .env to the API URL the browser will call, e.g. https://example.com/api/v1}
     restart: always
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      PORT: ${FRONTEND_PORT:-4321}
-      # For browser requests: use http://localhost or production domain
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8765/api/v1}
+      # NOTE: PORT is intentionally NOT set here. The container always listens on
+      # 4321 (set by apps/frontend/Dockerfile), so the nginx upstream `frontend:4321`
+      # stays valid. FRONTEND_PORT only chooses the *host* port in the mapping below.
+      # For browser requests: the public API URL (see the build arg above)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in .env to the API URL the browser will call, e.g. https://example.com/api/v1}
       # For server-side requests in Next.js: use internal Docker hostname
       INTERNAL_API_URL: ${INTERNAL_API_URL:-http://backend:${BACKEND_PORT:-8765}/api/v1}
     ports:
@@ -205,6 +227,9 @@ services:
       - frontend
       - backend
     healthcheck:
+      # Use 127.0.0.1, NOT localhost: nginx binds IPv4 only here (the image's
+      # 10-listen-on-ipv6-by-default.sh can't patch our read-only conf.d mount),
+      # while busybox wget resolves localhost to ::1 first and would always fail.
       test:
         [
           'CMD',
@@ -212,7 +237,7 @@ services:
           '--no-verbose',
           '--tries=1',
           '--spider',
-          'http://localhost/health',
+          'http://127.0.0.1/health',
         ]
       interval: 30s
       timeout: 10s

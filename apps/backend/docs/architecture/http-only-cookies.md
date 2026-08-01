@@ -1,335 +1,147 @@
-# HTTP-Only Secure Cookie Implementation Guide
+# HTTP-Only Çerezler
 
-## Overview
+Kimlik doğrulama, `localStorage`'da tutulan JWT yerine HTTP-only çerezlerle
+yapılır. Amaç, token'ları JavaScript'ten tamamen gizleyerek XSS ile token
+çalınmasını engellemektir.
 
-This implementation converts the JWT-based authentication system to use HTTP-only secure cookies following enterprise-grade security practices. This approach provides enhanced security by preventing XSS attacks from accessing authentication tokens while maintaining a seamless user experience.
+> Yapılandırma: [`config/cookies.js`](../../src/config/cookies.js)
 
-## Security Features Implemented
+## Çerez türleri
 
-### 1. HTTP-Only Cookies
+| Çerez            | İsim            | Süre    | httpOnly | Amaç                               |
+| ---------------- | --------------- | ------- | -------- | ---------------------------------- |
+| Erişim token'ı   | `access_token`  | 15 dk   | `true`   | API kimlik doğrulama               |
+| Yenileme token'ı | `refresh_token` | 7 gün   | `true`   | Erişim token'ını yenileme          |
+| CSRF token'ı     | `csrf_token`    | 24 saat | `false`  | Aşağıya bakın — şu an uygulanmıyor |
 
-- **Access tokens**: Stored in HTTP-only cookies, inaccessible to JavaScript
-- **Refresh tokens**: Stored in separate HTTP-only cookies with restricted paths
-- **Automatic expiration**: Cookies automatically expire based on JWT expiration times
-
-### 2. Cookie Security Configuration
+## Gerçek yapılandırma
 
 ```javascript
-{
-  httpOnly: true,              // Prevents XSS access
-  secure: true,                // HTTPS only in production
-  sameSite: 'strict',         // CSRF protection
-  path: '/',                  // Cookie scope
-  maxAge: 900000,            // 15 minutes for access tokens
-  domain: 'yourdomain.com'   // Domain restriction
-}
+const baseCookieConfig = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  path: '/',
+  domain:
+    process.env.NODE_ENV === 'production'
+      ? process.env.COOKIE_DOMAIN
+      : undefined,
+};
 ```
 
-### 3. Security Headers (Helmet.js)
+İki noktaya dikkat:
 
-- Content Security Policy (CSP)
-- HTTP Strict Transport Security (HSTS)
-- X-Content-Type-Options
-- X-Frame-Options
-- Referrer Policy
-- Cross-Origin Resource Policy
+- **`sameSite: 'lax'`**, `'strict'` değil. Kod içindeki yorum nedenini açıklıyor:
+  bir bağlantıya tıklayarak siteye gelmek gibi üst düzey (top-level) gezinmelerde
+  çerezin gönderilmesine izin verir; `'strict'` bunu engelleyip kullanıcı deneyimini
+  bozardı.
+- **Yenileme token'ının `path` değeri `/`'dir**, `/api/auth` değil. Kod yorumu:
+  _"Changed from '/api/auth' to '/' for better frontend compatibility."_ Yani
+  yenileme çerezi, kısıtlı bir yola değil, uygulamanın tamamına gönderilir.
 
-### 4. Rate Limiting
+`secure` ve `domain`, `NODE_ENV=production` olup olmamasına göre otomatik ayarlanır
+— elle değiştirmeniz gerekmez.
 
-- **General API**: 100 requests per 15 minutes per IP/user
-- **Authentication endpoints**: 5 attempts per 15 minutes
-- **Sensitive operations**: 3 attempts per hour
-
-### 5. CSRF Protection
-
-- CSRF tokens for state-changing operations
-- Token validation middleware
-- Secure token generation and storage
-
-## Cookie Types
-
-### Access Token Cookie
-
-- **Name**: `access_token`
-- **Duration**: 15 minutes
-- **Path**: `/` (entire application)
-- **Usage**: API authentication
-
-### Refresh Token Cookie
-
-- **Name**: `refresh_token`
-- **Duration**: 7 days
-- **Path**: `/api/auth` (restricted to auth endpoints)
-- **Usage**: Token refresh operations
-
-### CSRF Token Cookie
-
-- **Name**: `csrf_token`
-- **Duration**: 24 hours
-- **Path**: `/`
-- **HTTP-Only**: `false` (needs to be readable by client)
-- **Usage**: CSRF protection
-
-## Authentication Flow
-
-### 1. Login Process
+## Kimlik doğrulama akışı
 
 ```
-Client                    Server
-  |                        |
-  |-- POST /api/auth/login -|
-  |     { email, password } |
-  |                        |-- Validate credentials
-  |                        |-- Generate JWT tokens
-  |                        |-- Set HTTP-only cookies
-  |<-- 200 OK -------------|
-      Set-Cookie: access_token=jwt; HttpOnly; Secure
-      Set-Cookie: refresh_token=jwt; HttpOnly; Secure; Path=/api/auth
+POST /api/auth/login  { email, password }
+  → kimlik bilgisi doğrulanır
+  → access_token ve refresh_token cookie olarak set edilir
+
+GET /api/... (Cookie: access_token=...)
+  → verifyToken middleware'i cookie'den token'ı okur ve doğrular
+
+POST /api/auth/refresh-token  (Cookie: refresh_token=...)
+  → eski token ailesi iptal edilir, aynı ailede yeni token yazılır
+  → bkz. token-cleanup.md: token ailesi (token family) modeli
+
+POST /api/auth/logout  (Cookie: refresh_token=...)
+  → token veritabanında iptal edilir (is_revoked = TRUE)
+  → cookie'ler temizlenir
 ```
 
-### 2. Authenticated Request
+Yenileme token'ı rotasyonunun ayrıntısı için
+[token-cleanup.md](./token-cleanup.md) içindeki token ailesi bölümüne bakın.
 
-```
-Client                    Server
-  |                        |
-  |-- GET /api/protected --|
-  |   Cookie: access_token |
-  |                        |-- Extract token from cookie
-  |                        |-- Verify JWT
-  |<-- 200 OK -------------|
-      { protected_data }
-```
+## Bilinen sorun: CSRF token'ı üretiliyor ama hiçbir yerde doğrulanmıyor
 
-### 3. Token Refresh
+`middleware/security.js` içinde iki fonksiyon tanımlı:
 
-```
-Client                    Server
-  |                        |
-  |-- POST /api/auth/refresh-token --|
-  |   Cookie: refresh_token |
-  |                        |-- Verify refresh token
-  |                        |-- Generate new tokens
-  |                        |-- Set new cookies (token rotation)
-  |<-- 200 OK -------------|
-      Set-Cookie: access_token=new_jwt; HttpOnly; Secure
-      Set-Cookie: refresh_token=new_jwt; HttpOnly; Secure
-```
+- `generateCSRFToken` — rastgele bir token üretip session'a ve cookie'ye yazar
+- `validateCSRFToken` — `X-CSRF-Token` başlığını session'daki değerle karşılaştırır
 
-### 4. Logout Process
+**İkincisi hiçbir route'a bağlanmamış.** `app.js`, `security.js`'den yalnızca
+`securityHeaders`, `generalLimiter`, `healthCheckLimiter`, `cookieSecurity` ve
+`securityLogger`'ı içe aktarır — `validateCSRFToken` hiçbir yerde kullanılmıyor.
+CSRF cookie'si, `userController.js` içinde bu middleware'den bağımsız olarak
+doğrudan `crypto.randomBytes()` ile üretilip login ve refresh sırasında set
+ediliyor, ama hiçbir istekte doğrulanmıyor. Frontend de `csrf_token` cookie'sini
+okuyup `X-CSRF-Token` başlığına eklemiyor.
 
-```
-Client                    Server
-  |                        |
-  |-- POST /api/auth/logout --|
-  |   Cookie: refresh_token |
-  |                        |-- Revoke tokens in database
-  |                        |-- Clear cookies
-  |<-- 200 OK -------------|
-      Set-Cookie: access_token=; expires=Thu, 01 Jan 1970
-      Set-Cookie: refresh_token=; expires=Thu, 01 Jan 1970
-```
+Sonuç: durum değiştiren isteklerin (POST/PUT/DELETE) CSRF karşısındaki tek
+koruması şu an **`sameSite: 'lax'`**'tir. Bu, çoğu cross-site senaryoyu engeller ama
+`validateCSRFToken`'ın sağladığı çift-gönderim (double-submit) korumasının
+kendisi değildir.
 
-## Environment Configuration
+**Bunu kapatmak için** iki seçenek var: `validateCSRFToken`'ı durum değiştiren
+route'lara middleware olarak eklemek ve frontend'de karşılık gelen header'ı
+göndermek; ya da CSRF üretim kodunu kaldırıp yalnızca `sameSite: 'lax'`'e
+güvenmek. Şu anki hâl — token üretilip hiç kullanılmaması — hem gereksiz
+karmaşıklık hem de yanlış güven duygusu yaratıyor.
 
-### Required Environment Variables
+## Ortam değişkenleri
 
 ```bash
-# Security
-JWT_SECRET=your-super-secure-jwt-secret-key-here
-SESSION_SECRET=your-session-secret-key-here
-
-# Cookie Configuration
-COOKIE_DOMAIN=yourdomain.com  # Production only
+JWT_SECRET=<32+ rastgele karakter>
+SESSION_SECRET=<32+ rastgele karakter>
+COOKIE_DOMAIN=yourdomain.com   # yalnızca production'da kullanılır
 NODE_ENV=production
-
-# Token Expiration
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 ```
 
-### Development vs Production
+`COOKIE_DOMAIN`, `NODE_ENV=production` değilse okunmaz; geliştirmede boş
+bırakılabilir.
 
-- **Development**: Cookies work over HTTP, sameSite='lax'
-- **Production**: Cookies require HTTPS, sameSite='strict'
+## Hız sınırlama (rate limiting)
 
-## Middleware Integration
+Tanım: [`middleware/security.js`](../../src/middleware/security.js)
 
-### 1. Authentication Middleware
+| Sınırlayıcı                 | Pencere | Limit      | Kullanıldığı yer                                          |
+| --------------------------- | ------- | ---------- | --------------------------------------------------------- |
+| `generalLimiter`            | 15 dk   | 100 istek  | Tüm `/api`                                                |
+| `authLimiter`               | 15 dk   | 5 istek    | `/auth/signup`, `/auth/login`                             |
+| `verifyLimiter`             | 15 dk   | 1000 istek | `/auth/verify-token` (middleware tarafından sık çağrılır) |
+| `healthCheckLimiter`        | 1 dk    | 60 istek   | `/health` uç noktaları                                    |
+| `sensitiveOperationLimiter` | 1 saat  | 3 istek    | Hassas işlemler                                           |
 
-```javascript
-// Cookie-based token verification
-export const verifyToken = (req, res, next) => {
-  const token = req.cookies[COOKIE_NAMES.ACCESS_TOKEN];
-  // Token validation logic...
-};
-```
+## Middleware sırası
 
-### 2. Security Middleware Stack
-
-```javascript
-app.use(securityHeaders); // Helmet security headers
-app.use(cookieSecurity); // Cookie security enforcement
-app.use(securityLogger); // Security event logging
-app.use(generalLimiter); // Rate limiting
-app.use(cookieParser()); // Cookie parsing
-app.use(session()); // Session for CSRF
-```
-
-## Frontend Integration
-
-### 1. API Calls
-
-No changes required for API calls - cookies are automatically sent:
+`app.js` içindeki gerçek sıra:
 
 ```javascript
-fetch('/api/protected', {
-  credentials: 'include', // Include cookies
-  headers: {
-    'X-CSRF-Token': getCsrfToken(), // For state-changing operations
-  },
-});
+app.use(securityHeaders); // Helmet
+app.use(cookieSecurity);
+app.use(generalLimiter);
+app.use(cookieParser());
+app.use(securityLogger);
+app.use(session(/* ... */));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use('/api', routes);
+app.use('/api/auth', authRoutes);
 ```
 
-### 2. CSRF Protection
+## Frontend entegrasyonu
 
-Include CSRF token in headers for POST/PUT/PATCH/DELETE:
+Ek yapılandırma gerekmez — çerezler istekle otomatik gönderilir, `credentials`
+ayarı axios istemcisinde zaten tanımlıdır. 401 yanıtındaki sessiz token yenileme
+davranışı için [error-handling.md](./error-handling.md) içindeki interceptor
+açıklamasına bakın.
 
-```javascript
-function getCsrfToken() {
-  const cookies = document.cookie.split(';');
-  const csrfCookie = cookies.find(c => c.trim().startsWith('csrf_token='));
-  return csrfCookie ? csrfCookie.split('=')[1] : null;
-}
-```
+## İlgili dokümanlar
 
-### 3. Logout
-
-Simple logout call - server handles cookie clearing:
-
-```javascript
-fetch('/api/auth/logout', {
-  method: 'POST',
-  credentials: 'include',
-});
-```
-
-## Security Benefits
-
-### 1. XSS Protection
-
-- Tokens inaccessible to JavaScript
-- No localStorage or sessionStorage vulnerabilities
-- Automatic token handling
-
-### 2. CSRF Protection
-
-- SameSite cookie attribute
-- CSRF token validation
-- Domain restriction
-
-### 3. Token Security
-
-- Automatic token rotation
-- Secure storage in HTTP-only cookies
-- Path-based restrictions for refresh tokens
-
-### 4. Session Management
-
-- Automatic expiration
-- Server-side token revocation
-- Secure logout process
-
-## Monitoring and Logging
-
-### Security Events Logged
-
-- Authentication attempts
-- Token refresh operations
-- CSRF validation failures
-- Rate limit violations
-- Cookie security events
-
-### Log Format
-
-```json
-{
-  "timestamp": "2024-01-01T12:00:00.000Z",
-  "method": "POST",
-  "url": "/api/auth/login",
-  "ip": "192.168.1.1",
-  "userAgent": "Mozilla/5.0...",
-  "userId": "user123",
-  "hasAuthCookie": true,
-  "hasRefreshCookie": true
-}
-```
-
-## Production Deployment Checklist
-
-### 1. Environment Configuration
-
-- [ ] Set `NODE_ENV=production`
-- [ ] Configure `COOKIE_DOMAIN` for your domain
-- [ ] Set secure `JWT_SECRET` and `SESSION_SECRET`
-- [ ] Enable HTTPS (required for secure cookies)
-
-### 2. Security Headers
-
-- [ ] Configure Content Security Policy
-- [ ] Enable HSTS
-- [ ] Set up proper CORS configuration
-- [ ] Configure reverse proxy settings
-
-### 3. Rate Limiting
-
-- [ ] Adjust rate limits for production load
-- [ ] Configure Redis for distributed rate limiting (optional)
-- [ ] Set up IP whitelisting for trusted sources
-
-### 4. Monitoring
-
-- [ ] Set up security event monitoring
-- [ ] Configure alerting for suspicious activity
-- [ ] Implement audit logging
-- [ ] Set up health check endpoints
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Cookies not being set**
-   - Check HTTPS in production
-   - Verify domain configuration
-   - Check cookie path settings
-
-2. **CSRF validation failures**
-   - Ensure CSRF token is included in headers
-   - Check session configuration
-   - Verify cookie accessibility
-
-3. **Rate limiting issues**
-   - Check IP detection behind proxy
-   - Verify rate limit configuration
-   - Consider user-based rate limiting
-
-### Debug Mode
-
-Enable detailed logging by setting appropriate log levels in your environment.
-
-## Migration from Bearer Tokens
-
-### Backend Changes
-
-1. Update middleware to read from cookies
-2. Modify login/logout to set/clear cookies
-3. Add security middleware stack
-4. Update error handling
-
-### Frontend Changes
-
-1. Remove token storage logic
-2. Add CSRF token handling
-3. Update logout implementation
-4. Test cookie-based authentication
-
-This implementation provides enterprise-grade security while maintaining compatibility with existing applications.
+- [Token temizliği ve yenileme token'ları](./token-cleanup.md)
+- [Hata yönetimi ve sessiz token yenileme](./error-handling.md)
+- [Organizasyon bağlamı güvenliği](./security.md)

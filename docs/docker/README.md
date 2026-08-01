@@ -1,452 +1,152 @@
-# 🐳 Docker Deployment Guide
+# Docker deployment guide
 
-Production-ready Docker configuration for Mini SaaS ERP with industry best practices.
+Deeper reference alongside [QUICKSTART.md](./QUICKSTART.md), which covers the
+fastest path to a running stack. This document covers the `Makefile`
+shortcuts and production details.
 
-## 📋 Table of Contents
+## Prerequisites
 
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Environment Configuration](#environment-configuration)
-- [Development](#development)
-- [Production](#production)
-- [Database Management](#database-management)
-- [Monitoring & Logs](#monitoring--logs)
-- [Security](#security)
-- [Troubleshooting](#troubleshooting)
+- Docker Engine 24.0+, Docker Compose 2.20+
+- `make` (optional — every target is a thin wrapper around `docker-compose`,
+  shown below each command)
 
-## 🎯 Prerequisites
-
-- Docker Engine 24.0+
-- Docker Compose 2.20+
-- Make (optional, for using Makefile commands)
-
-**Windows Users:**
-
-- Docker Desktop for Windows
-- WSL2 enabled
-- Git Bash or PowerShell
-
-## 🚀 Quick Start
-
-### 1. Clone and Setup
+## Quick start
 
 ```bash
-# Clone repository
-git clone <your-repo-url>
-cd centura
-
-# Copy environment file
 cp .env.docker.example .env
-
-# Edit .env with your configuration
-# IMPORTANT: Change default passwords and secrets!
+# edit .env — set DB_PASSWORD, JWT_SECRET, SESSION_SECRET at minimum
 ```
-
-### 2. Start Development Environment
-
-**Using Make:**
 
 ```bash
-make dev
+make dev              # docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
-**Using Docker Compose:**
+| Service     | URL                   |
+| ----------- | --------------------- |
+| Frontend    | http://localhost:4321 |
+| Backend API | http://localhost:8765 |
+| PostgreSQL  | localhost:5432        |
 
-```bash
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-```
-
-**Using PowerShell:**
-
-```powershell
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-```
-
-### 3. Access Applications
-
-- **Frontend:** http://localhost:4321
-- **Backend API:** http://localhost:8765
-- **Database:** localhost:5432
-
-## ⚙️ Environment Configuration
-
-### Required Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-# Database
-DB_NAME=mini_saas_erp
-DB_USER=postgres
-DB_PASSWORD=your-secure-password-here
-
-# JWT & Security
-JWT_SECRET=your-256-bit-secret-key-here
-SESSION_SECRET=your-session-secret-here
-
-# URLs
-FRONTEND_URL=http://localhost:4321
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8765/api/v1
-```
-
-### Generate Secure Secrets
-
-**Using Node.js:**
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-**Using OpenSSL:**
+Generate a secret:
 
 ```bash
 openssl rand -hex 32
 ```
 
-**Using PowerShell:**
+> **`make install`** is currently broken on macOS and Linux — it uses Windows
+> batch syntax (`if not exist .env copy ...`) that `/bin/sh` can't parse. Use
+> `cp .env.docker.example .env` directly instead.
 
-```powershell
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
-```
+## Make targets
 
-## 💻 Development
+All targets are defined in [`Makefile`](../../Makefile). The ones that exist:
 
-### Start Development Environment
+| Target                                                     | Runs                                                                                                    |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `make dev` / `dev-d` / `dev-down` / `dev-logs`             | Dev stack, foreground / detached / stop / logs                                                          |
+| `make prod` / `prod-down` / `prod-logs`                    | Prod stack — **does not start nginx**, see below                                                        |
+| `make up` / `down` / `restart` / `ps`                      | Base compose file only, no overlay                                                                      |
+| `make build`                                               | `docker-compose build`                                                                                  |
+| `make backend-shell` / `frontend-shell` / `db-shell`       | Shell into a running container                                                                          |
+| `make backend-logs` / `frontend-logs` / `db-logs` / `logs` | Follow logs                                                                                             |
+| `make health`                                              | `docker-compose ps`                                                                                     |
+| `make stats`                                               | `docker stats`                                                                                          |
+| `make db-backup` / `db-restore file=...`                   | See below — has a database-name gotcha                                                                  |
+| `make clean`                                               | Removes containers, volumes, **and prunes the Docker system** — affects images outside this project too |
+| `make clean-volumes`                                       | `docker-compose down -v` — deletes data                                                                 |
+| `make clean-images`                                        | `docker-compose down --rmi all`                                                                         |
 
-```bash
-# With hot reload
-make dev
+`make prod-scale` and `make security-scan`, mentioned in older docs, do not
+exist as targets.
 
-# In detached mode
-make dev-d
-
-# View logs
-make dev-logs
-
-# Stop
-make dev-down
-```
-
-### Development Features
-
-- ✅ Hot module reloading
-- ✅ Source code mounted as volumes
-- ✅ Debug ports exposed
-- ✅ Development database with sample data
-
-### Access Development Tools
+## Production
 
 ```bash
-# Backend shell
-make backend-shell
-
-# Frontend shell
-make frontend-shell
-
-# Database shell
-make db-shell
-
-# View specific logs
-make backend-logs
-make frontend-logs
-```
-
-## 🏭 Production
-
-### Start Production Environment
-
-```bash
-# Build and start
 make prod
-
-# View logs
-make prod-logs
-
-# Stop
-make prod-down
 ```
 
-### Production Features
-
-- ✅ Multi-stage builds (smaller images)
-- ✅ Non-root user execution
-- ✅ Health checks
-- ✅ Resource limits
-- ✅ Automatic restarts
-- ✅ Security hardening
-- ✅ Nginx reverse proxy
-
-### Production with Nginx
-
-The production setup includes an optional Nginx reverse proxy:
+This is `docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build` — it does **not** pass `--profile production`, so the bundled nginx service does not start. That's consistent with the rest of this repo's deployment docs: nginx is opt-in, for people who don't already run their own reverse proxy. To include it:
 
 ```bash
-# Start with Nginx
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d --build
 ```
 
-### Scaling Services
+See [QUICKSTART.md](./QUICKSTART.md#production) for the required environment
+variables (`NEXT_PUBLIC_API_URL` fails the build if unset) and
+[PRODUCTION_CHECKLIST.md](./PRODUCTION_CHECKLIST.md) before going live.
+
+### TLS
+
+The bundled nginx serves plain HTTP by default. To terminate TLS in it
+instead of an upstream proxy, follow the steps in
+[`nginx/conf.d/tls.conf.example`](../../nginx/conf.d/tls.conf.example) — it
+covers certificates, enabling the config, and the required `.env` changes
+(`COOKIE_DOMAIN`, `NEXT_PUBLIC_API_URL`, etc.).
+
+## Database backup and restore
 
 ```bash
-# Scale backend to 3 instances
-make prod-scale service=backend replicas=3
-
-# Scale frontend to 2 instances
-make prod-scale service=frontend replicas=2
+make db-backup                              # writes ./backups/backup_<timestamp>.sql
+make db-restore file=backups/backup_....sql
 ```
 
-## 🗄️ Database Management
+**Gotcha:** both targets hardcode the database name `centura_crm`:
 
-### Backup Database
-
-```bash
-# Create backup
-make db-backup
-
-# Backups are stored in ./backups/ directory
+```makefile
+docker-compose exec -T postgres pg_dump -U postgres centura_crm > ...
 ```
 
-### Restore Database
+That matches `.env.docker.example`'s `DB_NAME`, but **not** the base
+`docker-compose.yml` default (`mini_saas_erp`) — see the database-name note in
+[database.md](../../apps/backend/docs/architecture/database.md#veritabanı-adı).
+If your `DB_NAME` differs from `centura_crm`, edit the Makefile target or run
+`pg_dump`/`psql` manually with the right name.
+
+## Logs and monitoring
 
 ```bash
-# Restore from backup file
-make db-restore file=backups/backup_20240101_120000.sql
+make logs              # all services
+make backend-logs      # one service
+docker-compose ps       # container status
+docker stats             # live resource usage
 ```
 
-### Database Shell Access
+## Troubleshooting
+
+**Port already in use.** `BACKEND_PORT` and `FRONTEND_PORT` in `.env` change
+the _host_ port only — containers always listen on 8765 and 4321 internally.
+
+**Database connection failed.**
 
 ```bash
-# PostgreSQL CLI
-make db-shell
-
-# Or directly
-docker-compose exec postgres psql -U postgres -d mini_saas_erp
-```
-
-### Run SQL Scripts
-
-```bash
-# Execute SQL file
-docker-compose exec -T postgres psql -U postgres -d mini_saas_erp < scripts/migration.sql
-```
-
-## 📊 Monitoring & Logs
-
-### View Logs
-
-```bash
-# All services
-make logs
-
-# Specific service
-make backend-logs
-make frontend-logs
-make db-logs
-
-# Follow logs
-docker-compose logs -f [service-name]
-```
-
-### Health Checks
-
-```bash
-# Check service health
-make health
-
-# Or detailed status
-docker-compose ps
-```
-
-### Resource Usage
-
-```bash
-# Real-time stats
-make stats
-
-# Or
-docker stats
-```
-
-## 🔒 Security
-
-### Security Features Implemented
-
-1. **Container Security**
-   - Non-root user execution
-   - Minimal base images (Alpine)
-   - No unnecessary packages
-   - Read-only root filesystem where possible
-
-2. **Network Security**
-   - Isolated Docker network
-   - Service-to-service communication only
-   - No exposed ports except necessary ones
-
-3. **Application Security**
-   - Environment variable isolation
-   - Secret management
-   - Security headers (Nginx)
-   - Rate limiting (Nginx)
-
-4. **Database Security**
-   - Named volumes for persistence
-   - Backup capabilities
-   - Health checks
-
-### Security Scanning
-
-```bash
-# Scan images for vulnerabilities
-make security-scan
-
-# Or manually
-docker scout cves mini-saas-backend
-docker scout cves mini-saas-frontend
-```
-
-### Best Practices
-
-- ✅ Never commit `.env` files
-- ✅ Use strong, unique secrets
-- ✅ Regularly update base images
-- ✅ Monitor container logs
-- ✅ Implement backup strategy
-- ✅ Use HTTPS in production (configure Nginx SSL)
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-#### 1. Port Already in Use
-
-```bash
-# Find process using port
-netstat -ano | findstr :5000
-
-# Stop all services and restart
-make down
-make up
-```
-
-#### 2. Database Connection Failed
-
-```bash
-# Check database health
 docker-compose ps postgres
-
-# View database logs
 make db-logs
-
-# Restart database
 docker-compose restart postgres
 ```
 
-#### 3. Build Failures
+**Build failures.**
 
 ```bash
-# Clean and rebuild
-make clean
-make build
+docker-compose build --no-cache
 ```
 
-#### 4. Volume Permission Issues
+**Start over.** This deletes all data:
 
 ```bash
-# Reset volumes (WARNING: deletes data!)
 make clean-volumes
+make dev
 ```
 
-### Debugging
+## Cleanup
 
-```bash
-# Enter container for debugging
-docker-compose exec backend sh
+`make clean` is more destructive than it looks — beyond this project's
+containers and volumes, it runs `docker system prune -af --volumes`, which
+removes **all** unused Docker images, containers, and volumes on the machine,
+not just this project's. Use `make clean-volumes` or `make clean-images` for
+a narrower cleanup.
 
-# Check environment variables
-docker-compose exec backend env
+## Related
 
-# Test network connectivity
-docker-compose exec backend ping postgres
-```
-
-### Reset Everything
-
-```bash
-# Complete cleanup (WARNING: deletes all data!)
-make clean
-```
-
-## 📚 Additional Resources
-
-### Docker Commands Reference
-
-```bash
-# View all containers
-docker ps -a
-
-# View all images
-docker images
-
-# Remove unused resources
-docker system prune -a
-
-# View volumes
-docker volume ls
-
-# Inspect container
-docker inspect <container-name>
-```
-
-### Useful Make Commands
-
-```bash
-make help           # Show all available commands
-make install        # Initial setup
-make build          # Build images
-make up             # Start services
-make down           # Stop services
-make restart        # Restart services
-make clean          # Complete cleanup
-```
-
-## 🌐 Production Deployment
-
-### SSL/HTTPS Configuration
-
-1. Obtain SSL certificates (Let's Encrypt, etc.)
-2. Place certificates in `./nginx/ssl/`
-3. Uncomment HTTPS server block in `nginx/conf.d/default.conf`
-4. Update `COOKIE_DOMAIN` in `.env`
-
-### Environment-Specific Configs
-
-- **Development:** `docker-compose.dev.yml`
-- **Production:** `docker-compose.prod.yml`
-- **Custom:** Create `docker-compose.custom.yml`
-
-### CI/CD Integration
-
-Example GitHub Actions workflow:
-
-```yaml
-- name: Build and push Docker images
-  run: |
-    docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
-    docker-compose push
-```
-
-## 📞 Support
-
-For issues or questions:
-
-1. Check logs: `make logs`
-2. Review [Troubleshooting](#troubleshooting)
-3. Open an issue on GitHub
-
-## 📄 License
-
-See LICENSE file for details.
-
----
-
-**Built with ❤️ using Docker, Node.js, Next.js, and PostgreSQL**
+- [Docker quick start](./QUICKSTART.md)
+- [Production checklist](./PRODUCTION_CHECKLIST.md)
+- [Project README](../../README.md)
