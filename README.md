@@ -212,6 +212,59 @@ It serves everything from a single origin on port 80 — `/` to the frontend and
 HTTPS is opt-in. To terminate TLS in this nginx instead of an upstream proxy, follow
 the instructions in [`nginx/conf.d/tls.conf.example`](./nginx/conf.d/tls.conf.example).
 
+### Web analytics (optional)
+
+Off by default — with no configuration, no third-party script is loaded and no
+visitor data leaves the deployment. Pick whichever provider you already run:
+
+```bash
+NEXT_PUBLIC_ANALYTICS_PROVIDER=umami   # or plausible, google, matomo, fathom, custom
+NEXT_PUBLIC_ANALYTICS_SITE_ID=00000000-0000-0000-0000-000000000000
+NEXT_PUBLIC_ANALYTICS_HOST=https://umami.example.com
+```
+
+`SITE_ID` and `HOST` mean something slightly different per provider:
+
+| Provider    | `SITE_ID`                      | `HOST`                                |
+| ----------- | ------------------------------ | ------------------------------------- |
+| `umami`     | website ID (UUID)              | your Umami URL — **required**         |
+| `plausible` | the domain, e.g. `example.com` | your instance, or empty for the cloud |
+| `google`    | measurement ID, `G-XXXXXXXXXX` | leave empty                           |
+| `matomo`    | numeric site ID                | your Matomo URL — **required**        |
+| `fathom`    | site ID                        | leave empty, or a custom domain       |
+| `custom`    | unused                         | unused                                |
+
+Two optional variables cover the rest:
+
+- `NEXT_PUBLIC_ANALYTICS_SRC` — full script URL, overriding the one derived from
+  `HOST`. Useful for a proxied or renamed script, and **required** for `custom`.
+- `NEXT_PUBLIC_ANALYTICS_ATTRS` — extra script-tag attributes as a JSON object,
+  e.g. `{"data-domains":"example.com"}`.
+
+Those two make `custom` a general escape hatch: anything that installs as a plain
+`<script src=…>` tag works without touching the code.
+
+```bash
+NEXT_PUBLIC_ANALYTICS_PROVIDER=custom
+NEXT_PUBLIC_ANALYTICS_SRC=https://analytics.example.com/tracker.js
+NEXT_PUBLIC_ANALYTICS_ATTRS={"data-site":"abc123"}
+```
+
+The script is loaded from the root layout, so it counts page views across the
+whole app — the landing page, login and signup, and the dashboard pages, whose
+client-side navigations are picked up too. On top of page views, a single custom
+`signup` event fires after a successful registration. No route carries a record
+ID, and no customer data, e-mail address or record ID is ever sent as event data.
+
+If you would rather not measure authenticated usage at all, remove
+`<AnalyticsScripts />` from [`apps/frontend/app/layout.tsx`](./apps/frontend/app/layout.tsx)
+and render it from `app/(public)/layout.tsx` instead.
+
+> Like `NEXT_PUBLIC_API_URL`, these are compiled into the bundle at build time —
+> rebuild with `--build` after changing them. A provider that is named but
+> incomplete (a typo, a missing host) fails the build instead of quietly
+> producing a bundle that measures nothing.
+
 ### Ports
 
 `BACKEND_PORT` and `FRONTEND_PORT` select the **host** port only. Inside the network,

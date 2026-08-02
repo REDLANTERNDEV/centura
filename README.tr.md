@@ -214,6 +214,63 @@ HTTPS isteğe bağlıdır. TLS'i üst kattaki bir vekil yerine bu nginx üzerind
 sonlandırmak için [`nginx/conf.d/tls.conf.example`](./nginx/conf.d/tls.conf.example)
 dosyasındaki adımları izleyin.
 
+### Web analitiği (opsiyonel)
+
+Varsayılan olarak kapalıdır — hiçbir ayar yapılmazsa üçüncü taraf bir script
+yüklenmez ve dışarıya ziyaretçi verisi gitmez. Hâlihazırda kullandığınız
+sağlayıcıyı seçin:
+
+```bash
+NEXT_PUBLIC_ANALYTICS_PROVIDER=umami   # veya plausible, google, matomo, fathom, custom
+NEXT_PUBLIC_ANALYTICS_SITE_ID=00000000-0000-0000-0000-000000000000
+NEXT_PUBLIC_ANALYTICS_HOST=https://umami.example.com
+```
+
+`SITE_ID` ve `HOST` değerlerinin anlamı sağlayıcıya göre değişir:
+
+| Sağlayıcı   | `SITE_ID`                      | `HOST`                            |
+| ----------- | ------------------------------ | --------------------------------- |
+| `umami`     | website ID (UUID)              | Umami adresiniz — **zorunlu**     |
+| `plausible` | alan adı, ör. `example.com`    | kendi kurulumunuz; bulut için boş |
+| `google`    | measurement ID, `G-XXXXXXXXXX` | boş bırakın                       |
+| `matomo`    | sayısal site ID                | Matomo adresiniz — **zorunlu**    |
+| `fathom`    | site ID                        | boş bırakın veya özel alan adı    |
+| `custom`    | kullanılmaz                    | kullanılmaz                       |
+
+Geri kalanı iki opsiyonel değişken karşılar:
+
+- `NEXT_PUBLIC_ANALYTICS_SRC` — `HOST`tan türetilen adresi geçersiz kılan tam
+  script URL'i. Proxy'lenmiş veya adı değiştirilmiş scriptler için kullanışlıdır,
+  `custom` sağlayıcısı için **zorunludur**.
+- `NEXT_PUBLIC_ANALYTICS_ATTRS` — script etiketine eklenecek fazladan
+  öznitelikler, JSON nesnesi olarak: `{"data-domains":"example.com"}`.
+
+Bu ikisi sayesinde `custom` genel bir çıkış kapısı olur: düz bir
+`<script src=…>` etiketiyle kurulan her araç, kodda değişiklik yapmadan çalışır.
+
+```bash
+NEXT_PUBLIC_ANALYTICS_PROVIDER=custom
+NEXT_PUBLIC_ANALYTICS_SRC=https://analytics.example.com/tracker.js
+NEXT_PUBLIC_ANALYTICS_ATTRS={"data-site":"abc123"}
+```
+
+Script kök layout'tan yüklenir; bu nedenle sayfa görüntülemeleri uygulamanın
+tamamında sayılır — tanıtım sayfası, giriş ve kayıt sayfaları ve istemci tarafı
+gezinmeleri de dâhil olmak üzere dashboard sayfaları. Sayfa görüntülemelerine ek
+olarak, başarılı kayıttan sonra tek bir özel `signup` olayı gönderilir. Hiçbir
+rota kayıt ID'si taşımaz; müşteri verisi, e-posta adresi veya kayıt ID'si olay
+verisi olarak asla gönderilmez.
+
+Oturum açmış kullanıcıların kullanımını ölçmek istemiyorsanız
+[`apps/frontend/app/layout.tsx`](./apps/frontend/app/layout.tsx) içindeki
+`<AnalyticsScripts />` bileşenini kaldırıp `app/(public)/layout.tsx` içinde
+render edin.
+
+> `NEXT_PUBLIC_API_URL` gibi bu değerler de derleme sırasında pakete gömülür —
+> değiştirdikten sonra `--build` ile yeniden derleyin. Adı yazılmış ama eksik
+> yapılandırılmış bir sağlayıcı (yazım hatası, eksik host) hiçbir şey ölçmeyen
+> bir paket üretmek yerine derlemeyi hata ile durdurur.
+
 ### Portlar
 
 `BACKEND_PORT` ve `FRONTEND_PORT` yalnızca **host** portunu belirler. Ağ içinde

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
 import { apiClient, API_ENDPOINTS } from '@/lib/api-client';
+import { trackEvent } from '@/lib/analytics';
 import { signupSchema, type SignupFormData } from '@/lib/validations';
 import { validateForm } from '@/lib/validations/form-validation';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,9 @@ export default function SignupPage() {
         email: validation.data.email,
         password: validation.data.password,
       });
+
+      // Conversion event — no e-mail or name is sent, only that a signup happened
+      trackEvent('signup');
 
       toast.success('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
 

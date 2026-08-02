@@ -162,6 +162,14 @@ services:
         # which builds and deploys cleanly and then fails in every visitor's browser.
         # The dev overlay supplies a localhost default for local work.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in .env to the API URL the browser will call, e.g. https://example.com/api/v1}
+        # Optional analytics, also compiled in at build time. An empty provider
+        # (the default) means no tracking script is embedded at all — rebuild the
+        # image after changing these, setting them at runtime has no effect.
+        NEXT_PUBLIC_ANALYTICS_PROVIDER: ${NEXT_PUBLIC_ANALYTICS_PROVIDER:-}
+        NEXT_PUBLIC_ANALYTICS_SITE_ID: ${NEXT_PUBLIC_ANALYTICS_SITE_ID:-}
+        NEXT_PUBLIC_ANALYTICS_HOST: ${NEXT_PUBLIC_ANALYTICS_HOST:-}
+        NEXT_PUBLIC_ANALYTICS_SRC: ${NEXT_PUBLIC_ANALYTICS_SRC:-}
+        NEXT_PUBLIC_ANALYTICS_ATTRS: ${NEXT_PUBLIC_ANALYTICS_ATTRS:-}
     restart: always
     environment:
       NODE_ENV: ${NODE_ENV:-production}
