@@ -1,11 +1,10 @@
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+#!/usr/bin/env sh
 
-for dir in /opt/homebrew/bin /usr/local/bin /usr/bin; do
-  case ":$PATH:" in
-  *":$dir:"*) ;;
-  *) [ -d "$dir" ] && PATH="$PATH:$dir" ;;
-  esac
-done
-
-npx lint-staged
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    npx.cmd lint-staged
+    ;;
+  *)
+    npx lint-staged
+    ;;
+esac
